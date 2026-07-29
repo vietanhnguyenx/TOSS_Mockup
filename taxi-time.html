@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<!--
+  TOSS — Airport Master Data / Taxi Time · Interactive mockup v0.4
+  Scope: Function list v1.0, rows 185-191 (7 functions) + Change History.
+
+  THIS IS A MOCKUP, NOT A WORKING SYSTEM:
+    - All airports, fleet groups, minute values, users and timestamps are SAMPLE DATA.
+    - Every action is simulated; nothing is saved.
+    - Layout and colours are a proposal, pending BA/UI approval.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.4)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
+  <style>
+    :root{
+      --vna-navy:#002A54; --vna-gold:#D4B26F;
+      --toss-primary:#005a9c; --toss-primary-light:#007ec3; --toss-primary-dark:#003d6b;
+      --toss-success:#059669; --toss-warn:#d97706; --toss-error:#dc2626;
+      --md-surface:#fff; --md-surface-variant:#f8fafc;
+      --md-outline:#cbd5e1; --md-outline-variant:#e2e8f0;
+      --md-text-primary:#1e293b; --md-text-secondary:#64748b; --md-text-muted:#94a3b8;
+      --sidebar-width:260px; --sidebar-collapsed-width:52px;
+      --md-radius:12px; --md-radius-sm:8px;
+      --md-elev1:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.05);
+      --md-elev2:0 4px 6px -1px rgba(0,0,0,.05),0 2px 4px -1px rgba(0,0,0,.05);
+      --md-elev3:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -2px rgba(0,0,0,.04);
+      --toss-bg-sky:linear-gradient(180deg,#dbe9f6 0%,#e8f1f9 30%,#f4f7fc 100%);
+      --mo-active-bg:#eaf3fb; --mo-active-text:#002A54; --mo-active-border:#005a9c;
+    }
+    @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',Roboto,'Segoe UI',Arial,sans-serif;background:var(--md-surface-variant);color:var(--md-text-primary);min-height:100vh;overflow-x:hidden;display:flex}
+    .material-symbols-outlined{font-family:'Material Symbols Outlined';font-size:22px;vertical-align:middle;line-height:1;user-select:none}
+    .app-layout{display:flex;width:100vw;min-height:100vh}
+
+    /* ===== Sidebar ===== */
+    .sidebar{width:var(--sidebar-width);background:var(--md-surface);border-right:1px solid var(--md-outline-variant);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;z-index:100;transition:width .3s cubic-bezier(.4,0,.2,1);flex-shrink:0}
+    .sidebar.collapsed{width:var(--sidebar-collapsed-width)}
+    .sidebar.collapsed .logo-text-group{display:none}
+    .sidebar.collapsed .menu-item,.sidebar.collapsed .footer-action-item{padding:12px 0;justify-content:center;gap:0;border-left:3px solid transparent}
+    .sidebar.collapsed .menu-item.active{border-left-color:var(--mo-active-border)}
+    .sidebar-header{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--md-outline-variant);height:48px;position:relative}
+    .logo-container{display:flex;align-items:center;gap:8px;overflow:hidden;white-space:nowrap;flex-shrink:0;height:32px}
+    .sidebar.collapsed .logo-container{justify-content:center;width:100%}
+    .vna-logo-text{font-size:13px;font-weight:700;color:var(--vna-navy);letter-spacing:.5px;line-height:1.2}
+    .vna-logo-sub{font-size:10px;color:var(--vna-gold);font-weight:500;display:block}
+    .sidebar-toggle-btn{position:absolute;right:-12px;top:20px;width:24px;height:24px;background:var(--md-surface);border:1px solid var(--md-outline);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--md-elev1);z-index:110}
+    .sidebar-toggle-btn:hover{background:var(--md-surface-variant);box-shadow:var(--md-elev2)}
+    .sidebar-toggle-btn .material-symbols-outlined{font-size:16px;color:var(--md-text-secondary)}
+    .sidebar-menu{flex:1;padding:12px 0;overflow-y:auto;overflow-x:hidden}
+    .sidebar-menu::-webkit-scrollbar{width:4px}
+    .sidebar-menu::-webkit-scrollbar-thumb{background:var(--md-outline-variant);border-radius:999px}
+    .menu-item{display:flex;align-items:center;gap:12px;padding:10px 18px;color:var(--md-text-primary);text-decoration:none;font-size:13.5px;font-weight:500;border-left:4px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s ease;position:relative}
+    .menu-item:hover{background:var(--md-surface-variant)}
+    .menu-item.active{background:var(--mo-active-bg);color:var(--mo-active-text);border-left-color:var(--mo-active-border);font-weight:600}
+    .menu-item .material-symbols-outlined{color:var(--md-text-secondary);flex-shrink:0;font-size:20px}
+    .menu-item.active .material-symbols-outlined{color:var(--mo-active-border)}
+    .sidebar.collapsed .menu-text{opacity:0;pointer-events:none;position:absolute}
+    .sidebar-footer{border-top:1px solid var(--md-outline-variant);padding:8px 0;background:var(--md-surface)}
+    .footer-action-item{display:flex;align-items:center;gap:12px;padding:10px 18px;color:var(--md-text-primary);font-size:14px;font-weight:500;cursor:pointer}
+    .footer-action-item:hover{background:var(--md-surface-variant)}
+    .footer-action-item .material-symbols-outlined{color:var(--md-text-secondary);flex-shrink:0}
+    .user-profile-card{display:flex;align-items:center;gap:10px;padding:12px 16px;margin:8px;border-radius:var(--md-radius-sm);background:var(--md-surface-variant);overflow:hidden;white-space:nowrap}
+    .sidebar.collapsed .user-profile-card{margin:8px 4px;padding:8px;justify-content:center;background:transparent}
+    .sidebar.collapsed .user-info{display:none}
+    .user-avatar-wrap{width:38px;height:38px;border-radius:50%;overflow:hidden;background:#cbd5e1;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--vna-gold)}
+    .user-avatar-img{width:100%;height:100%;object-fit:cover}
+    .user-info{flex:1;overflow:hidden}
+    .user-name{font-size:13px;font-weight:600}
+    .user-email{font-size:11px;color:var(--md-text-secondary);margin-top:2px}
+    .logout-btn{background:transparent;border:none;color:var(--md-text-secondary);cursor:pointer;display:flex;padding:4px;border-radius:50%}
+    .logout-btn:hover{background:#fee2e2;color:#ef4444}
+    .sidebar.collapsed .menu-item::after,.sidebar.collapsed .footer-action-item::after{content:attr(data-tooltip);position:absolute;left:100%;top:50%;transform:translateY(-50%) translateX(10px);background:#1e293b;color:#fff;padding:6px 12px;border-radius:4px;font-size:12px;white-space:nowrap;opacity:0;pointer-events:none;transition:all .25s;z-index:1000}
+    .sidebar.collapsed .menu-item:hover::after,.sidebar.collapsed .footer-action-item:hover::after{opacity:1;transform:translateY(-50%) translateX(15px)}
+
+    /* ===== Main ===== */
+    .main-content{flex:1;height:100vh;overflow-y:auto;background:var(--toss-bg-sky);display:flex;flex-direction:column}
+    .main-content-scrollable{padding:20px 24px 40px;display:flex;flex-direction:column;gap:16px;flex:1}
+
+    .m3-card{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);border-radius:var(--md-radius);box-shadow:var(--md-elev1);padding:16px}
+    .m3-card:hover{box-shadow:var(--md-elev2)}
+    .filter-grid{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+    .filter-item{display:flex;flex-direction:column;gap:4px;flex:1 1 170px}
+    .filter-item label{font-size:11px;font-weight:600;color:var(--md-text-secondary);text-transform:uppercase;letter-spacing:.3px}
+    .filter-input{width:100%;height:36px;padding:6px 10px;border:1px solid var(--md-outline);border-radius:var(--md-radius-sm);font-family:inherit;font-size:13px;color:var(--md-text-primary);background:var(--md-surface);outline:none;transition:border-color .2s,box-shadow .2s}
+    .filter-input:focus{border-color:var(--vna-navy);box-shadow:0 0 0 3px rgba(0,42,84,.1)}
+    .filter-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b' width='18' height='18'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:28px}
+    .filter-actions{display:flex;align-items:center;gap:10px;justify-content:flex-end;height:36px;flex:0 0 auto;margin-left:auto}
+
+    .main-nav-bar{background:rgba(255,255,255,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.9);border-radius:12px;padding:5px;box-shadow:0 4px 18px rgba(0,42,84,.09),inset 0 1px 0 rgba(255,255,255,.8);display:flex;gap:3px}
+    .mnav-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 8px;border:none;border-radius:8px;background:transparent;color:#64748b;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s ease;white-space:nowrap}
+    .mnav-btn .mnav-ic{font-size:17px;color:#94a3b8;flex-shrink:0}
+    .mnav-btn:hover:not(.active){background:rgba(0,42,84,.06);color:#002A54}
+    .mnav-btn.active{background:#fff;color:#002A54;box-shadow:0 2px 10px rgba(0,42,84,.12);font-weight:700}
+    .mnav-btn.active .mnav-ic{color:#005a9c}
+    .mnav-content{display:none;flex-direction:column;gap:16px;flex:1}
+    .mnav-content.active{display:flex}
+    .mnav-placeholder{align-items:center;justify-content:center;min-height:380px;text-align:center;color:var(--md-text-secondary)}
+
+    .btn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:none;outline:3px solid transparent;outline-offset:2px;transition:all .25s ease;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+    .btn:active{transform:translateY(1px)}
+    .btn:focus{outline-color:var(--toss-primary)}
+    .btn .material-symbols-outlined{font-size:18px}
+    .btn-blue{background:var(--toss-primary);color:#fff}
+    .btn-blue:hover{background:var(--toss-primary-light);box-shadow:0 4px 12px rgba(0,90,156,.2)}
+    .btn-clear{background:#fff;color:var(--toss-primary);border:1.5px solid var(--toss-primary)}
+    .btn-clear:hover{background:rgba(0,90,156,.05)}
+    .btn-ghost{background:#fff;color:var(--md-text-secondary);border:1px solid var(--md-outline)}
+    .btn-ghost:hover{background:var(--md-surface-variant)}
+    .btn-danger{background:transparent;color:var(--toss-error);border:1px solid var(--toss-error)}
+    .btn-danger:hover{background:rgba(220,38,38,.05)}
+    .btn-warn{background:var(--toss-warn);color:#fff}
+    .btn-warn:hover{background:#b45100}
+    .btn-sm{height:32px;padding:0 12px;font-size:12px}
+
+    .list-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .list-title-wrap{display:flex;align-items:center;gap:10px}
+    .list-title-wrap h2{font-size:18px;font-weight:700;color:var(--vna-navy)}
+    .list-actions{display:flex;gap:10px}
+    .refresh-btn{background:none;border:none;color:var(--md-text-secondary);cursor:pointer;display:flex;padding:4px;border-radius:50%;transition:transform .2s}
+    .refresh-btn:hover{background:rgba(0,0,0,.05);transform:rotate(45deg)}
+
+    .table-container{background:#fff;border-radius:var(--md-radius);border:1px solid var(--md-outline-variant);overflow-x:auto;box-shadow:var(--md-elev1)}
+    .user-table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}
+    .user-table th{background:#f1f5f9;color:var(--md-text-secondary);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--md-outline-variant);white-space:nowrap;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px}
+    .user-table td{padding:10px 12px;border-bottom:1px solid var(--md-outline-variant);vertical-align:middle;white-space:nowrap}
+    .user-table tbody tr{cursor:pointer;transition:background .15s}
+    .user-table tbody tr:hover{background:#f8fafc}
+    .row-actions{display:flex;gap:2px}
+    .icon-btn{background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;color:var(--md-text-secondary);display:inline-flex}
+    .icon-btn:hover{background:#e8f1fb;color:var(--toss-primary)}
+    .icon-btn.danger:hover{background:#fee2e2;color:var(--toss-error)}
+    .icon-btn .material-symbols-outlined{font-size:19px}
+    .miss-tag{display:inline-flex;align-items:center;gap:3px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:800;margin-left:6px}
+    .miss-tag .material-symbols-outlined{font-size:12px}
+
+    .status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+    .status-badge.active{background:#d1fae5;color:#047857}
+    .status-badge.expired{background:#f1f5f9;color:#475569}
+    .status-badge.future{background:#fef3c7;color:#92400e}
+
+    .pagination-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;font-size:12.5px;color:var(--md-text-secondary)}
+    .records-selector{display:flex;align-items:center;gap:6px}
+    .records-select{border:1px solid var(--md-outline);background:#fff;border-radius:4px;padding:4px 8px;font-family:inherit;font-size:12px;cursor:pointer}
+    .pagination-controls{display:flex;align-items:center;gap:4px}
+    .page-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--md-outline-variant);border-radius:4px;background:#fff;cursor:pointer;font-weight:500}
+    .page-btn:hover{background:var(--md-surface-variant)}
+    .page-btn.active{background:var(--toss-primary);color:#fff;border-color:var(--toss-primary)}
+    .page-btn.disabled{color:var(--md-text-muted);cursor:not-allowed;background:#f1f5f9}
+
+    /* ===== Modal ===== */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(2px);z-index:900;align-items:center;justify-content:center;padding:24px}
+    .modal-overlay.open{display:flex}
+    .modal{background:#fff;border-radius:var(--md-radius);box-shadow:var(--md-elev3);width:100%;max-width:1180px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+    .modal.narrow{max-width:560px}
+    .modal.mid{max-width:920px}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--md-outline-variant);background:#f8fafc}
+    .modal-head h3{font-size:15.5px;font-weight:700;color:var(--vna-navy);display:flex;align-items:center;gap:8px}
+    .modal-head h3 .material-symbols-outlined{font-size:20px;color:var(--toss-primary)}
+    .modal-body{padding:18px;overflow-y:auto;flex:1}
+    .modal-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 18px;border-top:1px solid var(--md-outline-variant);background:#f8fafc}
+    .modal-foot .foot-hint{margin-right:auto;font-size:11.5px;color:var(--md-text-secondary);display:flex;align-items:center;gap:6px}
+    #mdConfirm{z-index:960}
+
+    .form-head-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;padding:14px;background:#f8fafc;border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm)}
+    .form-cell{display:flex;flex-direction:column;gap:5px}
+    .form-cell label{font-size:11px;font-weight:600;color:var(--md-text-secondary);text-transform:uppercase;letter-spacing:.3px;display:flex;align-items:center;gap:5px}
+    .req{color:var(--toss-error)}
+
+    /* ===== "Copy from previous period" strip (A-4 v0.3) ===== */
+    .copy-strip{display:flex;align-items:center;gap:12px;margin-top:12px;padding:11px 14px;border:1px solid #bae6fd;background:#f0f9ff;border-radius:var(--md-radius-sm);flex-wrap:wrap}
+    .copy-strip .material-symbols-outlined{color:var(--toss-primary)}
+    .copy-strip .cs-txt{font-size:12.5px;color:#0c4a6e;line-height:1.5;flex:1;min-width:220px}
+    .copy-strip .cs-txt b{font-weight:700}
+    .copy-strip.done{background:#f0fdf4;border-color:#bbf7d0}
+    .copy-strip.done .material-symbols-outlined{color:var(--toss-success)}
+    .copy-strip.done .cs-txt{color:#14532d}
+
+    .mx-bar{display:flex;align-items:center;gap:14px;margin:16px 0 9px;flex-wrap:wrap}
+    .mx-bar h4{font-size:13px;font-weight:700;color:var(--vna-navy);display:flex;align-items:center;gap:6px}
+    .mx-bar h4 .material-symbols-outlined{font-size:18px;color:var(--toss-primary)}
+    .assign-counter{margin-left:auto;font-size:12px;color:var(--md-text-secondary);font-weight:600}
+    .assign-counter b{color:var(--toss-primary)}
+    .assign-counter .miss{color:var(--toss-warn)}
+
+    /* ===== Matrix ===== */
+    .mx-wrap{border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm);overflow:auto;background:#fff;max-height:44vh}
+    .mx{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+    .mx th,.mx td{border-right:1px solid var(--md-outline-variant);border-bottom:1px solid var(--md-outline-variant)}
+    .mx thead th{position:sticky;top:0;z-index:3;background:#f1f5f9;color:var(--md-text-secondary);font-weight:700;padding:8px 6px;text-align:center;font-size:11px;white-space:nowrap}
+    .mx thead th.mx-corner{left:0;z-index:5;text-align:left;padding-left:12px;min-width:158px}
+    .mx tbody th.mx-region{position:sticky;left:0;z-index:2;background:#fbfdff;text-align:left;padding:8px 12px;font-weight:700;color:var(--vna-navy);font-size:12px;vertical-align:top;min-width:158px}
+    .mx tbody th.mx-region small{display:block;font-weight:500;color:var(--md-text-muted);font-size:10.5px;margin-top:2px}
+    .mx tbody th.mx-region small.warn{color:var(--toss-warn);font-weight:700}
+    .mx td.mx-cell{vertical-align:top;padding:5px;min-width:98px;background:#fff}
+    .mx td.mx-cell.has{background:#fbfeff}
+
+    .chips{display:flex;flex-wrap:wrap;gap:4px;min-height:22px}
+    .chip{display:inline-flex;align-items:center;gap:3px;background:#e0f2fe;color:#075985;border:1px solid #bae6fd;border-radius:5px;padding:2px 4px 2px 6px;font-size:11px;font-weight:700;letter-spacing:.3px}
+    .chip .x{cursor:pointer;font-size:13px;line-height:1;color:#0369a1;opacity:.65}
+    .chip .x:hover{opacity:1;color:var(--toss-error)}
+    .chip.miss{background:#fef3c7;color:#92400e;border-color:#fde68a;padding:2px 7px}
+    .cell-add{margin-top:4px;width:100%;border:1px dashed var(--md-outline);background:#fff;color:var(--md-text-muted);border-radius:5px;font-size:11px;font-weight:600;padding:3px 0;cursor:pointer;font-family:inherit}
+    .cell-add:hover{border-color:var(--toss-primary);color:var(--toss-primary);background:#f0f9ff}
+
+    /* ===== A-2b: click-to-select, click-to-place ===== */
+    .chip.movable{cursor:pointer}
+    .chip.movable:hover{border-color:var(--toss-primary);box-shadow:0 0 0 2px rgba(0,90,156,.12)}
+    .chip.moving{background:var(--toss-primary);color:#fff;border-color:var(--toss-primary-dark);box-shadow:0 2px 8px rgba(0,90,156,.35)}
+    .chip.moving .x{color:#cfe6f7}
+    .mx td.mx-cell.src{background:#eaf3fb;outline:2px solid var(--toss-primary);outline-offset:-2px}
+    .mx td.mx-cell.target{cursor:pointer;outline:1px dashed #7dd3fc;outline-offset:-3px}
+    .mx td.mx-cell.target:hover{background:#e0f2fe;outline:2px solid var(--toss-primary);outline-offset:-2px}
+    .mx td.mx-cell.dim{opacity:.42}
+    .move-bar{display:none;align-items:center;gap:10px;margin-top:9px;padding:9px 13px;border:1px solid var(--toss-primary);background:#eaf3fb;border-radius:var(--md-radius-sm);font-size:12.5px;color:var(--toss-primary-dark)}
+    .move-bar.open{display:flex}
+    .move-bar .material-symbols-outlined{font-size:18px;color:var(--toss-primary)}
+    .move-bar b{font-weight:800}
+    .move-bar .esc{margin-left:auto;font-size:11px;color:var(--md-text-secondary)}
+    .move-bar .esc kbd{background:#fff;border:1px solid var(--md-outline);border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-family:inherit;font-size:10.5px;font-weight:700}
+
+    .picker{display:none;position:fixed;z-index:950;background:#fff;border:1px solid var(--md-outline);border-radius:9px;box-shadow:0 10px 30px rgba(0,42,84,.2);width:250px;max-height:300px;overflow:hidden;flex-direction:column}
+    .picker.open{display:flex}
+    .picker-head{padding:8px 10px;border-bottom:1px solid var(--md-outline-variant);background:#f8fafc;font-size:11px;font-weight:700;color:var(--vna-navy)}
+    .picker-search{margin:8px 10px 4px;height:30px;border:1px solid var(--md-outline);border-radius:6px;padding:0 8px;font-size:12px;font-family:inherit;outline:none}
+    .picker-list{overflow-y:auto;padding:4px 6px 8px}
+    .picker-opt{padding:6px 8px;border-radius:6px;font-size:12px;font-weight:600;color:#334155;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px}
+    .picker-opt:hover{background:#e8f1fb;color:var(--toss-primary-dark)}
+    .picker-opt small{font-weight:500;color:var(--md-text-muted);font-size:10.5px;white-space:nowrap}
+    .picker-none{padding:10px;font-size:11.5px;color:var(--md-text-muted);font-style:italic;text-align:center}
+
+    /* ===== Save confirmation ===== */
+    .cf-block{border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm);overflow:hidden;margin-bottom:14px}
+    .cf-block:last-child{margin-bottom:0}
+    .cf-head{padding:9px 13px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+    .cf-head .material-symbols-outlined{font-size:18px}
+    .cf-head.warn{background:#fffbeb;color:#92400e;border-bottom:1px solid #fde68a}
+    .cf-head.info{background:#f0f9ff;color:#0c4a6e;border-bottom:1px solid #bae6fd}
+    .cf-body{padding:12px 13px;font-size:12px;line-height:1.6}
+    .cf-body table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:9px}
+    .cf-body th{background:#f8fafc;text-align:left;padding:7px 10px;font-size:10.5px;text-transform:uppercase;color:var(--md-text-secondary);border-bottom:1px solid var(--md-outline-variant)}
+    .cf-body td{padding:8px 10px;border-bottom:1px solid var(--md-outline-variant)}
+    .val-old{color:#b91c1c;text-decoration:line-through}
+    .val-new{color:#047857;font-weight:600}
+    .val-nil{color:var(--md-text-muted);font-style:italic}
+
+    .detail-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:14px;background:#f8fafc;border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm);margin-bottom:14px}
+    .ds-cell .ds-label{font-size:10.5px;font-weight:700;color:var(--md-text-secondary);text-transform:uppercase;letter-spacing:.4px}
+    .ds-cell .ds-value{font-size:14px;font-weight:700;color:var(--vna-navy);margin-top:3px}
+    .ds-cell .ds-value.warn{color:var(--toss-warn)}
+
+    /* ===== Change History ===== */
+    .his-filter{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:11px;background:#f8fafc;border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm);margin-bottom:12px}
+    .his-filter .filter-item{flex:1 1 140px}
+    .his-filter .filter-item label{font-size:11px;font-weight:600;color:var(--md-text-secondary);text-transform:uppercase}
+    .his-table{width:100%;border-collapse:collapse;font-size:11.5px}
+    .his-table th{background:#f1f5f9;padding:8px 11px;font-weight:700;color:var(--md-text-secondary);border-bottom:2px solid var(--md-outline-variant);text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;position:sticky;top:0;z-index:2}
+    .his-table td{padding:8px 11px;border-bottom:1px solid var(--md-outline-variant);vertical-align:top}
+    .his-wrap{max-height:400px;overflow-y:auto;border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm)}
+    .cell-dt{white-space:nowrap;color:#475569;font-variant-numeric:tabular-nums}
+    .act-pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap}
+    .act-pill.add{background:#d1fae5;color:#065f46}
+    .act-pill.mod{background:#e0f2fe;color:#0369a1}
+    .act-pill.del{background:#fee2e2;color:#b91c1c}
+    .field-pill{display:inline-flex;align-items:center;padding:3px 8px;background:#eef2f7;color:#334155;border-radius:4px;font-size:10.5px;font-weight:700;white-space:nowrap}
+
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1e293b;color:#fff;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:1200;box-shadow:var(--md-elev3);display:flex;align-items:center;gap:8px}
+    .toast .material-symbols-outlined{font-size:18px;color:#4ade80}
+
+    @media (max-width:1200px){.form-head-grid{grid-template-columns:1fr 1fr}.detail-summary{grid-template-columns:1fr 1fr}}
+    @media (max-width:1024px){.mnav-btn .mnav-txt{display:none}.filter-item{flex:1 1 140px}}
+  </style>
+</head>
+<body>
+
+<div class="app-layout" id="appLayout">
+
+  <!-- ================= SIDEBAR ================= -->
+  <nav class="sidebar" id="sidebar" data-mat="mat-sidenav" data-src="Layout inherited from Aircraft Catalog mockup v4">
+    <div class="sidebar-header">
+      <div class="logo-container">
+        <svg viewBox="0 0 200 150" width="28" height="21" fill="#D4B26F" style="flex-shrink:0;">
+          <path d="M100,10 C101.5,45 118,70 148,82 C125,81 107,70 100,50 C93,70 75,81 52,82 C82,70 98.5,45 100,10 Z"/>
+          <path d="M100,60 C110,95 152,110 190,102 C150,107 118,92 100,74 C82,92 50,107 10,102 C48,110 90,95 100,60 Z"/>
+          <path d="M100,82 C108,118 168,128 185,126 C155,128 122,118 100,100 C78,118 45,128 15,126 C32,128 92,118 100,82 Z"/>
+          <path d="M100,105 C104,128 135,138 150,138 C130,138 112,128 100,118 C88,128 70,138 50,138 C65,138 96,128 100,105 Z"/>
+        </svg>
+        <div class="logo-text-group">
+          <span class="vna-logo-text" style="color:#005c72;font-weight:700;font-size:15px;letter-spacing:-.2px;text-transform:none;">Vietnam<span style="font-weight:300;">Airlines</span></span>
+          <span class="vna-logo-sub" style="font-size:9px;color:#a1a1aa;font-weight:500;text-transform:uppercase;letter-spacing:1.2px;">Master Data Management</span>
+        </div>
+      </div>
+      <button class="sidebar-toggle-btn" id="sidebarToggle" title="Toggle Navigation">
+        <span class="material-symbols-outlined" id="toggleIcon">chevron_left</span>
+      </button>
+    </div>
+
+    <div class="sidebar-menu" data-mat="mat-nav-list" data-src="Function list §6 — Data Maintenance catalogues">
+      <a class="menu-item" data-tooltip="Aircraft Fleet" onclick="toast('Out of scope for this mockup')"><span class="material-symbols-outlined">flight</span><span class="menu-text">Aircraft Fleet</span></a>
+      <a class="menu-item active" data-tooltip="Airports" onclick="return false"><span class="material-symbols-outlined">flight_takeoff</span><span class="menu-text">Airports</span></a>
+      <a class="menu-item" data-tooltip="Flight Routes" onclick="toast('Out of scope for this mockup')"><span class="material-symbols-outlined">route</span><span class="menu-text">Flight Routes</span></a>
+      <a class="menu-item" data-tooltip="Pilots" onclick="toast('Out of scope for this mockup')"><span class="material-symbols-outlined">person</span><span class="menu-text">Pilots</span></a>
+      <a class="menu-item" data-tooltip="Flight Attendants" onclick="toast('Out of scope for this mockup')"><span class="material-symbols-outlined">group</span><span class="menu-text">Flight Attendants</span></a>
+      <a class="menu-item" data-tooltip="Countries" onclick="toast('Out of scope for this mockup')"><span class="material-symbols-outlined">public</span><span class="menu-text">Countries</span></a>
+      <a class="menu-item" data-tooltip="Carriers" onclick="toast('Out of scope for this mockup')"><span class="material-symbols-outlined">business_center</span><span class="menu-text">Carriers</span></a>
+      <a class="menu-item" data-tooltip="FIR (Flight Information Region)" onclick="toast('Out of scope for this mockup')"><span class="material-symbols-outlined">cloud</span><span class="menu-text">FIR (Flight Information Region)</span></a>
+      <a class="menu-item" data-tooltip="ULD (Unit Load Devices)" onclick="toast('Out of scope for this mockup')"><span class="material-symbols-outlined">inventory_2</span><span class="menu-text">ULD (Unit Load Devices)</span></a>
+    </div>
+
+    <div class="sidebar-footer">
+      <a class="footer-action-item" data-tooltip="System Audit Log" onclick="toast('System Audit Log')">
+        <span class="material-symbols-outlined">history</span><span class="menu-text">System Audit Log</span>
+      </a>
+      <div class="user-profile-card">
+        <div class="user-avatar-wrap">
+          <img class="user-avatar-img" alt="Avatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'><circle cx='50' cy='50' r='48' fill='%23f1f5f9'/><path d='M25,35 Q50,25 75,35 L70,42 Q50,38 30,42 Z' fill='%23002A54'/><path d='M30,42 Q50,38 70,42 L72,45 Q50,42 28,45 Z' fill='%23D4B26F'/><circle cx='50' cy='55' r='18' fill='%23fed7aa'/><path d='M32,50 Q36,45 40,48 Q44,45 50,48 Q56,45 60,48 Q64,45 68,50 Q66,40 50,40 Z' fill='%231e293b'/><circle cx='44' cy='55' r='2' fill='%231e293b'/><circle cx='56' cy='55' r='2' fill='%231e293b'/><path d='M32,73 L42,85 L50,78 L58,85 L68,73 L65,95 L35,95 Z' fill='%23002A54'/></svg>">
+        </div>
+        <div class="user-info">
+          <div class="user-name">Dispatcher</div>
+          <div class="user-email">dispatcher@vietnamairlines.com</div>
+        </div>
+        <button class="logout-btn" title="Sign Out" onclick="toast('Sign Out')"><span class="material-symbols-outlined">logout</span></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main-content">
+    <div class="main-content-scrollable">
+
+      <nav class="main-nav-bar" id="mainNavBar" role="tablist" data-mat="mat-tab-group" data-src="[FL] rows 179–213 — six function groups of the Airport Master Data module">
+        <button class="mnav-btn" role="tab" onclick="switchMain(this,'p-general')"><span class="material-symbols-outlined mnav-ic">flight_takeoff</span><span class="mnav-txt">General Information</span></button>
+        <button class="mnav-btn active" role="tab" aria-selected="true" onclick="switchMain(this,'p-taxi')"><span class="material-symbols-outlined mnav-ic">timer</span><span class="mnav-txt">Taxi Time</span></button>
+        <button class="mnav-btn" role="tab" onclick="switchMain(this,'p-alt')"><span class="material-symbols-outlined mnav-ic">alt_route</span><span class="mnav-txt">Destination Alternate</span></button>
+        <button class="mnav-btn" role="tab" onclick="switchMain(this,'p-gse')"><span class="material-symbols-outlined mnav-ic">agriculture</span><span class="mnav-txt">Ground Support Equipment</span></button>
+        <button class="mnav-btn" role="tab" onclick="switchMain(this,'p-min')"><span class="material-symbols-outlined mnav-ic">visibility</span><span class="mnav-txt">Minima</span></button>
+        <button class="mnav-btn" role="tab" onclick="switchMain(this,'p-fuel')"><span class="material-symbols-outlined mnav-ic">local_gas_station</span><span class="mnav-txt">Fuel Pricing</span></button>
+      </nav>
+
+      <!-- ============ PANEL: TAXI TIME ============ -->
+      <div id="p-taxi" class="mnav-content active">
+
+        <!-- [FL-186] Filter -->
+        <section class="m3-card" data-mat="mat-card" data-src="[FL-186] row 186 — Filter the taxi time list">
+          <div class="filter-grid">
+            <div class="filter-item">
+              <label for="fCat3">Fleet Group</label>
+              <select id="fCat3" class="filter-input filter-select" data-mat="mat-select" data-src="[FL-185] 'Fleet group (cate 3)' · [CAT3] master data">
+                <option value="">All</option>
+                <option>A320 / A321 (Narrow-body)</option>
+                <option>A350 / B787 (Wide-body)</option>
+                <option>ATR72</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="fFrom">Effective From</label>
+              <input type="date" id="fFrom" class="filter-input" data-mat="mat-datepicker" data-src="[FL-185] 'From - to'">
+            </div>
+            <div class="filter-item">
+              <label for="fTo">Effective To</label>
+              <input type="date" id="fTo" class="filter-input" data-mat="mat-datepicker" data-src="[FL-185] 'From - to'">
+            </div>
+            <div class="filter-item">
+              <label for="fStatus">Status</label>
+              <select id="fStatus" class="filter-input filter-select" data-mat="mat-select" data-src="Decision A-8 — no approval workflow; status is DERIVED from the effective period against today's date">
+                <option value="">All</option>
+                <option>Active</option>
+                <option>Scheduled</option>
+                <option>Expired</option>
+              </select>
+            </div>
+            <div class="filter-actions">
+              <button class="btn btn-clear" onclick="clearFilters()"><span class="material-symbols-outlined">restart_alt</span>Clear</button>
+              <button class="btn btn-blue" onclick="toast('Filters applied (simulated)')"><span class="material-symbols-outlined">search</span>Search</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- [FL-185] List + [FL-191] Export -->
+        <div class="list-header">
+          <div class="list-title-wrap">
+            <h2>Taxi Time Records</h2>
+            <button class="refresh-btn" title="Refresh" onclick="toast('List refreshed')"><span class="material-symbols-outlined">refresh</span></button>
+            <span style="font-size:11.5px;color:var(--md-text-secondary);">Sorted with the most recent record first</span>
+          </div>
+          <div class="list-actions">
+            <button class="btn btn-ghost" onclick="toast('Generating .xlsx file… (simulated)')" data-mat="mat-stroked-button" data-src="[FL-191] row 191 — Export taxi time data">
+              <span class="material-symbols-outlined">download</span>Export to Excel
+            </button>
+            <button class="btn btn-blue" onclick="openForm('create')" data-mat="mat-raised-button" data-src="[FL-188] row 188 — Create taxi time record">
+              <span class="material-symbols-outlined">add</span>New Record
+            </button>
+          </div>
+        </div>
+
+        <div class="table-container" data-mat="mat-table" data-src="[FL-185] row 185 — Taxi time list">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th style="width:44px;">No</th>
+                <th>Fleet Group</th>
+                <th style="text-align:center;">Regions</th>
+                <th style="text-align:center;">Airports Assigned</th>
+                <th>Effective From</th>
+                <th>Effective To</th>
+                <th>Last Updated</th>
+                <th>Updated By</th>
+                <th>Status</th>
+                <th style="width:124px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="listBody"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination-bar" data-mat="mat-paginator" data-src="Shared pagination pattern (SRS Common Design v0.1)">
+          <div class="records-selector">
+            Show
+            <select class="records-select" id="pageSize" onchange="renderList()"><option>10</option><option>20</option><option>50</option><option>100</option></select>
+            rows per page — Total records: <b style="color:var(--md-text-primary)" id="totalRows">0</b>
+          </div>
+          <div class="pagination-controls" id="pager"></div>
+        </div>
+      </div>
+
+      <!-- ============ OTHER PANELS ============ -->
+      <div id="p-general" class="mnav-content mnav-placeholder"><div><span class="material-symbols-outlined" style="font-size:44px;color:#cbd5e1;">flight_takeoff</span><h3 style="margin:10px 0 4px;color:var(--vna-navy);">Airport General Information</h3><p style="font-size:12.5px;">Function list rows 179–184 — out of scope for this mockup.<br>An SRS v0.1 already exists from the customer (<code>TOSS.DM.AIRPORT/</code>).</p></div></div>
+      <div id="p-alt" class="mnav-content mnav-placeholder"><div><span class="material-symbols-outlined" style="font-size:44px;color:#cbd5e1;">alt_route</span><h3 style="margin:10px 0 4px;color:var(--vna-navy);">Destination Alternate</h3><p style="font-size:12.5px;">Function list rows 192–199 — out of scope for this mockup.</p></div></div>
+      <div id="p-gse" class="mnav-content mnav-placeholder"><div><span class="material-symbols-outlined" style="font-size:44px;color:#cbd5e1;">agriculture</span><h3 style="margin:10px 0 4px;color:var(--vna-navy);">Ground Support Equipment</h3><p style="font-size:12.5px;">Function list rows 200–205 — out of scope for this mockup.</p></div></div>
+      <div id="p-min" class="mnav-content mnav-placeholder"><div><span class="material-symbols-outlined" style="font-size:44px;color:#cbd5e1;">visibility</span><h3 style="margin:10px 0 4px;color:var(--vna-navy);">Minima Management</h3><p style="font-size:12.5px;">Function list rows 206–211 — out of scope for this mockup.<br><span style="color:#b91c1c;">Note: the “Description” cell on row 206 actually describes Taxi Time — suspected copy/paste error.</span></p></div></div>
+      <div id="p-fuel" class="mnav-content mnav-placeholder"><div><span class="material-symbols-outlined" style="font-size:44px;color:#cbd5e1;">local_gas_station</span><h3 style="margin:10px 0 4px;color:var(--vna-navy);">Fuel Pricing</h3><p style="font-size:12.5px;">Function list rows 212–213 · not yet assigned to a sprint — out of scope for this mockup.</p></div></div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ================= MODAL: CREATE / EDIT [FL-188][FL-189] ================= -->
+<div class="modal-overlay" id="mdForm" data-mat="mat-dialog">
+  <div class="modal">
+    <div class="modal-head">
+      <h3><span class="material-symbols-outlined" id="formIcon">add_circle</span><span id="formTitle">New Taxi Time Record</span></h3>
+      <button class="icon-btn" onclick="closeModal('mdForm')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-head-grid" data-src="[FL-188] 'Header: select fleet group cate 3, select from-to'">
+        <div class="form-cell">
+          <label>Fleet Group <span class="req">*</span></label>
+          <select class="filter-input filter-select" id="frmCat3" data-mat="mat-select" data-src="[FL-188] 'fleet group cate 3' · [CAT3]">
+            <option>A320 / A321 (Narrow-body)</option>
+            <option>A350 / B787 (Wide-body)</option>
+            <option>ATR72</option>
+          </select>
+        </div>
+        <div class="form-cell">
+          <label>Effective From <span class="req">*</span></label>
+          <input type="date" class="filter-input" id="frmFrom" value="2026-08-01" data-mat="mat-datepicker" data-src="[FL-188] 'select from-to'">
+        </div>
+        <div class="form-cell">
+          <label>Effective To</label>
+          <input type="date" class="filter-input" id="frmTo" value="2026-10-31" data-mat="mat-datepicker" data-src="[FL-188] 'select from-to' — leave blank for open-ended (precedent BR-420)">
+        </div>
+      </div>
+
+      <!-- A-4 (v0.3) — Copy from previous period -->
+      <div class="copy-strip" id="copyStrip" data-mat="mat-raised-button" data-src="Decision A-4 (v0.3) — dynamic inheritance replaced by an explicit copy action">
+        <span class="material-symbols-outlined">content_copy</span>
+        <div class="cs-txt" id="copyTxt"></div>
+        <button class="btn btn-blue btn-sm" id="copyBtn" onclick="copyFromPrev()"><span class="material-symbols-outlined">content_copy</span>Copy from previous period</button>
+      </div>
+
+      <div class="mx-bar">
+        <h4><span class="material-symbols-outlined">grid_on</span>Standard taxi time (minutes)</h4>
+        <span class="assign-counter"><b id="cntAssigned">0</b> of <span id="cntTotal">0</span> airports assigned · <span class="miss"><b id="cntMiss">0</b> unassigned</span></span>
+      </div>
+
+      <div class="mx-wrap">
+        <table class="mx" id="mxTable"></table>
+      </div>
+
+      <div class="move-bar" id="moveBar">
+        <span class="material-symbols-outlined">swap_horiz</span>
+        <span>Moving <b id="mvAp">—</b> — click a target cell in <b id="mvRegion">—</b>, or click the <b>“Unassigned”</b> column to remove it from the matrix.</span>
+        <span class="esc"><kbd>Esc</kbd> to cancel</span>
+      </div>
+
+    </div>
+
+    <div class="modal-foot">
+      <span class="foot-hint"><span class="material-symbols-outlined" style="font-size:16px;">info</span>Mockup — actions are simulated, no data is persisted</span>
+      <button class="btn btn-ghost" onclick="closeModal('mdForm')">Cancel</button>
+      <button class="btn btn-blue" onclick="trySave()"><span class="material-symbols-outlined">save</span>Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: SAVE CONFIRMATION (A-7 + A-4) ================= -->
+<div class="modal-overlay" id="mdConfirm" data-mat="mat-dialog" data-src="Decision A-7 (auto-trim previous period) + A-4 (warn about airports without a value)">
+  <div class="modal narrow">
+    <div class="modal-head">
+      <h3><span class="material-symbols-outlined" style="color:var(--toss-warn);">fact_check</span>Confirm Save</h3>
+      <button class="icon-btn" onclick="closeModal('mdConfirm')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Block 1 — A-7 -->
+      <div class="cf-block" id="cfOverlap">
+        <div class="cf-head warn"><span class="material-symbols-outlined">event_repeat</span>Overlapping effective period — the earlier record will be trimmed</div>
+        <div class="cf-body">
+          The new record for fleet group <b id="ovCat">—</b> is effective <b id="ovNew">—</b>, which overlaps an existing record.
+          The system will <b>automatically shorten</b> the earlier record so the two periods run consecutively, with no overlap and no gap.
+          <table>
+            <tr><th>Affected record</th><th>Effective period</th></tr>
+            <tr><td>Current</td><td class="val-old" id="ovOld">—</td></tr>
+            <tr><td>After saving</td><td class="val-new" id="ovCut">—</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Block 2 — A-4 -->
+      <div class="cf-block" id="cfMissing">
+        <div class="cf-head info"><span class="material-symbols-outlined">report</span><span id="cfMissTitle">Airports without a Standard Taxi Time</span></div>
+        <div class="cf-body">
+          <div class="chips" id="cfMissList" style="margin-bottom:10px;"></div>
+          These airports have <b>no value assigned</b> on this record. TOSS will <b>not push a Standard Taxi Time</b>
+          for them to Lido; <b>Lido will keep using its own figure</b> when building the OFP.
+          <div style="margin-top:9px;color:var(--md-text-secondary);font-size:11.5px;">
+            You can still save. To have TOSS manage these airports, go back and assign values first.
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('mdConfirm')">Back to edit</button>
+      <button class="btn btn-warn" onclick="confirmSave()"><span class="material-symbols-outlined">check</span>Confirm &amp; Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: VIEW DETAILS [FL-187] ================= -->
+<div class="modal-overlay" id="mdDetail" data-mat="mat-dialog" data-src="[FL-187] row 187 — View a standard taxi time record">
+  <div class="modal">
+    <div class="modal-head">
+      <h3><span class="material-symbols-outlined">visibility</span>Taxi Time Details</h3>
+      <button class="icon-btn" onclick="closeModal('mdDetail')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-summary">
+        <div class="ds-cell"><div class="ds-label">Fleet Group</div><div class="ds-value" id="dtCat">—</div></div>
+        <div class="ds-cell"><div class="ds-label">Effective Period</div><div class="ds-value" id="dtValid">—</div></div>
+        <div class="ds-cell"><div class="ds-label">Airports Assigned</div><div class="ds-value" id="dtCount">—</div></div>
+        <div class="ds-cell"><div class="ds-label">Unassigned</div><div class="ds-value warn" id="dtMiss">—</div></div>
+      </div>
+      <div class="mx-wrap">
+        <table class="mx" id="mxDetail"></table>
+      </div>
+      <p style="font-size:11.5px;color:var(--md-text-secondary);margin-top:8px;">
+        Read-only view. An airport's Standard Taxi Time is the minute value of the column it sits in.
+        Airports absent from the matrix are not managed by TOSS for this period (see “Unassigned”).
+      </p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('mdDetail')">Close</button>
+      <button class="btn btn-blue" onclick="closeModal('mdDetail'); openForm('edit',curRow)"><span class="material-symbols-outlined">edit</span>Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CHANGE HISTORY (FUNC-418-06 / A-8) ================= -->
+<div class="modal-overlay" id="mdHistory" data-mat="mat-dialog" data-src="FUNC-418-06 — change history of a Standard Taxi Time record · decision A-8">
+  <div class="modal mid">
+    <div class="modal-head">
+      <h3><span class="material-symbols-outlined">history</span>Change History — <span id="hisCat" style="font-weight:600;">—</span></h3>
+      <button class="icon-btn" onclick="closeModal('mdHistory')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+      <div class="his-filter">
+        <div class="filter-item"><label>From date</label><input type="date" class="filter-input"></div>
+        <div class="filter-item"><label>To date</label><input type="date" class="filter-input"></div>
+        <div class="filter-item"><label>Account</label><input type="text" class="filter-input" placeholder="All"></div>
+        <div class="filter-item"><label>Action</label>
+          <select class="filter-input filter-select"><option>All</option><option>Create</option><option>Update</option><option>Delete</option></select>
+        </div>
+        <div class="filter-actions" style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="toast('Filters cleared')">Clear</button>
+          <button class="btn btn-blue btn-sm" onclick="toast('History filtered (simulated)')">Search</button>
+        </div>
+      </div>
+
+      <div class="his-wrap">
+        <table class="his-table">
+          <thead><tr>
+            <th style="width:132px;">Timestamp</th>
+            <th style="width:96px;">Account</th>
+            <th style="width:82px;">Action</th>
+            <th style="width:178px;">Changed Item</th>
+            <th>Old Value</th>
+            <th>New Value</th>
+          </tr></thead>
+          <tbody id="hisBody"></tbody>
+        </table>
+      </div>
+      <p style="font-size:11.5px;color:var(--md-text-secondary);margin-top:9px;line-height:1.55;">
+        Records changes at both <b>header level</b> (fleet group, effective period) and <b>matrix cell level</b> (Region × minute band).
+        <b>Copy from previous period</b> (A-4) and <b>auto-trim of the earlier record</b> (A-7) are logged here as well.
+      </p>
+    </div>
+    <div class="modal-foot">
+      <span class="foot-hint"><span class="material-symbols-outlined" style="font-size:16px;">info</span>Sample data</span>
+      <button class="btn btn-ghost" onclick="toast('Exporting history… (simulated)')"><span class="material-symbols-outlined">download</span>Export</button>
+      <button class="btn btn-blue" onclick="closeModal('mdHistory')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: DELETE [FL-190] ================= -->
+<div class="modal-overlay" id="mdDelete" data-mat="mat-dialog" data-src="[FL-190] row 190 — Delete taxi time record">
+  <div class="modal narrow">
+    <div class="modal-head">
+      <h3><span class="material-symbols-outlined" style="color:var(--toss-error);">delete</span>Delete Taxi Time Record</h3>
+      <button class="icon-btn" onclick="closeModal('mdDelete')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13.5px;line-height:1.65;">Delete the taxi time record for fleet group <b id="delName">—</b>, effective <b id="delValid">—</b>?</p>
+      
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('mdDelete')">Cancel</button>
+      <button class="btn btn-danger" onclick="closeModal('mdDelete'); toast('Record deleted (simulated)')"><span class="material-symbols-outlined">delete</span>Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="picker" id="picker">
+  <div class="picker-head" id="pickerHead">Select airport</div>
+  <input class="picker-search" id="pickerSearch" placeholder="Search airport code…" oninput="renderPicker()">
+  <div class="picker-list" id="pickerList"></div>
+</div>
+
+<div class="toast" id="toastNotif"><span class="material-symbols-outlined">check_circle</span><span id="toastMessage"></span></div>
+
+<script>
+/* =========================================================================
+   SAMPLE DATA — CLAUDE.md §0: NOT REAL OPERATIONAL DATA
+   Regions per [BR-432] · Minute bands per [FL-188] + decision A-1 (10 fixed bands)
+   ========================================================================= */
+const MINUTES = [5,10,15,20,25,30,35,40,45,50];
+const REGIONS = [
+  { code:'VN',  name:'Domestic VN', airports:['HAN','SGN','DAD','CXR','HPH','VII','PQC','VCA','DLI','HUI','UIH','VDH','THD','DIN','TBB','PXU','VCL','BMV','VDO'] },
+  { code:'SEA', name:'SEA',         airports:['BKK','SIN','PNH','REP','RGN','KUL','CGK','MNL','VTE','LPQ'] },
+  { code:'NEA', name:'NEA',         airports:['ICN','NRT','HND','KIX','NGO','PVG','PEK','CAN','HKG','TPE'] },
+  { code:'EU',  name:'EU',          airports:['CDG','FRA','LHR'] },
+  { code:'US',  name:'US',          airports:['SFO','LAX'] }
+];
+
+/* Values of the IMMEDIATELY PRECEDING effective period — source for "Copy from previous period".
+   VDO is deliberately left out to illustrate an airport that never had a value. */
+const PREV = {
+  VN:  { 5:['THD','DIN','TBB'], 10:['VDH','VCL','PXU','BMV'], 15:['DAD','CXR','HPH','VII','DLI','HUI','UIH','VCA','PQC'], 25:['HAN'], 30:['SGN'] },
+  SEA: { 15:['PNH','REP','RGN','VTE','LPQ'], 20:['KUL','CGK','MNL'], 25:['BKK'], 30:['SIN'] },
+  NEA: { 20:['KIX','NGO','HKG','TPE'], 25:['ICN','PVG','CAN'], 30:['NRT','HND','PEK'] },
+  EU:  { 25:['CDG'], 30:['FRA'], 35:['LHR'] },
+  US:  { 30:['LAX'], 40:['SFO'] }
+};
+const PREV_LABEL = '01/07/2026 → 31/08/2026';
+
+let state = {};
+let pickerCtx = null;
+let curRow = 0;
+let copied = false;
+let moving = null;   /* A-2b: {region, minute, ap} while an airport is being moved */
+
+/* Previous-period value of an airport — used only as a dropdown hint */
+function prevValueOf(regionCode, ap){
+  const p = PREV[regionCode] || {};
+  for(const m of MINUTES){ if((p[m]||[]).includes(ap)) return m; }
+  return null;
+}
+/* Airports not assigned to any cell of the region */
+function unassignedOf(regionCode){
+  const r = REGIONS.find(x=>x.code===regionCode);
+  const used = [];
+  MINUTES.forEach(m => used.push(...state[regionCode][m]));
+  return r.airports.filter(a => !used.includes(a));
+}
+function allMissing(){
+  const out = [];
+  REGIONS.forEach(r => unassignedOf(r.code).forEach(a => out.push(a)));
+  return out;
+}
+
+function initState(seeded){
+  state = {};
+  REGIONS.forEach(r=>{
+    state[r.code] = {};
+    MINUTES.forEach(m => state[r.code][m] = []);
+  });
+  if(seeded) applyPrev();
+}
+/* Load every value of the previous period into state as REAL DATA */
+function applyPrev(){
+  REGIONS.forEach(r=>{
+    const p = PREV[r.code] || {};
+    MINUTES.forEach(m => { if(p[m]) state[r.code][m] = p[m].slice(); });
+  });
+}
+
+function totals(){
+  let assigned=0, total=0;
+  REGIONS.forEach(r=>{
+    total += r.airports.length;
+    MINUTES.forEach(m => assigned += state[r.code][m].length);
+  });
+  return { assigned, total, miss: total - assigned };
+}
+
+/* ---------- A-4 (v0.3): copy from previous period ---------- */
+function copyFromPrev(){
+  applyPrev();
+  copied = true;
+  render();
+  toast('Copied 43 airports from period ' + PREV_LABEL + ' — you can now adjust individual airports');
+}
+
+/* ---------- A-2b: click-to-select, click-to-place ---------- */
+function startMove(regionCode, minute, ap){
+  if(moving && moving.ap === ap && moving.region === regionCode && moving.minute === minute){ cancelMove(); return; }
+  moving = { region:regionCode, minute:minute, ap:ap };
+  render();
+}
+function doMove(regionCode, minute){
+  if(!moving || moving.region !== regionCode) return;
+  assign(regionCode, minute, moving.ap);     /* assign already clears every other cell (A-3) */
+  moving = null;
+  render();
+}
+function doMoveOut(regionCode){
+  if(!moving || moving.region !== regionCode) return;
+  unassign(regionCode, moving.minute, moving.ap);
+  moving = null;
+  render();
+}
+function cancelMove(){ moving = null; render(); }
+
+/* ---------- Matrix rendering ---------- */
+function buildMatrix(tableEl, ro){
+  const mv = ro ? null : moving;
+  let html = '<thead><tr><th class="mx-corner">Region \\ Minute band</th>';
+  MINUTES.forEach(m => html += '<th>' + m + '&#39;</th>');
+  html += '<th style="background:#fef9ed;color:#92400e;">Unassigned</th></tr></thead><tbody>';
+
+  REGIONS.forEach(r=>{
+    const miss = unassignedOf(r.code);
+    const otherRegion = mv && mv.region !== r.code;
+    html += '<tr><th class="mx-region">' + r.name
+         + '<small' + (miss.length ? ' class="warn"' : '') + '>' + r.airports.length + ' airports'
+         + (miss.length ? ' · ' + miss.length + ' unassigned' : '') + '</small></th>';
+
+    MINUTES.forEach(m=>{
+      const list = state[r.code][m];
+      let cls = 'mx-cell' + (list.length ? ' has' : '');
+      let onclk = '';
+      if(mv){
+        if(otherRegion)              cls += ' dim';         /* moves are limited to the same Region */
+        else if(m === mv.minute)     cls += ' src';
+        else { cls += ' target'; onclk = ' onclick="doMove(\'' + r.code + '\',' + m + ')"'; }
+      }
+      html += '<td class="' + cls + '"' + onclk + '><div class="chips">';
+      list.forEach(a=>{
+        const isMv = mv && mv.region === r.code && mv.minute === m && mv.ap === a;
+        if(ro){
+          html += '<span class="chip">' + a + '</span>';
+        } else {
+          html += '<span class="chip movable' + (isMv ? ' moving' : '') + '"'
+               + ' title="Click to move to another band"'
+               + ' onclick="event.stopPropagation();startMove(\'' + r.code + '\',' + m + ',\'' + a + '\')">' + a
+               + '<span class="x" title="Remove from matrix" onclick="event.stopPropagation();unassign(\'' + r.code + '\',' + m + ',\'' + a + '\')">&times;</span>'
+               + '</span>';
+        }
+      });
+      html += '</div>';
+      if(!ro && !mv) html += '<button class="cell-add" onclick="event.stopPropagation();openPicker(event,\'' + r.code + '\',' + m + ')">+ Add airport</button>';
+      html += '</td>';
+    });
+
+    /* "Unassigned" column — while moving, this is the drop target that removes the airport */
+    let mcls = 'mx-cell', monclk = '';
+    if(mv){
+      if(otherRegion) mcls += ' dim';
+      else { mcls += ' target'; monclk = ' onclick="doMoveOut(\'' + r.code + '\')"'; }
+    }
+    html += '<td class="' + mcls + '" style="background:#fffdf5;min-width:130px;"' + monclk + '><div class="chips">';
+    if(!miss.length) html += '<span style="font-size:10.5px;color:var(--md-text-muted);font-style:italic;">—</span>';
+    else miss.forEach(a => html += '<span class="chip miss" title="No Standard Taxi Time in TOSS — Lido keeps using its own figure">' + a + '</span>');
+    html += '</div></td></tr>';
+  });
+
+  tableEl.innerHTML = html + '</tbody>';
+}
+
+function render(){
+  buildMatrix(document.getElementById('mxTable'), false);
+  const t = totals();
+  document.getElementById('cntAssigned').textContent = t.assigned;
+  document.getElementById('cntTotal').textContent    = t.total;
+  document.getElementById('cntMiss').textContent     = t.miss;
+
+  const bar = document.getElementById('moveBar');
+  if(moving){
+    document.getElementById('mvAp').textContent     = moving.ap;
+    document.getElementById('mvRegion').textContent = REGIONS.find(x=>x.code===moving.region).name;
+    bar.classList.add('open');
+  } else bar.classList.remove('open');
+
+  const strip = document.getElementById('copyStrip');
+  const btn   = document.getElementById('copyBtn');
+  if(copied || t.assigned > 0){
+    strip.classList.add('done');
+    document.getElementById('copyTxt').innerHTML =
+      'Values from period <b>' + PREV_LABEL + '</b> were used as the starting point. They are now <b>real data on this record</b> — editing them here does not affect the earlier period.';
+    btn.style.display = 'none';
+  } else {
+    strip.classList.remove('done');
+    document.getElementById('copyTxt').innerHTML =
+      'The matrix is empty. You can <b>copy every value from the immediately preceding effective period</b> (<b>' + PREV_LABEL + '</b>, 43 airports) into this record and then adjust only the airports that changed.';
+    btn.style.display = '';
+  }
+}
+
+/* ---------- Assign / unassign (A-3: duplicates blocked) ---------- */
+function assign(regionCode, minute, ap){
+  MINUTES.forEach(m => { state[regionCode][m] = state[regionCode][m].filter(x => x !== ap); });
+  state[regionCode][minute].push(ap);
+  state[regionCode][minute].sort();
+  render();
+}
+function unassign(regionCode, minute, ap){
+  state[regionCode][minute] = state[regionCode][minute].filter(x => x !== ap);
+  render();
+}
+
+/* ---------- A-2: multi-select dropdown ---------- */
+function openPicker(ev, regionCode, minute){
+  ev.stopPropagation();
+  pickerCtx = { regionCode, minute };
+  const r = REGIONS.find(x=>x.code===regionCode);
+  document.getElementById('pickerHead').textContent = r.name + ' — ' + minute + ' minute band';
+  document.getElementById('pickerSearch').value = '';
+  renderPicker();
+  const p = document.getElementById('picker');
+  p.classList.add('open');
+  const rect = ev.target.getBoundingClientRect();
+  let top = rect.bottom + 6, left = rect.left;
+  if(top + 300 > window.innerHeight) top = Math.max(8, rect.top - 306);
+  if(left + 250 > window.innerWidth) left = window.innerWidth - 258;
+  p.style.top = top + 'px'; p.style.left = left + 'px';
+  document.getElementById('pickerSearch').focus();
+}
+function renderPicker(){
+  if(!pickerCtx) return;
+  const q = document.getElementById('pickerSearch').value.trim().toUpperCase();
+  const list = unassignedOf(pickerCtx.regionCode).filter(a => a.includes(q));
+  const el = document.getElementById('pickerList');
+  if(!list.length){
+    el.innerHTML = '<div class="picker-none">' + (unassignedOf(pickerCtx.regionCode).length ? 'No airport matches your search' : 'Every airport in this region is already assigned') + '</div>';
+    return;
+  }
+  el.innerHTML = list.map(a=>{
+    const pv = prevValueOf(pickerCtx.regionCode, a);
+    const note = pv === null ? 'previous: none' : 'previous: ' + pv + '&#39;';
+    return '<div class="picker-opt" onclick="pickAirport(\'' + a + '\')">' + a + '<small>' + note + '</small></div>';
+  }).join('');
+}
+function pickAirport(ap){ assign(pickerCtx.regionCode, pickerCtx.minute, ap); renderPicker(); }
+document.addEventListener('click', e=>{
+  const p = document.getElementById('picker');
+  if(p.classList.contains('open') && !p.contains(e.target)) p.classList.remove('open');
+});
+
+/* =========================================================================
+   LIST — [FL-185] "most recent record first"
+   ========================================================================= */
+const NB = 'A320 / A321 (Narrow-body)', WB = 'A350 / B787 (Wide-body)', AT = 'ATR72';
+const ROWS = [
+  { cat:WB, regions:5, aps:44, miss:0, from:'01/09/2026', to:'31/12/2026', upd:'27/07/2026 14:32', by:'Nguyen Minh Quan', st:'future'  },
+  { cat:AT, regions:1, aps:18, miss:1, from:'01/09/2026', to:'31/12/2026', upd:'27/07/2026 11:08', by:'Tran Thu Ha',      st:'future'  },
+  { cat:NB, regions:5, aps:43, miss:1, from:'01/09/2026', to:'31/12/2026', upd:'26/07/2026 16:45', by:'Nguyen Minh Quan', st:'future'  },
+  { cat:NB, regions:5, aps:43, miss:1, from:'01/07/2026', to:'31/08/2026', upd:'25/06/2026 09:15', by:'Nguyen Minh Quan', st:'active'  },
+  { cat:WB, regions:5, aps:44, miss:0, from:'01/07/2026', to:'31/08/2026', upd:'25/06/2026 09:08', by:'Tran Thu Ha',      st:'active'  },
+  { cat:AT, regions:1, aps:19, miss:0, from:'01/07/2026', to:'31/08/2026', upd:'25/06/2026 09:02', by:'Tran Thu Ha',      st:'active'  },
+  { cat:NB, regions:5, aps:42, miss:2, from:'01/02/2026', to:'30/06/2026', upd:'20/01/2026 16:40', by:'Le Hoang Nam',     st:'expired' },
+  { cat:WB, regions:5, aps:44, miss:0, from:'01/02/2026', to:'30/06/2026', upd:'20/01/2026 16:22', by:'Le Hoang Nam',     st:'expired' },
+  { cat:AT, regions:1, aps:19, miss:0, from:'01/02/2026', to:'30/06/2026', upd:'20/01/2026 16:05', by:'Le Hoang Nam',     st:'expired' },
+  { cat:NB, regions:5, aps:44, miss:0, from:'20/01/2026', to:'31/01/2026', upd:'12/01/2026 08:30', by:'Nguyen Minh Quan', st:'expired' },
+  { cat:WB, regions:5, aps:44, miss:0, from:'20/01/2026', to:'31/01/2026', upd:'12/01/2026 08:12', by:'Nguyen Minh Quan', st:'expired' },
+  { cat:AT, regions:1, aps:19, miss:0, from:'20/01/2026', to:'31/01/2026', upd:'12/01/2026 08:04', by:'Nguyen Minh Quan', st:'expired' },
+  { cat:NB, regions:5, aps:41, miss:3, from:'01/10/2025', to:'19/01/2026', upd:'25/09/2025 10:55', by:'Tran Thu Ha',      st:'expired' },
+  { cat:WB, regions:5, aps:43, miss:1, from:'01/10/2025', to:'19/01/2026', upd:'25/09/2025 10:41', by:'Tran Thu Ha',      st:'expired' }
+];
+const ST_LABEL = { active:'Active', future:'Scheduled', expired:'Expired' };
+let page = 1;
+
+const HISTORY = [
+  { dt:'27/07/2026 14:32:10', by:'quan.nm', act:'mod', obj:'Domestic VN × 25&#39;',            old:null,                      nw:'+ HAN' },
+  { dt:'27/07/2026 14:31:55', by:'quan.nm', act:'mod', obj:'Domestic VN × 30&#39;',            old:'HAN',                     nw:null },
+  { dt:'27/07/2026 14:28:03', by:'quan.nm', act:'mod', obj:'NEA × 30&#39;',                    old:null,                      nw:'+ NRT, + HND' },
+  { dt:'27/07/2026 14:20:47', by:'quan.nm', act:'add', obj:'Copy from previous period (A-4)',  old:null,                      nw:'43 airports from period 01/07/2026 → 31/08/2026' },
+  { dt:'25/06/2026 09:15:41', by:'quan.nm', act:'mod', obj:'Effective To',                     old:'30/09/2026',              nw:'31/08/2026' },
+  { dt:'25/06/2026 09:15:41', by:'quan.nm', act:'mod', obj:'Auto-trim earlier record (A-7)',   old:'01/02/2026 → 30/09/2026', nw:'01/02/2026 → 30/06/2026' },
+  { dt:'25/06/2026 09:02:18', by:'ha.tt',   act:'add', obj:'Entire record',                    old:null,                      nw:'A320 / A321 · 01/07/2026 → 31/08/2026 · 43 airports' }
+];
+const ACT_LABEL = { add:'Create', mod:'Update', del:'Delete' };
+
+function renderList(){
+  const size = parseInt(document.getElementById('pageSize').value, 10);
+  const pages = Math.max(1, Math.ceil(ROWS.length / size));
+  if(page > pages) page = pages;
+  const slice = ROWS.slice((page-1)*size, page*size);
+
+  document.getElementById('listBody').innerHTML = slice.map((r,k)=>{
+    const i = (page-1)*size + k;
+    return `<tr onclick="openDetail(${i})">
+      <td>${i+1}</td>
+      <td style="font-weight:600;color:var(--vna-navy);">${r.cat}</td>
+      <td style="text-align:center;">${r.regions}</td>
+      <td style="text-align:center;font-weight:600;">${r.aps}${r.miss ? `<span class="miss-tag" title="${r.miss} airport(s) without a Standard Taxi Time — Lido keeps using its own figure"><span class="material-symbols-outlined">report</span>${r.miss}</span>` : ''}</td>
+      <td>${r.from}</td>
+      <td>${r.to}</td>
+      <td style="color:var(--md-text-secondary);">${r.upd}</td>
+      <td>${r.by}</td>
+      <td><span class="status-badge ${r.st}">${ST_LABEL[r.st]}</span></td>
+      <td>
+        <div class="row-actions" onclick="event.stopPropagation()">
+          <button class="icon-btn" title="View details" onclick="openDetail(${i})"><span class="material-symbols-outlined">visibility</span></button>
+          <button class="icon-btn" title="Edit" onclick="openForm('edit',${i})"><span class="material-symbols-outlined">edit</span></button>
+          <button class="icon-btn" title="Change history" onclick="openHistory(${i})"><span class="material-symbols-outlined">history</span></button>
+          <button class="icon-btn danger" title="Delete" onclick="openDelete(${i})"><span class="material-symbols-outlined">delete</span></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('totalRows').textContent = ROWS.length;
+  let pg = `<button class="page-btn ${page===1?'disabled':''}" onclick="goPage(${page-1})">‹</button>`;
+  for(let n=1; n<=pages; n++) pg += `<button class="page-btn ${n===page?'active':''}" onclick="goPage(${n})">${n}</button>`;
+  pg += `<button class="page-btn ${page===pages?'disabled':''}" onclick="goPage(${page+1})">›</button>`;
+  document.getElementById('pager').innerHTML = pg;
+}
+function goPage(n){
+  const size = parseInt(document.getElementById('pageSize').value, 10);
+  const pages = Math.max(1, Math.ceil(ROWS.length / size));
+  if(n < 1 || n > pages) return;
+  page = n; renderList();
+}
+
+function renderHistory(){
+  document.getElementById('hisBody').innerHTML = HISTORY.map(h=>`
+    <tr>
+      <td class="cell-dt">${h.dt}</td>
+      <td style="font-weight:600;">${h.by}</td>
+      <td><span class="act-pill ${h.act}">${ACT_LABEL[h.act]}</span></td>
+      <td><span class="field-pill">${h.obj}</span></td>
+      <td>${h.old ? '<span class="val-old">'+h.old+'</span>' : '<span class="val-nil">—</span>'}</td>
+      <td>${h.nw  ? '<span class="val-new">'+h.nw+'</span>'  : '<span class="val-nil">— (removed)</span>'}</td>
+    </tr>`).join('');
+}
+
+/* ---------- Modals ---------- */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); document.getElementById('picker').classList.remove('open'); }
+
+function openForm(mode, idx){
+  const isEdit = mode === 'edit';
+  if(idx != null) curRow = idx;
+  document.getElementById('formTitle').textContent = isEdit ? 'Edit Taxi Time Record' : 'New Taxi Time Record';
+  document.getElementById('formIcon').textContent  = isEdit ? 'edit' : 'add_circle';
+  copied = isEdit;
+  moving = null;
+  initState(isEdit);
+  render();
+  openModal('mdForm');
+}
+
+/* ---------- Save: A-7 (overlap) + A-4 (unassigned airports) ---------- */
+function trySave(){
+  const cat  = document.getElementById('frmCat3').value;
+  const from = document.getElementById('frmFrom').value;
+  const to   = document.getElementById('frmTo').value;
+  const clash = ROWS.find(r => r.cat === cat && r.st !== 'expired');
+  const miss  = allMissing();
+
+  const hasOverlap = !!(clash && from);
+  document.getElementById('cfOverlap').style.display = hasOverlap ? '' : 'none';
+  document.getElementById('cfMissing').style.display = miss.length ? '' : 'none';
+
+  if(hasOverlap){
+    const d = new Date(from); d.setDate(d.getDate() - 1);
+    const cut = ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear();
+    document.getElementById('ovCat').textContent = cat;
+    document.getElementById('ovNew').textContent = fmt(from) + ' → ' + (to ? fmt(to) : 'open-ended');
+    document.getElementById('ovOld').textContent = clash.from + ' → ' + clash.to;
+    document.getElementById('ovCut').textContent = clash.from + ' → ' + cut;
+  }
+  if(miss.length){
+    document.getElementById('cfMissTitle').textContent = miss.length + ' airport(s) without a Standard Taxi Time';
+    document.getElementById('cfMissList').innerHTML = miss.map(a => '<span class="chip miss">' + a + '</span>').join('');
+  }
+
+  if(!hasOverlap && !miss.length){ confirmSave(); return; }
+  openModal('mdConfirm');
+}
+function confirmSave(){
+  closeModal('mdConfirm');
+  closeModal('mdForm');
+  toast('Taxi time record saved and change history written (simulated)');
+}
+function fmt(iso){ const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+
+function openDetail(idx){
+  curRow = idx;
+  const r = ROWS[idx];
+  document.getElementById('dtCat').textContent   = r.cat;
+  document.getElementById('dtValid').textContent = r.from + ' → ' + r.to;
+  initState(true);
+  const t = totals();
+  document.getElementById('dtCount').textContent = t.assigned + ' airports';
+  document.getElementById('dtMiss').textContent  = t.miss + ' airports';
+  buildMatrix(document.getElementById('mxDetail'), true);
+  openModal('mdDetail');
+}
+function openHistory(idx){
+  curRow = idx;
+  const r = ROWS[idx];
+  document.getElementById('hisCat').textContent = r.cat + ' · ' + r.from + ' → ' + r.to;
+  renderHistory();
+  openModal('mdHistory');
+}
+function openDelete(idx){
+  const r = ROWS[idx];
+  document.getElementById('delName').textContent  = r.cat;
+  document.getElementById('delValid').textContent = r.from + ' → ' + r.to;
+  openModal('mdDelete');
+}
+
+/* ---------- Utilities ---------- */
+function switchMain(btn, id){
+  document.querySelectorAll('.mnav-content').forEach(p => p.classList.toggle('active', p.id === id));
+  document.querySelectorAll('#mainNavBar .mnav-btn').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+  btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+}
+function clearFilters(){
+  ['fCat3','fFrom','fTo','fStatus'].forEach(id=>{ const el = document.getElementById(id); if(el) el.value=''; });
+  toast('Filters cleared');
+}
+function toast(msg){
+  const t = document.getElementById('toastNotif');
+  document.getElementById('toastMessage').textContent = msg;
+  t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
+  clearTimeout(t._tm);
+  t._tm = setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(100px)'; }, 2600);
+}
+
+const sidebar = document.getElementById('sidebar');
+document.getElementById('sidebarToggle').addEventListener('click', ()=>{
+  sidebar.classList.toggle('collapsed');
+  document.getElementById('toggleIcon').textContent = sidebar.classList.contains('collapsed') ? 'chevron_right' : 'chevron_left';
+});
+document.addEventListener('keydown', e=>{
+  if(e.key !== 'Escape') return;
+  if(moving){ cancelMove(); return; }   /* Esc cancels the pending move before closing any modal */
+  ['mdConfirm','mdForm','mdDetail','mdHistory','mdDelete'].forEach(closeModal);
+});
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click', e=>{ if(e.target === o) closeModal(o.id); });
+});
+
+/* Initialise */
+initState(false);
+renderList();
+render();
+</script>
+</body>
+</html>
