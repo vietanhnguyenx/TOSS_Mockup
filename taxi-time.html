@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <!--
-  TOSS — Airport Master Data / Taxi Time · Interactive mockup v0.4
-  Scope: Function list v1.0, rows 185-191 (7 functions) + Change History.
+  TOSS -- Airport Master Data / Taxi Time . Interactive mockup v0.5
+  Scope: Function list v1.0, rows 185-191 (7 functions) + Change History + Import.
 
   THIS IS A MOCKUP, NOT A WORKING SYSTEM:
     - All airports, fleet groups, minute values, users and timestamps are SAMPLE DATA.
-    - Every action is simulated; nothing is saved.
+    - Every action is simulated; nothing is saved. File import is simulated (no real
+      spreadsheet parsing) -- selecting any file reveals the same sample preview.
     - Layout and colours are a proposal, pending BA/UI approval.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.4)</title>
+  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.5)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
   <style>
     :root{
@@ -140,7 +141,7 @@
     .status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
     .status-badge.active{background:#d1fae5;color:#047857}
     .status-badge.expired{background:#f1f5f9;color:#475569}
-    .status-badge.future{background:#fef3c7;color:#92400e}
+    .ongoing-tag{color:var(--toss-primary);font-weight:700;font-style:italic}
 
     .pagination-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;font-size:12.5px;color:var(--md-text-secondary)}
     .records-selector{display:flex;align-items:center;gap:6px}
@@ -169,6 +170,12 @@
     .form-cell{display:flex;flex-direction:column;gap:5px}
     .form-cell label{font-size:11px;font-weight:600;color:var(--md-text-secondary);text-transform:uppercase;letter-spacing:.3px;display:flex;align-items:center;gap:5px}
     .req{color:var(--toss-error)}
+    .lock-field{width:100%;height:36px;padding:6px 10px;border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm);font-family:inherit;font-size:13px;background:#f1f5f9;color:var(--md-text-muted);display:flex;align-items:center;gap:6px;font-style:italic}
+    .lock-field .material-symbols-outlined{font-size:15px}
+    .field-hint{font-size:11px;color:var(--md-text-secondary);margin-top:5px;line-height:1.5;display:flex;align-items:flex-start;gap:5px}
+    .field-hint .material-symbols-outlined{font-size:14px;color:var(--toss-primary);flex-shrink:0;margin-top:1px}
+    .field-hint.err{color:var(--toss-error)}
+    .field-hint.err .material-symbols-outlined{color:var(--toss-error)}
 
     /* ===== "Copy from previous period" strip (A-4 v0.3) ===== */
     .copy-strip{display:flex;align-items:center;gap:12px;margin-top:12px;padding:11px 14px;border:1px solid #bae6fd;background:#f0f9ff;border-radius:var(--md-radius-sm);flex-wrap:wrap}
@@ -270,6 +277,31 @@
     .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1e293b;color:#fff;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:1200;box-shadow:var(--md-elev3);display:flex;align-items:center;gap:8px}
     .toast .material-symbols-outlined{font-size:18px;color:#4ade80}
 
+    /* ===== Import (A-9) ===== */
+    .imp-section{border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm);overflow:hidden;margin-bottom:14px}
+    .imp-section:last-child{margin-bottom:0}
+    .imp-section-head{background:#f8fafc;padding:9px 13px;font-size:12.5px;font-weight:700;color:var(--vna-navy);display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--md-outline-variant)}
+    .imp-section-head .step-no{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:var(--toss-primary);color:#fff;font-size:11px;font-weight:800;flex-shrink:0}
+    .imp-section-body{padding:14px}
+    .imp-dropzone{border:2px dashed var(--md-outline);border-radius:var(--md-radius-sm);padding:22px;text-align:center;color:var(--md-text-secondary);position:relative;cursor:pointer;transition:all .2s}
+    .imp-dropzone:hover{border-color:var(--toss-primary);background:#f0f9ff}
+    .imp-dropzone .material-symbols-outlined{font-size:30px;color:var(--md-text-muted);display:block;margin:0 auto 6px}
+    .imp-dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .imp-dropzone .fname{font-weight:700;color:var(--toss-primary);margin-top:4px}
+    .imp-tools{display:flex;justify-content:flex-end;margin-bottom:10px}
+    .imp-summary{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--md-radius-sm);font-size:12.5px;font-weight:600;margin-bottom:10px}
+    .imp-summary.ok{background:#f0fdf4;color:#14532d;border:1px solid #bbf7d0}
+    .imp-summary .material-symbols-outlined{font-size:18px}
+    .imp-table{width:100%;border-collapse:collapse;font-size:12px}
+    .imp-table th{background:#f1f5f9;text-align:left;padding:7px 10px;font-weight:700;color:var(--md-text-secondary);border-bottom:1px solid var(--md-outline-variant);font-size:10.5px;text-transform:uppercase}
+    .imp-table td{padding:7px 10px;border-bottom:1px solid var(--md-outline-variant)}
+    .imp-table tr.err td{background:#fff5f5}
+    .imp-flag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:700}
+    .imp-flag.ok{background:#d1fae5;color:#047857}
+    .imp-flag.bad{background:#fee2e2;color:#b91c1c}
+    .imp-flag .material-symbols-outlined{font-size:13px}
+    .imp-rules{font-size:11px;color:var(--md-text-secondary);margin-top:10px;line-height:1.6}
+
     @media (max-width:1200px){.form-head-grid{grid-template-columns:1fr 1fr}.detail-summary{grid-template-columns:1fr 1fr}}
     @media (max-width:1024px){.mnav-btn .mnav-txt{display:none}.filter-item{flex:1 1 140px}}
   </style>
@@ -365,10 +397,9 @@
             </div>
             <div class="filter-item">
               <label for="fStatus">Status</label>
-              <select id="fStatus" class="filter-input filter-select" data-mat="mat-select" data-src="Decision A-8 — no approval workflow; status is DERIVED from the effective period against today's date">
+              <select id="fStatus" class="filter-input filter-select" data-mat="mat-select" data-src="Decision A-7 (v0.5) — status is DERIVED from the effective-period chain: Active = the one open-ended record per fleet group">
                 <option value="">All</option>
                 <option>Active</option>
-                <option>Scheduled</option>
                 <option>Expired</option>
               </select>
             </div>
@@ -389,6 +420,9 @@
           <div class="list-actions">
             <button class="btn btn-ghost" onclick="toast('Generating .xlsx file… (simulated)')" data-mat="mat-stroked-button" data-src="[FL-191] row 191 — Export taxi time data">
               <span class="material-symbols-outlined">download</span>Export to Excel
+            </button>
+            <button class="btn btn-ghost" onclick="openImport()" data-mat="mat-stroked-button" data-src="Decision A-9 (v0.5) — Import, added per feedback; template pattern per rows 193/213">
+              <span class="material-symbols-outlined">upload_file</span>Import
             </button>
             <button class="btn btn-blue" onclick="openForm('create')" data-mat="mat-raised-button" data-src="[FL-188] row 188 — Create taxi time record">
               <span class="material-symbols-outlined">add</span>New Record
@@ -449,7 +483,7 @@
       <div class="form-head-grid" data-src="[FL-188] 'Header: select fleet group cate 3, select from-to'">
         <div class="form-cell">
           <label>Fleet Group <span class="req">*</span></label>
-          <select class="filter-input filter-select" id="frmCat3" data-mat="mat-select" data-src="[FL-188] 'fleet group cate 3' · [CAT3]">
+          <select class="filter-input filter-select" id="frmCat3" onchange="updateChainHint()" data-mat="mat-select" data-src="[FL-188] 'fleet group cate 3' · [CAT3]">
             <option>A320 / A321 (Narrow-body)</option>
             <option>A350 / B787 (Wide-body)</option>
             <option>ATR72</option>
@@ -457,12 +491,17 @@
         </div>
         <div class="form-cell">
           <label>Effective From <span class="req">*</span></label>
-          <input type="date" class="filter-input" id="frmFrom" value="2026-08-01" data-mat="mat-datepicker" data-src="[FL-188] 'select from-to'">
+          <input type="date" class="filter-input" id="frmFrom" oninput="updateChainHint()" data-mat="mat-datepicker" data-src="[FL-188] 'select from-to'">
         </div>
         <div class="form-cell">
           <label>Effective To</label>
-          <input type="date" class="filter-input" id="frmTo" value="2026-10-31" data-mat="mat-datepicker" data-src="[FL-188] 'select from-to' — leave blank for open-ended (precedent BR-420)">
+          <input type="date" class="filter-input" id="frmTo" data-mat="mat-datepicker" data-src="[FL-188] 'select from-to'" style="display:none;">
+          <div class="lock-field" id="frmToLock"><span class="material-symbols-outlined">lock</span><span id="frmToLockTxt">Ongoing</span></div>
         </div>
+      </div>
+      <div class="field-hint" id="chainHint" data-src="Decision A-7 (v0.5) — the next period must dovetail exactly with the fleet group's current active period">
+        <span class="material-symbols-outlined">info</span>
+        <span id="chainHintTxt">—</span>
       </div>
 
       <!-- A-4 (v0.3) — Copy from previous period -->
@@ -498,7 +537,7 @@
 </div>
 
 <!-- ================= MODAL: SAVE CONFIRMATION (A-7 + A-4) ================= -->
-<div class="modal-overlay" id="mdConfirm" data-mat="mat-dialog" data-src="Decision A-7 (auto-trim previous period) + A-4 (warn about airports without a value)">
+<div class="modal-overlay" id="mdConfirm" data-mat="mat-dialog" data-src="Decision A-7 (v0.5, unified chaining) + A-4 (warn about airports without a value)">
   <div class="modal narrow">
     <div class="modal-head">
       <h3><span class="material-symbols-outlined" style="color:var(--toss-warn);">fact_check</span>Confirm Save</h3>
@@ -506,15 +545,15 @@
     </div>
     <div class="modal-body">
 
-      <!-- Block 1 — A-7 -->
+      <!-- Block 1 — A-7 (v0.5): unified chaining, replaces the former separate overlap/gap cases -->
       <div class="cf-block" id="cfOverlap">
-        <div class="cf-head warn"><span class="material-symbols-outlined">event_repeat</span>Overlapping effective period — the earlier record will be trimmed</div>
+        <div class="cf-head warn"><span class="material-symbols-outlined">event_repeat</span>Current active period will be closed</div>
         <div class="cf-body">
-          The new record for fleet group <b id="ovCat">—</b> is effective <b id="ovNew">—</b>, which overlaps an existing record.
-          The system will <b>automatically shorten</b> the earlier record so the two periods run consecutively, with no overlap and no gap.
+          The new record for fleet group <b id="ovCat">—</b> becomes the <b>active</b> period, effective <b id="ovNew">—</b> (open-ended).
+          To keep the fleet group's timeline continuous — no overlap, no gap — the system will <b>automatically close</b> the period currently active for this fleet group on the day before.
           <table>
             <tr><th>Affected record</th><th>Effective period</th></tr>
-            <tr><td>Current</td><td class="val-old" id="ovOld">—</td></tr>
+            <tr><td>Current active</td><td class="val-old" id="ovOld">—</td></tr>
             <tr><td>After saving</td><td class="val-new" id="ovCut">—</td></tr>
           </table>
         </div>
@@ -635,6 +674,80 @@
   </div>
 </div>
 
+<!-- ================= MODAL: IMPORT (A-9) ================= -->
+<div class="modal-overlay" id="mdImport" data-mat="mat-dialog" data-src="Decision A-9 (v0.5) — Import taxi time, template pattern per Function list rows 193/213">
+  <div class="modal mid">
+    <div class="modal-head">
+      <h3><span class="material-symbols-outlined">upload_file</span>Import Taxi Time</h3>
+      <button class="icon-btn" onclick="closeModal('mdImport')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+
+      <div class="imp-section">
+        <div class="imp-section-head"><span class="step-no">1</span>Select scope</div>
+        <div class="imp-section-body">
+          <div class="form-head-grid" style="grid-template-columns:1.6fr 1fr;">
+            <div class="form-cell">
+              <label>Fleet Group <span class="req">*</span></label>
+              <select class="filter-input filter-select" id="impCat3" onchange="updateImportHint()">
+                <option>A320 / A321 (Narrow-body)</option>
+                <option>A350 / B787 (Wide-body)</option>
+                <option>ATR72</option>
+              </select>
+            </div>
+            <div class="form-cell">
+              <label>Effective From <span class="req">*</span></label>
+              <input type="date" class="filter-input" id="impFrom" oninput="updateImportHint()">
+            </div>
+          </div>
+          <div class="field-hint" id="impChainHint">
+            <span class="material-symbols-outlined">info</span>
+            <span id="impChainHintTxt">—</span>
+          </div>
+          <p style="font-size:11px;color:var(--md-text-secondary);margin-top:8px;">Effective To is not entered manually — like manual creation (A-7), it is set automatically when a newer period is created for this fleet group.</p>
+        </div>
+      </div>
+
+      <div class="imp-section">
+        <div class="imp-section-head"><span class="step-no">2</span>Upload file</div>
+        <div class="imp-section-body">
+          <div class="imp-tools">
+            <button class="btn btn-ghost btn-sm" onclick="toast('Downloading taxi-time-import-template.xlsx (simulated)')"><span class="material-symbols-outlined">download</span>Download template</button>
+          </div>
+          <label class="imp-dropzone" id="impDropzone">
+            <input type="file" id="impFile" accept=".xlsx,.xls,.csv" onchange="handleImportFile()">
+            <span class="material-symbols-outlined">cloud_upload</span>
+            <div>Click to choose a file, or drag it here</div>
+            <div style="font-size:11px;margin-top:4px;">Template: <code>Airport Code</code> · <code>Taxi time (min)</code></div>
+            <div class="fname" id="impFileName" style="display:none;"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="imp-section" id="impPreviewSection" style="display:none;">
+        <div class="imp-section-head"><span class="step-no">3</span>Preview &amp; validate</div>
+        <div class="imp-section-body">
+          <div class="imp-summary ok" id="impSummary"></div>
+          <table class="imp-table">
+            <thead><tr><th style="width:110px;">Airport Code</th><th style="width:120px;">Taxi Time (min)</th><th>Validation</th></tr></thead>
+            <tbody id="impTableBody"></tbody>
+          </table>
+          <div class="imp-rules">
+            Rows are skipped if: the airport code is not found in Airport Master Data · the value is not one of the 10 fixed bands (5, 10, … 50) · the airport code is duplicated within the file.
+            Airports not present in the file simply remain <b>Unassigned</b> for this period (non-blocking, same as A-4).
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <span class="foot-hint"><span class="material-symbols-outlined" style="font-size:16px;">info</span>Mockup — file selection is simulated; the preview below always shows the same sample data</span>
+      <button class="btn btn-ghost" onclick="closeModal('mdImport')">Cancel</button>
+      <button class="btn btn-blue" id="impConfirmBtn" onclick="confirmImport()" disabled><span class="material-symbols-outlined">upload_file</span>Import</button>
+    </div>
+  </div>
+</div>
+
 <div class="picker" id="picker">
   <div class="picker-head" id="pickerHead">Select airport</div>
   <input class="picker-search" id="pickerSearch" placeholder="Search airport code…" oninput="renderPicker()">
@@ -656,6 +769,8 @@ const REGIONS = [
   { code:'EU',  name:'EU',          airports:['CDG','FRA','LHR'] },
   { code:'US',  name:'US',          airports:['SFO','LAX'] }
 ];
+/* Flat list of every known airport code — used by Import validation (A-9) */
+const ALL_AIRPORTS = REGIONS.flatMap(r => r.airports);
 
 /* Values of the IMMEDIATELY PRECEDING effective period — source for "Copy from previous period".
    VDO is deliberately left out to illustrate an airport that never had a value. */
@@ -885,26 +1000,37 @@ document.addEventListener('click', e=>{
    LIST — [FL-185] "most recent record first"
    ========================================================================= */
 const NB = 'A320 / A321 (Narrow-body)', WB = 'A350 / B787 (Wide-body)', AT = 'ATR72';
+/*
+  Chain per fleet group (A-7, v0.5): sorted by Effective From, each record's `to` is exactly
+  one day before the next record's `from` — no gap, no overlap. The most recent record of each
+  fleet group has `to: null` (open-ended) and is therefore the ACTIVE one (see statusOf below).
+*/
 const ROWS = [
-  { cat:WB, regions:5, aps:44, miss:0, from:'01/09/2026', to:'31/12/2026', upd:'27/07/2026 14:32', by:'Nguyen Minh Quan', st:'future'  },
-  { cat:AT, regions:1, aps:18, miss:1, from:'01/09/2026', to:'31/12/2026', upd:'27/07/2026 11:08', by:'Tran Thu Ha',      st:'future'  },
-  { cat:NB, regions:5, aps:43, miss:1, from:'01/09/2026', to:'31/12/2026', upd:'26/07/2026 16:45', by:'Nguyen Minh Quan', st:'future'  },
-  { cat:NB, regions:5, aps:43, miss:1, from:'01/07/2026', to:'31/08/2026', upd:'25/06/2026 09:15', by:'Nguyen Minh Quan', st:'active'  },
-  { cat:WB, regions:5, aps:44, miss:0, from:'01/07/2026', to:'31/08/2026', upd:'25/06/2026 09:08', by:'Tran Thu Ha',      st:'active'  },
-  { cat:AT, regions:1, aps:19, miss:0, from:'01/07/2026', to:'31/08/2026', upd:'25/06/2026 09:02', by:'Tran Thu Ha',      st:'active'  },
-  { cat:NB, regions:5, aps:42, miss:2, from:'01/02/2026', to:'30/06/2026', upd:'20/01/2026 16:40', by:'Le Hoang Nam',     st:'expired' },
-  { cat:WB, regions:5, aps:44, miss:0, from:'01/02/2026', to:'30/06/2026', upd:'20/01/2026 16:22', by:'Le Hoang Nam',     st:'expired' },
-  { cat:AT, regions:1, aps:19, miss:0, from:'01/02/2026', to:'30/06/2026', upd:'20/01/2026 16:05', by:'Le Hoang Nam',     st:'expired' },
-  { cat:NB, regions:5, aps:44, miss:0, from:'20/01/2026', to:'31/01/2026', upd:'12/01/2026 08:30', by:'Nguyen Minh Quan', st:'expired' },
-  { cat:WB, regions:5, aps:44, miss:0, from:'20/01/2026', to:'31/01/2026', upd:'12/01/2026 08:12', by:'Nguyen Minh Quan', st:'expired' },
-  { cat:AT, regions:1, aps:19, miss:0, from:'20/01/2026', to:'31/01/2026', upd:'12/01/2026 08:04', by:'Nguyen Minh Quan', st:'expired' },
-  { cat:NB, regions:5, aps:41, miss:3, from:'01/10/2025', to:'19/01/2026', upd:'25/09/2025 10:55', by:'Tran Thu Ha',      st:'expired' },
-  { cat:WB, regions:5, aps:43, miss:1, from:'01/10/2025', to:'19/01/2026', upd:'25/09/2025 10:41', by:'Tran Thu Ha',      st:'expired' }
+  { cat:WB, regions:5, aps:44, miss:0, from:'01/09/2026', to:null,          upd:'27/07/2026 14:32', by:'Nguyen Minh Quan' },
+  { cat:AT, regions:1, aps:18, miss:1, from:'01/09/2026', to:null,          upd:'27/07/2026 11:08', by:'Tran Thu Ha'      },
+  { cat:NB, regions:5, aps:43, miss:1, from:'01/09/2026', to:null,          upd:'26/07/2026 16:45', by:'Nguyen Minh Quan' },
+  { cat:NB, regions:5, aps:43, miss:1, from:'01/07/2026', to:'31/08/2026',  upd:'25/06/2026 09:15', by:'Nguyen Minh Quan' },
+  { cat:WB, regions:5, aps:44, miss:0, from:'01/07/2026', to:'31/08/2026',  upd:'25/06/2026 09:08', by:'Tran Thu Ha'      },
+  { cat:AT, regions:1, aps:19, miss:0, from:'01/07/2026', to:'31/08/2026',  upd:'25/06/2026 09:02', by:'Tran Thu Ha'      },
+  { cat:NB, regions:5, aps:42, miss:2, from:'01/02/2026', to:'30/06/2026',  upd:'20/01/2026 16:40', by:'Le Hoang Nam'     },
+  { cat:WB, regions:5, aps:44, miss:0, from:'01/02/2026', to:'30/06/2026',  upd:'20/01/2026 16:22', by:'Le Hoang Nam'     },
+  { cat:AT, regions:1, aps:19, miss:0, from:'01/02/2026', to:'30/06/2026',  upd:'20/01/2026 16:05', by:'Le Hoang Nam'     },
+  { cat:NB, regions:5, aps:44, miss:0, from:'20/01/2026', to:'31/01/2026',  upd:'12/01/2026 08:30', by:'Nguyen Minh Quan' },
+  { cat:WB, regions:5, aps:44, miss:0, from:'20/01/2026', to:'31/01/2026',  upd:'12/01/2026 08:12', by:'Nguyen Minh Quan' },
+  { cat:AT, regions:1, aps:19, miss:0, from:'20/01/2026', to:'31/01/2026',  upd:'12/01/2026 08:04', by:'Nguyen Minh Quan' },
+  { cat:NB, regions:5, aps:41, miss:3, from:'01/10/2025', to:'19/01/2026',  upd:'25/09/2025 10:55', by:'Tran Thu Ha'      },
+  { cat:WB, regions:5, aps:43, miss:1, from:'01/10/2025', to:'19/01/2026',  upd:'25/09/2025 10:41', by:'Tran Thu Ha'      }
 ];
-const ST_LABEL = { active:'Active', future:'Scheduled', expired:'Expired' };
+const ST_LABEL = { active:'Active', expired:'Expired' };
+/* Status is DERIVED, not stored: the record with no end date is the fleet group's active one (A-7 v0.5) */
+function statusOf(r){ return r.to === null ? 'active' : 'expired'; }
+function toLabel(r){ return r.to === null ? 'Ongoing' : r.to; }
+/* The record currently active for a fleet group, if any */
+function currentActiveOf(cat){ return ROWS.find(r => r.cat === cat && r.to === null) || null; }
 let page = 1;
 
 const HISTORY = [
+  { dt:'29/07/2026 10:15:22', by:'quan.nm', act:'add', obj:'Import from file (A-9)',           old:null,                      nw:'4 airports imported from sample-taxi-time-import.xlsx' },
   { dt:'27/07/2026 14:32:10', by:'quan.nm', act:'mod', obj:'Domestic VN × 25&#39;',            old:null,                      nw:'+ HAN' },
   { dt:'27/07/2026 14:31:55', by:'quan.nm', act:'mod', obj:'Domestic VN × 30&#39;',            old:'HAN',                     nw:null },
   { dt:'27/07/2026 14:28:03', by:'quan.nm', act:'mod', obj:'NEA × 30&#39;',                    old:null,                      nw:'+ NRT, + HND' },
@@ -923,16 +1049,17 @@ function renderList(){
 
   document.getElementById('listBody').innerHTML = slice.map((r,k)=>{
     const i = (page-1)*size + k;
+    const st = statusOf(r);
     return `<tr onclick="openDetail(${i})">
       <td>${i+1}</td>
       <td style="font-weight:600;color:var(--vna-navy);">${r.cat}</td>
       <td style="text-align:center;">${r.regions}</td>
       <td style="text-align:center;font-weight:600;">${r.aps}${r.miss ? `<span class="miss-tag" title="${r.miss} airport(s) without a Standard Taxi Time — Lido keeps using its own figure"><span class="material-symbols-outlined">report</span>${r.miss}</span>` : ''}</td>
       <td>${r.from}</td>
-      <td>${r.to}</td>
+      <td>${r.to === null ? '<span class="ongoing-tag">Ongoing</span>' : r.to}</td>
       <td style="color:var(--md-text-secondary);">${r.upd}</td>
       <td>${r.by}</td>
-      <td><span class="status-badge ${r.st}">${ST_LABEL[r.st]}</span></td>
+      <td><span class="status-badge ${st}">${ST_LABEL[st]}</span></td>
       <td>
         <div class="row-actions" onclick="event.stopPropagation()">
           <button class="icon-btn" title="View details" onclick="openDetail(${i})"><span class="material-symbols-outlined">visibility</span></button>
@@ -973,8 +1100,28 @@ function renderHistory(){
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); document.getElementById('picker').classList.remove('open'); }
 
+let isEditMode = false;   /* A-7 (v0.5): the chain check below only runs when creating, not editing */
+
+function isoFromDmy(s){ const p = s.split('/'); return p[2] + '-' + p[1] + '-' + p[0]; }
+function fmt(iso){ const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+
+/* Show/hide the locked "Ongoing" display vs. the editable date input for Effective To */
+function setToLock(locked, text){
+  const dateEl = document.getElementById('frmTo');
+  const lockEl = document.getElementById('frmToLock');
+  if(locked){
+    dateEl.style.display = 'none';
+    lockEl.style.display = 'flex';
+    document.getElementById('frmToLockTxt').textContent = text || 'Ongoing';
+  } else {
+    dateEl.style.display = '';
+    lockEl.style.display = 'none';
+  }
+}
+
 function openForm(mode, idx){
   const isEdit = mode === 'edit';
+  isEditMode = isEdit;
   if(idx != null) curRow = idx;
   document.getElementById('formTitle').textContent = isEdit ? 'Edit Taxi Time Record' : 'New Taxi Time Record';
   document.getElementById('formIcon').textContent  = isEdit ? 'edit' : 'add_circle';
@@ -982,35 +1129,96 @@ function openForm(mode, idx){
   moving = null;
   initState(isEdit);
   render();
+
+  const catSel = document.getElementById('frmCat3');
+  const fromEl = document.getElementById('frmFrom');
+
+  if(isEdit){
+    const r = ROWS[curRow];
+    catSel.value = r.cat;
+    fromEl.value = isoFromDmy(r.from);
+    if(r.to === null){
+      setToLock(true, 'Ongoing — this is the current active period');
+    } else {
+      setToLock(false);
+      document.getElementById('frmTo').value = isoFromDmy(r.to);
+    }
+  } else {
+    catSel.selectedIndex = 0;
+    fromEl.value = '';
+    setToLock(true, 'Ongoing — set automatically');
+  }
+  updateChainHint();
   openModal('mdForm');
 }
 
-/* ---------- Save: A-7 (overlap) + A-4 (unassigned airports) ---------- */
+/* ---------- A-7 (v0.5): chain hint shown under the header while creating/editing ---------- */
+function updateChainHint(){
+  const cat = document.getElementById('frmCat3').value;
+  const fromVal = document.getElementById('frmFrom').value;
+  const hintEl = document.getElementById('chainHint');
+  const txtEl = document.getElementById('chainHintTxt');
+  hintEl.classList.remove('err');
+
+  if(isEditMode){
+    const r = ROWS[curRow];
+    txtEl.innerHTML = r.to === null
+      ? 'This is the fleet group&#39;s current active period — its Effective To stays open-ended until a newer period is created.'
+      : 'This is a past period (Effective To: <b>' + r.to + '</b>). Editing it does not change the chain with adjacent periods (out of scope for this mockup).';
+    return;
+  }
+
+  const active = currentActiveOf(cat);
+  if(!active){
+    txtEl.innerHTML = 'No existing period for this fleet group yet — this will become its first record.';
+    return;
+  }
+  if(fromVal && new Date(fromVal) <= new Date(isoFromDmy(active.from))){
+    hintEl.classList.add('err');
+    txtEl.innerHTML = 'Effective From must be later than <b>' + active.from + '</b> — the start of the current active period for ' + cat + '.';
+    return;
+  }
+  txtEl.innerHTML = 'Current active period for <b>' + cat + '</b> started <b>' + active.from + '</b> (open-ended). Saving this record will automatically close it the day before this new period starts.';
+}
+
+/* ---------- Save: A-7 (v0.5, unified chaining) + A-4 (unassigned airports) ---------- */
 function trySave(){
   const cat  = document.getElementById('frmCat3').value;
   const from = document.getElementById('frmFrom').value;
-  const to   = document.getElementById('frmTo').value;
-  const clash = ROWS.find(r => r.cat === cat && r.st !== 'expired');
-  const miss  = allMissing();
+  const miss = allMissing();
 
-  const hasOverlap = !!(clash && from);
-  document.getElementById('cfOverlap').style.display = hasOverlap ? '' : 'none';
+  if(!from){ toast('Effective From is required'); return; }
+
+  let chainRecord = null;
+  if(!isEditMode){
+    const active = currentActiveOf(cat);
+    if(active){
+      if(new Date(from) <= new Date(isoFromDmy(active.from))){
+        toast('Effective From must be later than ' + active.from + ' for ' + cat);
+        updateChainHint();
+        return;
+      }
+      chainRecord = active;
+    }
+  }
+
+  document.getElementById('cfOverlap').style.display = chainRecord ? '' : 'none';
   document.getElementById('cfMissing').style.display = miss.length ? '' : 'none';
 
-  if(hasOverlap){
+  if(chainRecord){
     const d = new Date(from); d.setDate(d.getDate() - 1);
     const cut = ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear();
     document.getElementById('ovCat').textContent = cat;
-    document.getElementById('ovNew').textContent = fmt(from) + ' → ' + (to ? fmt(to) : 'open-ended');
-    document.getElementById('ovOld').textContent = clash.from + ' → ' + clash.to;
-    document.getElementById('ovCut').textContent = clash.from + ' → ' + cut;
+    document.getElementById('ovNew').textContent = fmt(from) + ' → Ongoing';
+    document.getElementById('ovOld').textContent = chainRecord.from + ' → Ongoing';
+    document.getElementById('ovCut').textContent = chainRecord.from + ' → ' + cut;
   }
   if(miss.length){
     document.getElementById('cfMissTitle').textContent = miss.length + ' airport(s) without a Standard Taxi Time';
     document.getElementById('cfMissList').innerHTML = miss.map(a => '<span class="chip miss">' + a + '</span>').join('');
   }
 
-  if(!hasOverlap && !miss.length){ confirmSave(); return; }
+  if(!chainRecord && !miss.length){ confirmSave(); return; }
   openModal('mdConfirm');
 }
 function confirmSave(){
@@ -1018,13 +1226,116 @@ function confirmSave(){
   closeModal('mdForm');
   toast('Taxi time record saved and change history written (simulated)');
 }
-function fmt(iso){ const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+
+/* =========================================================================
+   IMPORT (A-9) — added per feedback from Đặng Văn Hiệp, 29/07/2026.
+   The file is not actually parsed in this mockup: any file chosen (or the
+   dropzone clicked) reveals the same canned preview below, so the validation
+   UX can be reviewed without depending on a real spreadsheet library.
+   ========================================================================= */
+const IMPORT_SAMPLE_ROWS = [
+  { ap:'HAN', min:25 },
+  { ap:'SGN', min:30 },
+  { ap:'DAD', min:15 },
+  { ap:'XXX', min:20 },
+  { ap:'CXR', min:999 },
+  { ap:'CXR', min:15 },
+  { ap:'VDO', min:10 }
+];
+
+function openImport(){
+  document.getElementById('impCat3').selectedIndex = 0;
+  document.getElementById('impFrom').value = '';
+  document.getElementById('impFile').value = '';
+  document.getElementById('impFileName').style.display = 'none';
+  document.getElementById('impPreviewSection').style.display = 'none';
+  const btn = document.getElementById('impConfirmBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined">upload_file</span>Import';
+  updateImportHint();
+  openModal('mdImport');
+}
+
+function updateImportHint(){
+  const cat = document.getElementById('impCat3').value;
+  const fromVal = document.getElementById('impFrom').value;
+  const hintEl = document.getElementById('impChainHint');
+  const txtEl = document.getElementById('impChainHintTxt');
+  hintEl.classList.remove('err');
+
+  const active = currentActiveOf(cat);
+  if(!active){
+    txtEl.innerHTML = 'No existing period for this fleet group yet — this import will become its first record.';
+    return;
+  }
+  if(fromVal && new Date(fromVal) <= new Date(isoFromDmy(active.from))){
+    hintEl.classList.add('err');
+    txtEl.innerHTML = 'Effective From must be later than <b>' + active.from + '</b> — the start of the current active period for ' + cat + '.';
+    return;
+  }
+  txtEl.innerHTML = 'Current active period for <b>' + cat + '</b> started <b>' + active.from + '</b> (open-ended). Importing will automatically close it the day before this new period starts.';
+}
+
+function handleImportFile(){
+  const f = document.getElementById('impFile').files[0];
+  const nameEl = document.getElementById('impFileName');
+  nameEl.textContent = f ? f.name : 'sample-taxi-time-import.xlsx';
+  nameEl.style.display = 'block';
+  renderImportPreview();
+}
+
+function renderImportPreview(){
+  const counts = {};
+  IMPORT_SAMPLE_ROWS.forEach(r => { counts[r.ap] = (counts[r.ap] || 0) + 1; });
+
+  let validCount = 0;
+  const rowsHtml = IMPORT_SAMPLE_ROWS.map(r=>{
+    const unknown = !ALL_AIRPORTS.includes(r.ap);
+    const dup     = counts[r.ap] > 1;
+    const badBand = !MINUTES.includes(r.min);
+    const isValid = !unknown && !dup && !badBand;
+    if(isValid) validCount++;
+
+    let flag;
+    if(unknown)       flag = '<span class="imp-flag bad"><span class="material-symbols-outlined">error</span>Unknown airport code</span>';
+    else if(dup)      flag = '<span class="imp-flag bad"><span class="material-symbols-outlined">error</span>Duplicate in file</span>';
+    else if(badBand)  flag = '<span class="imp-flag bad"><span class="material-symbols-outlined">error</span>Invalid value (must be 5–50, step 5)</span>';
+    else              flag = '<span class="imp-flag ok"><span class="material-symbols-outlined">check_circle</span>OK</span>';
+
+    return '<tr class="' + (isValid ? '' : 'err') + '"><td>' + r.ap + '</td><td>' + r.min + '</td><td>' + flag + '</td></tr>';
+  }).join('');
+
+  document.getElementById('impTableBody').innerHTML = rowsHtml;
+  const total = IMPORT_SAMPLE_ROWS.length;
+  document.getElementById('impSummary').innerHTML =
+    '<span class="material-symbols-outlined">fact_check</span>' + validCount + ' of ' + total +
+    ' rows are valid and will be imported. ' + (total - validCount) + ' row(s) have errors and will be skipped.';
+
+  document.getElementById('impPreviewSection').style.display = '';
+  const btn = document.getElementById('impConfirmBtn');
+  btn.disabled = validCount === 0;
+  btn.innerHTML = '<span class="material-symbols-outlined">upload_file</span>Import ' + validCount + ' valid row' + (validCount === 1 ? '' : 's');
+}
+
+function confirmImport(){
+  const cat  = document.getElementById('impCat3').value;
+  const from = document.getElementById('impFrom').value;
+  if(!from){ toast('Effective From is required'); return; }
+  const active = currentActiveOf(cat);
+  if(active && new Date(from) <= new Date(isoFromDmy(active.from))){
+    toast('Effective From must be later than ' + active.from + ' for ' + cat);
+    updateImportHint();
+    return;
+  }
+  closeModal('mdImport');
+  toast('Imported into a new chained record for ' + cat + ', effective ' + fmt(from) + ' (simulated)');
+}
 
 function openDetail(idx){
   curRow = idx;
   const r = ROWS[idx];
   document.getElementById('dtCat').textContent   = r.cat;
-  document.getElementById('dtValid').textContent = r.from + ' → ' + r.to;
+  document.getElementById('dtValid').textContent = r.from + ' → ' + toLabel(r);
   initState(true);
   const t = totals();
   document.getElementById('dtCount').textContent = t.assigned + ' airports';
@@ -1035,14 +1346,14 @@ function openDetail(idx){
 function openHistory(idx){
   curRow = idx;
   const r = ROWS[idx];
-  document.getElementById('hisCat').textContent = r.cat + ' · ' + r.from + ' → ' + r.to;
+  document.getElementById('hisCat').textContent = r.cat + ' · ' + r.from + ' → ' + toLabel(r);
   renderHistory();
   openModal('mdHistory');
 }
 function openDelete(idx){
   const r = ROWS[idx];
   document.getElementById('delName').textContent  = r.cat;
-  document.getElementById('delValid').textContent = r.from + ' → ' + r.to;
+  document.getElementById('delValid').textContent = r.from + ' → ' + toLabel(r);
   openModal('mdDelete');
 }
 
