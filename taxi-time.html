@@ -611,10 +611,13 @@
         Airports absent from the matrix are not managed by TOSS for this period (see “Unassigned”).
       </p>
     </div>
-    <div class="modal-foot" data-src="Customer feedback 29/07/2026 (revised 30/07) — a single Export button; the workbook opens on the matrix sheet, with the flat airport list as a second sheet">
-      <span class="foot-hint"><span class="material-symbols-outlined" style="font-size:16px;">info</span>Mockup — actions are simulated, no data is persisted</span>
-      <button class="btn btn-ghost" onclick="exportDetail()" data-mat="mat-stroked-button">
-        <span class="material-symbols-outlined">download</span>Export to Excel
+    <div class="modal-foot" data-src="Customer feedback 29/07/2026 — export this record in two shapes: as displayed (matrix) and as a flat airport list">
+      <span class="foot-hint"><span class="material-symbols-outlined" style="font-size:16px;">download</span>Export this record:</span>
+      <button class="btn btn-ghost" onclick="exportDetail('matrix')" data-mat="mat-stroked-button">
+        <span class="material-symbols-outlined">grid_on</span>As displayed (matrix)
+      </button>
+      <button class="btn btn-ghost" onclick="exportDetail('flat')" data-mat="mat-stroked-button">
+        <span class="material-symbols-outlined">table_rows</span>Flat list
       </button>
       <button class="btn btn-ghost" onclick="closeModal('mdDetail')">Close</button>
       <button class="btn btn-blue" onclick="closeModal('mdDetail'); openForm('edit',curRow)"><span class="material-symbols-outlined">edit</span>Edit</button>
@@ -1359,17 +1362,20 @@ function openDetail(idx){
   buildMatrix(document.getElementById('mxDetail'), true);
   openModal('mdDetail');
 }
-/* Export the open record (A-11). ONE button — the workbook opens on the matrix sheet
-   ("as displayed"), and carries the flat airport list as a second sheet so the two shapes the
-   customer originally asked for are both present without a second button.
-   Details screen only; deliberately NOT offered on Create/Edit.
-   Sample output lives beside this mockup as TaxiTime_*.xlsx. */
-function exportDetail(){
+/* Customer feedback 29/07/2026: export the open record in two shapes (A-11).
+   'matrix' — the sheet mirrors the on-screen Region × minute-band grid, plus an Unassigned column.
+   'flat'   — one row per airport: Airport | Region | Taxi Time (min).
+   Confirmed Details-screen only; deliberately NOT offered on Create/Edit.
+   Sample outputs live beside this mockup as TaxiTime_matrix_*.xlsx / TaxiTime_list_*.xlsx. */
+function exportDetail(shape){
   const r = ROWS[curRow];
   const t = totals();
   const stamp = r.cat.replace(/[^A-Za-z0-9]+/g,'-') + '_' + r.from.replace(/\//g,'');
-  toast('Generating TaxiTime_' + stamp + '.xlsx — sheet 1: matrix as displayed · sheet 2: '
-        + t.assigned + ' rows Airport | Region | Taxi Time (simulated)');
+  if(shape === 'matrix'){
+    toast('Generating TaxiTime_matrix_' + stamp + '.xlsx — Region × minute-band grid (simulated)');
+  } else {
+    toast('Generating TaxiTime_list_' + stamp + '.xlsx — ' + t.assigned + ' rows: Airport | Region | Taxi Time (simulated)');
+  }
 }
 
 function openHistory(idx){
