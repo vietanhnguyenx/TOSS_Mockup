@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  TOSS -- Airport Master Data / Taxi Time . Interactive mockup v0.5
+  TOSS -- Airport Master Data / Taxi Time . Interactive mockup v0.6
   Scope: Function list v1.0, rows 185-191 (7 functions) + Change History + Import.
 
   THIS IS A MOCKUP, NOT A WORKING SYSTEM:
@@ -202,7 +202,12 @@
     .mx tbody th.mx-region{position:sticky;left:0;z-index:2;background:#fbfdff;text-align:left;padding:8px 12px;font-weight:700;color:var(--vna-navy);font-size:12px;vertical-align:top;min-width:158px}
     .mx tbody th.mx-region small{display:block;font-weight:500;color:var(--md-text-muted);font-size:10.5px;margin-top:2px}
     .mx tbody th.mx-region small.warn{color:var(--toss-warn);font-weight:700}
-    .mx td.mx-cell{vertical-align:top;padding:5px;min-width:98px;background:#fff}
+    .mx td.mx-cell{vertical-align:top;padding:5px;min-width:98px;background:#fff;height:1px}
+    /* Customer feedback 29/07/2026: the add button must sit flush with the bottom of every cell.
+       The <td> itself must stay a table-cell so the matrix columns keep aligning with the header,
+       so an inner flex column does the vertical layout instead. `height:1px` on the td makes its
+       height "definite" so height:100% resolves here; the row still stretches it to the tallest cell. */
+    .cell-inner{display:flex;flex-direction:column;height:100%}
     .mx td.mx-cell.has{background:#fbfeff}
 
     .chips{display:flex;flex-wrap:wrap;gap:4px;min-height:22px}
@@ -210,7 +215,11 @@
     .chip .x{cursor:pointer;font-size:13px;line-height:1;color:#0369a1;opacity:.65}
     .chip .x:hover{opacity:1;color:var(--toss-error)}
     .chip.miss{background:#fef3c7;color:#92400e;border-color:#fde68a;padding:2px 7px}
-    .cell-add{margin-top:4px;width:100%;border:1px dashed var(--md-outline);background:#fff;color:var(--md-text-muted);border-radius:5px;font-size:11px;font-weight:600;padding:3px 0;cursor:pointer;font-family:inherit}
+    /* Customer feedback 29/07/2026: "+ Add airport" repeated in every cell was too noisy —
+       reduced to a compact + icon (tooltip keeps the meaning), pinned to the bottom of the cell
+       by margin-top:auto inside .cell-inner so the icons line up across the whole row. */
+    .cell-add{margin-top:auto;align-self:center;width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px dashed var(--md-outline);background:#fff;color:var(--md-text-muted);border-radius:5px;cursor:pointer;font-family:inherit;padding:0;transition:all .15s}
+    .cell-add .material-symbols-outlined{font-size:15px}
     .cell-add:hover{border-color:var(--toss-primary);color:var(--toss-primary);background:#f0f9ff}
 
     /* ===== A-2b: click-to-select, click-to-place ===== */
@@ -602,7 +611,14 @@
         Airports absent from the matrix are not managed by TOSS for this period (see “Unassigned”).
       </p>
     </div>
-    <div class="modal-foot">
+    <div class="modal-foot" data-src="Customer feedback 29/07/2026 — export this record in two shapes: as displayed (matrix) and as a flat airport list">
+      <span class="foot-hint"><span class="material-symbols-outlined" style="font-size:16px;">download</span>Export this record:</span>
+      <button class="btn btn-ghost" onclick="exportDetail('matrix')" data-mat="mat-stroked-button">
+        <span class="material-symbols-outlined">grid_on</span>As displayed (matrix)
+      </button>
+      <button class="btn btn-ghost" onclick="exportDetail('flat')" data-mat="mat-stroked-button">
+        <span class="material-symbols-outlined">table_rows</span>Flat list
+      </button>
       <button class="btn btn-ghost" onclick="closeModal('mdDetail')">Close</button>
       <button class="btn btn-blue" onclick="closeModal('mdDetail'); openForm('edit',curRow)"><span class="material-symbols-outlined">edit</span>Edit</button>
     </div>
@@ -884,7 +900,9 @@ function buildMatrix(tableEl, ro){
         else if(m === mv.minute)     cls += ' src';
         else { cls += ' target'; onclk = ' onclick="doMove(\'' + r.code + '\',' + m + ')"'; }
       }
-      html += '<td class="' + cls + '"' + onclk + '><div class="chips">';
+      /* .cell-inner keeps the <td> a real table-cell (columns stay aligned with the header)
+         while laying its content out vertically, so the add button can sit flush at the bottom. */
+      html += '<td class="' + cls + '"' + onclk + '><div class="cell-inner"><div class="chips">';
       list.forEach(a=>{
         const isMv = mv && mv.region === r.code && mv.minute === m && mv.ap === a;
         if(ro){
@@ -898,8 +916,8 @@ function buildMatrix(tableEl, ro){
         }
       });
       html += '</div>';
-      if(!ro && !mv) html += '<button class="cell-add" onclick="event.stopPropagation();openPicker(event,\'' + r.code + '\',' + m + ')">+ Add airport</button>';
-      html += '</td>';
+      if(!ro && !mv) html += '<button class="cell-add" title="Add airport to the ' + m + ' minute band" onclick="event.stopPropagation();openPicker(event,\'' + r.code + '\',' + m + ')"><span class="material-symbols-outlined">add</span></button>';
+      html += '</div></td>';
     });
 
     /* "Unassigned" column — while moving, this is the drop target that removes the airport */
@@ -968,7 +986,8 @@ function openPicker(ev, regionCode, minute){
   renderPicker();
   const p = document.getElementById('picker');
   p.classList.add('open');
-  const rect = ev.target.getBoundingClientRect();
+  /* currentTarget = the button itself; ev.target could be the icon <span> inside it */
+  const rect = (ev.currentTarget || ev.target).getBoundingClientRect();
   let top = rect.bottom + 6, left = rect.left;
   if(top + 300 > window.innerHeight) top = Math.max(8, rect.top - 306);
   if(left + 250 > window.innerWidth) left = window.innerWidth - 258;
@@ -1343,6 +1362,21 @@ function openDetail(idx){
   buildMatrix(document.getElementById('mxDetail'), true);
   openModal('mdDetail');
 }
+/* Customer feedback 29/07/2026: export the open record in two shapes.
+   'matrix' — the sheet mirrors the on-screen Region × minute-band grid.
+   'flat'   — one row per airport: Airport | Region | Taxi Time (min).
+   [To confirm] whether these two buttons are also wanted on the Create/Edit screen. */
+function exportDetail(shape){
+  const r = ROWS[curRow];
+  const t = totals();
+  const stamp = r.cat.replace(/[^A-Za-z0-9]+/g,'-') + '_' + r.from.replace(/\//g,'');
+  if(shape === 'matrix'){
+    toast('Generating TaxiTime_matrix_' + stamp + '.xlsx — Region × minute-band grid (simulated)');
+  } else {
+    toast('Generating TaxiTime_list_' + stamp + '.xlsx — ' + t.assigned + ' rows: Airport | Region | Taxi Time (simulated)');
+  }
+}
+
 function openHistory(idx){
   curRow = idx;
   const r = ROWS[idx];
