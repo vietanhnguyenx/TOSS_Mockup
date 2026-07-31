@@ -1,19 +1,15 @@
 <!DOCTYPE html>
 <!--
-  TOSS -- Airport Master Data / Taxi Time . Interactive mockup v0.6
-  Scope: Function list v1.0, rows 185-191 (7 functions) + Change History + Import.
-
-  THIS IS A MOCKUP, NOT A WORKING SYSTEM:
-    - All airports, fleet groups, minute values, users and timestamps are SAMPLE DATA.
-    - Every action is simulated; nothing is saved. File import is simulated (no real
-      spreadsheet parsing) -- selecting any file reveals the same sample preview.
-    - Layout and colours are a proposal, pending BA/UI approval.
+  TOSS — Data Maintenance / Airport Master Data › TAXI TIME (mockup v0.7)
+  Interactive click-through mockup for review. All data shown is SAMPLE DATA,
+  not real operational data. Layout and colours are a proposal, pending
+  final BA/UI approval.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.5)</title>
+  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.7)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
   <style>
     :root{
@@ -134,6 +130,7 @@
     .icon-btn{background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;color:var(--md-text-secondary);display:inline-flex}
     .icon-btn:hover{background:#e8f1fb;color:var(--toss-primary)}
     .icon-btn.danger:hover{background:#fee2e2;color:var(--toss-error)}
+    .icon-btn:disabled{opacity:.32;cursor:not-allowed;pointer-events:none}
     .icon-btn .material-symbols-outlined{font-size:19px}
     .miss-tag{display:inline-flex;align-items:center;gap:3px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:800;margin-left:6px}
     .miss-tag .material-symbols-outlined{font-size:12px}
@@ -193,16 +190,26 @@
     .assign-counter b{color:var(--toss-primary)}
     .assign-counter .miss{color:var(--toss-warn)}
 
+    /* A-13 (v0.7): "+ Add region" control and the "regions not added yet" notice */
+    .region-adder{font-family:inherit;font-size:12px;font-weight:600;color:var(--toss-primary);background:#fff;border:1px dashed var(--toss-primary);border-radius:6px;padding:5px 10px;cursor:pointer}
+    .region-adder:disabled{color:var(--md-text-muted);border-color:var(--md-outline);cursor:not-allowed}
+    .region-note{display:none;align-items:center;gap:6px;width:100%;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;margin:-2px 0 9px;line-height:1.5}
+
     /* ===== Matrix ===== */
     .mx-wrap{border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm);overflow:auto;background:#fff;max-height:44vh}
     .mx{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
     .mx th,.mx td{border-right:1px solid var(--md-outline-variant);border-bottom:1px solid var(--md-outline-variant)}
     .mx thead th{position:sticky;top:0;z-index:3;background:#f1f5f9;color:var(--md-text-secondary);font-weight:700;padding:8px 6px;text-align:center;font-size:11px;white-space:nowrap}
-    .mx thead th.mx-corner{left:0;z-index:5;text-align:left;padding-left:12px;min-width:158px}
-    .mx tbody th.mx-region{position:sticky;left:0;z-index:2;background:#fbfdff;text-align:left;padding:8px 12px;font-weight:700;color:var(--vna-navy);font-size:12px;vertical-align:top;min-width:158px}
+    .mx thead th.mx-corner{left:0;z-index:5;text-align:left;padding-left:12px;min-width:172px}
+    .mx tbody th.mx-region{position:sticky;left:0;z-index:2;background:#fbfdff;text-align:left;padding:8px 12px;font-weight:700;color:var(--vna-navy);font-size:12px;vertical-align:top;min-width:172px}
+    .mx-region-head{display:flex;align-items:center;justify-content:space-between;gap:6px}
+    .mx-region-del{flex-shrink:0;background:none;border:none;cursor:pointer;padding:2px;border-radius:4px;color:var(--md-text-muted);display:inline-flex;font-family:inherit}
+    .mx-region-del .material-symbols-outlined{font-size:15px}
+    .mx-region-del:hover{background:#fee2e2;color:var(--toss-error)}
     .mx tbody th.mx-region small{display:block;font-weight:500;color:var(--md-text-muted);font-size:10.5px;margin-top:2px}
     .mx tbody th.mx-region small.warn{color:var(--toss-warn);font-weight:700}
-    .mx td.mx-cell{vertical-align:top;padding:5px;min-width:98px;background:#fff;height:1px}
+    .mx td.mx-cell{vertical-align:top;padding:5px;min-width:112px;background:#fff;height:1px}
+    .mx-empty{padding:28px 14px;text-align:center;color:var(--md-text-muted);font-size:12.5px;background:#fff}
     /* Customer feedback 29/07/2026: the add button must sit flush with the bottom of every cell.
        The <td> itself must stay a table-cell so the matrix columns keep aligning with the header,
        so an inner flex column does the vertical layout instead. `height:1px` on the td makes its
@@ -427,9 +434,6 @@
             <span style="font-size:11.5px;color:var(--md-text-secondary);">Sorted with the most recent record first</span>
           </div>
           <div class="list-actions">
-            <button class="btn btn-ghost" onclick="toast('Generating .xlsx file… (simulated)')" data-mat="mat-stroked-button" data-src="[FL-191] row 191 — Export taxi time data">
-              <span class="material-symbols-outlined">download</span>Export to Excel
-            </button>
             <button class="btn btn-ghost" onclick="openImport()" data-mat="mat-stroked-button" data-src="Decision A-9 (v0.5) — Import, added per feedback; template pattern per rows 193/213">
               <span class="material-symbols-outlined">upload_file</span>Import
             </button>
@@ -523,7 +527,11 @@
       <div class="mx-bar">
         <h4><span class="material-symbols-outlined">grid_on</span>Standard taxi time (minutes)</h4>
         <span class="assign-counter"><b id="cntAssigned">0</b> of <span id="cntTotal">0</span> airports assigned · <span class="miss"><b id="cntMiss">0</b> unassigned</span></span>
+        <select class="region-adder" id="regionAdder" onchange="addRegionRow(this.value)" data-src="Decision A-13 (v0.7) — feedback from Đặng Văn Hiệp, 31/07/2026: region rows are no longer fixed, added one at a time">
+          <option value="">+ Add region…</option>
+        </select>
       </div>
+      <div class="region-note" id="regionNote"></div>
 
       <div class="mx-wrap">
         <table class="mx" id="mxTable"></table>
@@ -681,11 +689,56 @@
     </div>
     <div class="modal-body">
       <p style="font-size:13.5px;line-height:1.65;">Delete the taxi time record for fleet group <b id="delName">—</b>, effective <b id="delValid">—</b>?</p>
-      
+
+      <div class="cf-block" id="delPromoteNote" data-src="Decision A-16 (v0.7) — feedback from Đặng Văn Hiệp, 31/07/2026">
+        <div class="cf-head info"><span class="material-symbols-outlined">arrow_upward</span>Previous record becomes Active</div>
+        <div class="cf-body">
+          Only the <b>Active</b> record of a fleet group may be deleted. To keep the chain of effective periods
+          continuous (BR-TAXI-01), deleting it re-opens the record immediately before it, which becomes the new
+          Active period.
+          <table>
+            <tr><th>Record</th><th>Effective period</th></tr>
+            <tr><td>Before deleting</td><td class="val-old" id="delPromoteFrom">—</td></tr>
+            <tr><td>After deleting</td><td class="val-new" id="delPromoteTo">—</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="cf-block" id="delNoPromoteNote" style="display:none;">
+        <div class="cf-head warn"><span class="material-symbols-outlined">info</span>No record left afterwards</div>
+        <div class="cf-body">This is the only record for this fleet group. After deleting, the fleet group will have no Standard Taxi Time record at all (confirmed 31/07/2026).</div>
+      </div>
+
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('mdDelete')">Cancel</button>
-      <button class="btn btn-danger" onclick="closeModal('mdDelete'); toast('Record deleted (simulated)')"><span class="material-symbols-outlined">delete</span>Delete</button>
+      <button class="btn btn-danger" onclick="confirmDelete()"><span class="material-symbols-outlined">delete</span>Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: REMOVE REGION ROW (A-13) ================= -->
+<div class="modal-overlay" id="mdRemoveRegion" data-mat="mat-dialog" data-src="Decision A-13 (v0.7) — feedback from Đặng Văn Hiệp, 31/07/2026: region rows can be removed; airports assigned in that row become Unassigned">
+  <div class="modal narrow">
+    <div class="modal-head">
+      <h3><span class="material-symbols-outlined" style="color:var(--toss-warn);">delete</span>Remove Region Row</h3>
+      <button class="icon-btn" onclick="closeModal('mdRemoveRegion')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13.5px;line-height:1.65;">Remove <b id="rrName">—</b> from this matrix?</p>
+      <div class="cf-block">
+        <div class="cf-head warn"><span class="material-symbols-outlined">report</span><b id="rrCount">0</b>&nbsp;airport(s) will lose their value on this record</div>
+        <div class="cf-body">
+          <div class="chips" id="rrChips" style="margin-bottom:8px;"></div>
+          Removing the row hides it from the matrix — these airports will have <b>no Standard Taxi Time</b> on this
+          record until the region is added back. This does not change Airport Master Data, and does not affect any
+          other record.
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('mdRemoveRegion')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmRemoveRegion()"><span class="material-symbols-outlined">delete</span>Remove Region</button>
     </div>
   </div>
 </div>
@@ -778,28 +831,36 @@
    Regions per [BR-432] · Minute bands per [FL-188] + decision A-1 (10 fixed bands)
    ========================================================================= */
 const MINUTES = [5,10,15,20,25,30,35,40,45,50];
+/* A-14 (v0.7): airport codes switched from IATA (3 letters) to ICAO (4 letters) end to end —
+   feedback from Đặng Văn Hiệp, 31/07/2026: "những chỗ nào chọn airport thì chọn mã ICAO, mã
+   IATA ít dùng". IATA is dropped, not kept alongside (confirmed 31/07/2026). */
 const REGIONS = [
-  { code:'VN',  name:'Domestic VN', airports:['HAN','SGN','DAD','CXR','HPH','VII','PQC','VCA','DLI','HUI','UIH','VDH','THD','DIN','TBB','PXU','VCL','BMV','VDO'] },
-  { code:'SEA', name:'SEA',         airports:['BKK','SIN','PNH','REP','RGN','KUL','CGK','MNL','VTE','LPQ'] },
-  { code:'NEA', name:'NEA',         airports:['ICN','NRT','HND','KIX','NGO','PVG','PEK','CAN','HKG','TPE'] },
-  { code:'EU',  name:'EU',          airports:['CDG','FRA','LHR'] },
-  { code:'US',  name:'US',          airports:['SFO','LAX'] }
+  { code:'VN',  name:'Domestic VN', airports:['VVNB','VVTS','VVDN','VVCR','VVCI','VVVH','VVPQ','VVCT','VVDL','VVPB','VVPC','VVDH','VVTX','VVDB','VVTH','VVPK','VVCA','VVBM','VVVD'] },
+  { code:'SEA', name:'SEA',         airports:['VTBS','WSSS','VDPP','VDSR','VYYY','WMKK','WIII','RPLL','VLVT','VLLB'] },
+  { code:'NEA', name:'NEA',         airports:['RKSI','RJAA','RJTT','RJBB','RJGG','ZSPD','ZBAA','ZGGG','VHHH','RCTP'] },
+  { code:'EU',  name:'EU',          airports:['LFPG','EDDF','EGLL'] },
+  { code:'US',  name:'US',          airports:['KSFO','KLAX'] }
 ];
 /* Flat list of every known airport code — used by Import validation (A-9) */
 const ALL_AIRPORTS = REGIONS.flatMap(r => r.airports);
 
 /* Values of the IMMEDIATELY PRECEDING effective period — source for "Copy from previous period".
-   VDO is deliberately left out to illustrate an airport that never had a value. */
+   VVVD (ex-VDO) is deliberately left out to illustrate an airport that never had a value. */
 const PREV = {
-  VN:  { 5:['THD','DIN','TBB'], 10:['VDH','VCL','PXU','BMV'], 15:['DAD','CXR','HPH','VII','DLI','HUI','UIH','VCA','PQC'], 25:['HAN'], 30:['SGN'] },
-  SEA: { 15:['PNH','REP','RGN','VTE','LPQ'], 20:['KUL','CGK','MNL'], 25:['BKK'], 30:['SIN'] },
-  NEA: { 20:['KIX','NGO','HKG','TPE'], 25:['ICN','PVG','CAN'], 30:['NRT','HND','PEK'] },
-  EU:  { 25:['CDG'], 30:['FRA'], 35:['LHR'] },
-  US:  { 30:['LAX'], 40:['SFO'] }
+  VN:  { 5:['VVTX','VVDB','VVTH'], 10:['VVDH','VVCA','VVPK','VVBM'], 15:['VVDN','VVCR','VVCI','VVVH','VVDL','VVPB','VVPC','VVCT','VVPQ'], 25:['VVNB'], 30:['VVTS'] },
+  SEA: { 15:['VDPP','VDSR','VYYY','VLVT','VLLB'], 20:['WMKK','WIII','RPLL'], 25:['VTBS'], 30:['WSSS'] },
+  NEA: { 20:['RJBB','RJGG','VHHH','RCTP'], 25:['RKSI','ZSPD','ZGGG'], 30:['RJAA','RJTT','ZBAA'] },
+  EU:  { 25:['LFPG'], 30:['EDDF'], 35:['EGLL'] },
+  US:  { 30:['KLAX'], 40:['KSFO'] }
 };
 const PREV_LABEL = '01/07/2026 → 31/08/2026';
 
 let state = {};
+/* A-13 (v0.7): region rows are added/removed by the user — this list IS the set of rows
+   currently shown on the CREATE/EDIT matrix; a region absent from this list has no row at all
+   (not merely an empty one), and its airports are not visible anywhere in the matrix. */
+let activeRegions = [];
+let pendingRemoveRegion = null;
 let pickerCtx = null;
 let curRow = 0;
 let copied = false;
@@ -811,40 +872,47 @@ function prevValueOf(regionCode, ap){
   for(const m of MINUTES){ if((p[m]||[]).includes(ap)) return m; }
   return null;
 }
-/* Airports not assigned to any cell of the region */
+/* Airports not assigned to any cell of the region — region MUST already be an active row */
 function unassignedOf(regionCode){
   const r = REGIONS.find(x=>x.code===regionCode);
   const used = [];
-  MINUTES.forEach(m => used.push(...state[regionCode][m]));
+  MINUTES.forEach(m => used.push(...(state[regionCode] ? state[regionCode][m] : [])));
   return r.airports.filter(a => !used.includes(a));
 }
+/* A-13 (v0.7): "missing" now covers BOTH airports unassigned within an added region row AND
+   every airport of a region that was never added as a row at all — otherwise the assign-counter
+   and the save-confirmation warning (A-4) would silently understate how much is left to do. */
 function allMissing(){
   const out = [];
-  REGIONS.forEach(r => unassignedOf(r.code).forEach(a => out.push(a)));
+  REGIONS.forEach(r=>{
+    if(activeRegions.includes(r.code)) unassignedOf(r.code).forEach(a => out.push(a));
+    else out.push(...r.airports);
+  });
   return out;
 }
 
 function initState(seeded){
   state = {};
-  REGIONS.forEach(r=>{
-    state[r.code] = {};
-    MINUTES.forEach(m => state[r.code][m] = []);
-  });
+  activeRegions = [];
   if(seeded) applyPrev();
 }
-/* Load every value of the previous period into state as REAL DATA */
+/* Load every value of the previous period into state as REAL DATA — A-13 (v0.7): this now also
+   copies the SET OF REGION ROWS from the previous period, not only the cell values within them. */
 function applyPrev(){
-  REGIONS.forEach(r=>{
-    const p = PREV[r.code] || {};
-    MINUTES.forEach(m => { if(p[m]) state[r.code][m] = p[m].slice(); });
+  activeRegions = REGIONS.filter(r => PREV[r.code]).map(r => r.code);
+  activeRegions.forEach(code=>{
+    state[code] = {};
+    MINUTES.forEach(m => state[code][m] = (PREV[code][m] || []).slice());
   });
 }
 
+/* Denominator is always the FULL airport catalogue (all Regions), not just the rows currently
+   added — so "X of Y assigned" cannot overstate completeness by ignoring un-added regions. */
 function totals(){
-  let assigned=0, total=0;
-  REGIONS.forEach(r=>{
-    total += r.airports.length;
-    MINUTES.forEach(m => assigned += state[r.code][m].length);
+  let assigned = 0;
+  const total = REGIONS.reduce((s,r) => s + r.airports.length, 0);
+  activeRegions.forEach(code=>{
+    MINUTES.forEach(m => assigned += state[code][m].length);
   });
   return { assigned, total, miss: total - assigned };
 }
@@ -854,7 +922,66 @@ function copyFromPrev(){
   applyPrev();
   copied = true;
   render();
-  toast('Copied 43 airports from period ' + PREV_LABEL + ' — you can now adjust individual airports');
+  toast('Copied 43 airports (5 regions) from period ' + PREV_LABEL + ' — you can now adjust individual airports');
+}
+
+/* ---------- A-13 (v0.7): region rows are added/removed by the user, not fixed ---------- */
+function addRegionRow(code){
+  if(!code || activeRegions.includes(code)) return;
+  moving = null;
+  activeRegions.push(code);
+  state[code] = {};
+  MINUTES.forEach(m => state[code][m] = []);
+  render();
+}
+function askRemoveRegion(code){
+  moving = null;
+  const assignedCount = MINUTES.reduce((s,m) => s + state[code][m].length, 0);
+  if(!assignedCount){ removeRegionRow(code); toast('Region removed from the matrix'); return; }
+  pendingRemoveRegion = code;
+  const r = REGIONS.find(x=>x.code===code);
+  document.getElementById('rrName').textContent = r.name;
+  document.getElementById('rrCount').textContent = assignedCount;
+  const chips = [];
+  MINUTES.forEach(m => state[code][m].forEach(a => chips.push(a)));
+  document.getElementById('rrChips').innerHTML = chips.map(a => '<span class="chip miss">' + a + '</span>').join('');
+  openModal('mdRemoveRegion');
+}
+function confirmRemoveRegion(){
+  const code = pendingRemoveRegion;
+  closeModal('mdRemoveRegion');
+  if(!code) return;
+  removeRegionRow(code);
+  pendingRemoveRegion = null;
+  toast('Region removed — its airports have no Standard Taxi Time on this record until the region is added back');
+}
+function removeRegionRow(code){
+  activeRegions = activeRegions.filter(c => c !== code);
+  delete state[code];
+  render();
+}
+function renderRegionAdder(){
+  const sel = document.getElementById('regionAdder');
+  if(!sel) return;
+  const avail = REGIONS.filter(r => !activeRegions.includes(r.code));
+  if(!avail.length){
+    sel.innerHTML = '<option value="">All regions added</option>';
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  sel.innerHTML = '<option value="">+ Add region…</option>' +
+    avail.map(r => '<option value="' + r.code + '">' + r.name + ' (' + r.airports.length + ' airports)</option>').join('');
+}
+function renderRegionNote(){
+  const el = document.getElementById('regionNote');
+  if(!el) return;
+  const avail = REGIONS.filter(r => !activeRegions.includes(r.code));
+  if(!activeRegions.length || !avail.length){ el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = '<span class="material-symbols-outlined" style="font-size:13px;vertical-align:-2px;">info</span> '
+    + avail.length + ' region(s) not added to this record yet — ' + avail.map(r=>r.name).join(', ')
+    + ' (' + avail.reduce((s,r)=>s+r.airports.length,0) + ' airports have no Standard Taxi Time until their region is added).';
 }
 
 /* ---------- A-2b: click-to-select, click-to-place ---------- */
@@ -884,39 +1011,50 @@ function buildMatrix(tableEl, ro){
   MINUTES.forEach(m => html += '<th>' + m + '&#39;</th>');
   html += '<th style="background:#fef9ed;color:#92400e;">Unassigned</th></tr></thead><tbody>';
 
-  REGIONS.forEach(r=>{
-    const miss = unassignedOf(r.code);
-    const otherRegion = mv && mv.region !== r.code;
-    html += '<tr><th class="mx-region">' + r.name
+  /* A-13 (v0.7): no fixed rows — a region only appears if the user added it */
+  if(!activeRegions.length){
+    const colspan = 2 + MINUTES.length;
+    html += '<tr><td colspan="' + colspan + '" class="mx-empty">'
+      + (ro ? 'No region has been added to this record.'
+            : 'No region added yet. Use <b>+ Add region</b> above to start assigning airports.')
+      + '</td></tr>';
+  }
+
+  activeRegions.forEach(code=>{
+    const r = REGIONS.find(x=>x.code===code);
+    const miss = unassignedOf(code);
+    const otherRegion = mv && mv.region !== code;
+    const delBtn = ro ? '' : '<button class="mx-region-del" title="Remove ' + r.name + ' row" onclick="event.stopPropagation();askRemoveRegion(\'' + code + '\')"><span class="material-symbols-outlined">delete</span></button>';
+    html += '<tr><th class="mx-region"><div class="mx-region-head"><span>' + r.name + '</span>' + delBtn + '</div>'
          + '<small' + (miss.length ? ' class="warn"' : '') + '>' + r.airports.length + ' airports'
          + (miss.length ? ' · ' + miss.length + ' unassigned' : '') + '</small></th>';
 
     MINUTES.forEach(m=>{
-      const list = state[r.code][m];
+      const list = state[code][m];
       let cls = 'mx-cell' + (list.length ? ' has' : '');
       let onclk = '';
       if(mv){
         if(otherRegion)              cls += ' dim';         /* moves are limited to the same Region */
         else if(m === mv.minute)     cls += ' src';
-        else { cls += ' target'; onclk = ' onclick="doMove(\'' + r.code + '\',' + m + ')"'; }
+        else { cls += ' target'; onclk = ' onclick="doMove(\'' + code + '\',' + m + ')"'; }
       }
       /* .cell-inner keeps the <td> a real table-cell (columns stay aligned with the header)
          while laying its content out vertically, so the add button can sit flush at the bottom. */
       html += '<td class="' + cls + '"' + onclk + '><div class="cell-inner"><div class="chips">';
       list.forEach(a=>{
-        const isMv = mv && mv.region === r.code && mv.minute === m && mv.ap === a;
+        const isMv = mv && mv.region === code && mv.minute === m && mv.ap === a;
         if(ro){
           html += '<span class="chip">' + a + '</span>';
         } else {
           html += '<span class="chip movable' + (isMv ? ' moving' : '') + '"'
                + ' title="Click to move to another band"'
-               + ' onclick="event.stopPropagation();startMove(\'' + r.code + '\',' + m + ',\'' + a + '\')">' + a
-               + '<span class="x" title="Remove from matrix" onclick="event.stopPropagation();unassign(\'' + r.code + '\',' + m + ',\'' + a + '\')">&times;</span>'
+               + ' onclick="event.stopPropagation();startMove(\'' + code + '\',' + m + ',\'' + a + '\')">' + a
+               + '<span class="x" title="Remove from matrix" onclick="event.stopPropagation();unassign(\'' + code + '\',' + m + ',\'' + a + '\')">&times;</span>'
                + '</span>';
         }
       });
       html += '</div>';
-      if(!ro && !mv) html += '<button class="cell-add" title="Add airport to the ' + m + ' minute band" onclick="event.stopPropagation();openPicker(event,\'' + r.code + '\',' + m + ')"><span class="material-symbols-outlined">add</span></button>';
+      if(!ro && !mv) html += '<button class="cell-add" title="Add airport to the ' + m + ' minute band" onclick="event.stopPropagation();openPicker(event,\'' + code + '\',' + m + ')"><span class="material-symbols-outlined">add</span></button>';
       html += '</div></td>';
     });
 
@@ -924,7 +1062,7 @@ function buildMatrix(tableEl, ro){
     let mcls = 'mx-cell', monclk = '';
     if(mv){
       if(otherRegion) mcls += ' dim';
-      else { mcls += ' target'; monclk = ' onclick="doMoveOut(\'' + r.code + '\')"'; }
+      else { mcls += ' target'; monclk = ' onclick="doMoveOut(\'' + code + '\')"'; }
     }
     html += '<td class="' + mcls + '" style="background:#fffdf5;min-width:130px;"' + monclk + '><div class="chips">';
     if(!miss.length) html += '<span style="font-size:10.5px;color:var(--md-text-muted);font-style:italic;">—</span>';
@@ -941,6 +1079,8 @@ function render(){
   document.getElementById('cntAssigned').textContent = t.assigned;
   document.getElementById('cntTotal').textContent    = t.total;
   document.getElementById('cntMiss').textContent     = t.miss;
+  renderRegionAdder();
+  renderRegionNote();
 
   const bar = document.getElementById('moveBar');
   if(moving){
@@ -1050,9 +1190,9 @@ let page = 1;
 
 const HISTORY = [
   { dt:'29/07/2026 10:15:22', by:'quan.nm', act:'add', obj:'Import from file (A-9)',           old:null,                      nw:'4 airports imported from sample-taxi-time-import.xlsx' },
-  { dt:'27/07/2026 14:32:10', by:'quan.nm', act:'mod', obj:'Domestic VN × 25&#39;',            old:null,                      nw:'+ HAN' },
-  { dt:'27/07/2026 14:31:55', by:'quan.nm', act:'mod', obj:'Domestic VN × 30&#39;',            old:'HAN',                     nw:null },
-  { dt:'27/07/2026 14:28:03', by:'quan.nm', act:'mod', obj:'NEA × 30&#39;',                    old:null,                      nw:'+ NRT, + HND' },
+  { dt:'27/07/2026 14:32:10', by:'quan.nm', act:'mod', obj:'Domestic VN × 25&#39;',            old:null,                      nw:'+ VVNB' },
+  { dt:'27/07/2026 14:31:55', by:'quan.nm', act:'mod', obj:'Domestic VN × 30&#39;',            old:'VVNB',                    nw:null },
+  { dt:'27/07/2026 14:28:03', by:'quan.nm', act:'mod', obj:'NEA × 30&#39;',                    old:null,                      nw:'+ RJAA, + RJTT' },
   { dt:'27/07/2026 14:20:47', by:'quan.nm', act:'add', obj:'Copy from previous period (A-4)',  old:null,                      nw:'43 airports from period 01/07/2026 → 31/08/2026' },
   { dt:'25/06/2026 09:15:41', by:'quan.nm', act:'mod', obj:'Effective To',                     old:'30/09/2026',              nw:'31/08/2026' },
   { dt:'25/06/2026 09:15:41', by:'quan.nm', act:'mod', obj:'Auto-trim earlier record (A-7)',   old:'01/02/2026 → 30/09/2026', nw:'01/02/2026 → 30/06/2026' },
@@ -1084,7 +1224,7 @@ function renderList(){
           <button class="icon-btn" title="View details" onclick="openDetail(${i})"><span class="material-symbols-outlined">visibility</span></button>
           <button class="icon-btn" title="Edit" onclick="openForm('edit',${i})"><span class="material-symbols-outlined">edit</span></button>
           <button class="icon-btn" title="Change history" onclick="openHistory(${i})"><span class="material-symbols-outlined">history</span></button>
-          <button class="icon-btn danger" title="Delete" onclick="openDelete(${i})"><span class="material-symbols-outlined">delete</span></button>
+          <button class="icon-btn danger" title="${st==='active' ? 'Delete' : 'Only the active record of a fleet group can be deleted (A-16)'}" ${st!=='active' ? 'disabled' : ''} onclick="openDelete(${i})"><span class="material-symbols-outlined">delete</span></button>
         </div>
       </td>
     </tr>`;
@@ -1253,13 +1393,13 @@ function confirmSave(){
    UX can be reviewed without depending on a real spreadsheet library.
    ========================================================================= */
 const IMPORT_SAMPLE_ROWS = [
-  { ap:'HAN', min:25 },
-  { ap:'SGN', min:30 },
-  { ap:'DAD', min:15 },
-  { ap:'XXX', min:20 },
-  { ap:'CXR', min:999 },
-  { ap:'CXR', min:15 },
-  { ap:'VDO', min:10 }
+  { ap:'VVNB', min:25 },
+  { ap:'VVTS', min:30 },
+  { ap:'VVDN', min:15 },
+  { ap:'ZZZZ', min:20 },
+  { ap:'VVCR', min:999 },
+  { ap:'VVCR', min:15 },
+  { ap:'VVVD', min:10 }
 ];
 
 function openImport(){
@@ -1385,11 +1525,49 @@ function openHistory(idx){
   renderHistory();
   openModal('mdHistory');
 }
+/* ---------- A-16 (v0.7): only the Active record may be deleted; the previous record (by
+   Effective From) is promoted back to Active, since the fleet group's chain (BR-TAXI-01) always
+   needs exactly one open-ended record — "như là 1 chuỗi số 1-2-3-4-5 thì mình phải xóa từ 5 về 1
+   để đảm bảo không bị lủng" (Đặng Văn Hiệp, 31/07/2026). ---------- */
+let delRowIdx = null;
+function previousRecordOf(cat, idx){
+  const cur = ROWS[idx];
+  const curFrom = new Date(isoFromDmy(cur.from));
+  const candidates = ROWS
+    .map((r,i)=>({ r, i }))
+    .filter(x => x.r.cat === cat && x.i !== idx && new Date(isoFromDmy(x.r.from)) < curFrom);
+  if(!candidates.length) return null;
+  candidates.sort((a,b) => new Date(isoFromDmy(b.r.from)) - new Date(isoFromDmy(a.r.from)));
+  return candidates[0];
+}
 function openDelete(idx){
   const r = ROWS[idx];
+  if(statusOf(r) !== 'active'){ toast('Only the active record of a fleet group can be deleted'); return; }
+  delRowIdx = idx;
   document.getElementById('delName').textContent  = r.cat;
   document.getElementById('delValid').textContent = r.from + ' → ' + toLabel(r);
+
+  const prevEntry = previousRecordOf(r.cat, idx);
+  document.getElementById('delPromoteNote').style.display   = prevEntry ? '' : 'none';
+  document.getElementById('delNoPromoteNote').style.display = prevEntry ? 'none' : '';
+  if(prevEntry){
+    document.getElementById('delPromoteFrom').textContent = prevEntry.r.from + ' → ' + prevEntry.r.to;
+    document.getElementById('delPromoteTo').textContent   = prevEntry.r.from + ' → Ongoing';
+  }
   openModal('mdDelete');
+}
+function confirmDelete(){
+  const r = ROWS[delRowIdx];
+  const prevEntry = previousRecordOf(r.cat, delRowIdx);
+  ROWS.splice(delRowIdx, 1);
+  if(prevEntry) ROWS[ROWS.indexOf(prevEntry.r)].to = null;
+  closeModal('mdDelete');
+  toast(prevEntry
+    ? ('Deleted. ' + r.cat + ' ' + prevEntry.r.from + ' → Ongoing is now the active record (simulated)')
+    : (r.cat + ' now has no record left (simulated)'));
+  delRowIdx = null;
+  page = 1;
+  renderList();
 }
 
 /* ---------- Utilities ---------- */
