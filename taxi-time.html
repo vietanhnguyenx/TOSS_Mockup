@@ -161,6 +161,12 @@
     .modal-body{padding:18px;overflow-y:auto;flex:1}
     .modal-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 18px;border-top:1px solid var(--md-outline-variant);background:#f8fafc}
     .modal-foot .foot-hint{margin-right:auto;font-size:11.5px;color:var(--md-text-secondary);display:flex;align-items:center;gap:6px}
+    /* Customer feedback 31/07/2026: the two export buttons on the Details footer looked
+       disconnected from their "Export this record:" label (pushed apart from the label,
+       next to Close/Edit instead). Grouping them lets .foot-hint keep its normal
+       margin-right:auto behaviour everywhere else, while this group carries its own. */
+    .foot-export-group{display:flex;align-items:center;gap:10px;margin-right:auto}
+    .foot-export-group .foot-hint{margin-right:0}
     #mdConfirm{z-index:960}
 
     .form-head-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;padding:14px;background:#f8fafc;border:1px solid var(--md-outline-variant);border-radius:var(--md-radius-sm)}
@@ -619,14 +625,16 @@
         Airports absent from the matrix are not managed by TOSS for this period (see “Unassigned”).
       </p>
     </div>
-    <div class="modal-foot" data-src="Customer feedback 29/07/2026 — export this record in two shapes: as displayed (matrix) and as a flat airport list">
-      <span class="foot-hint"><span class="material-symbols-outlined" style="font-size:16px;">download</span>Export this record:</span>
-      <button class="btn btn-ghost" onclick="exportDetail('matrix')" data-mat="mat-stroked-button">
-        <span class="material-symbols-outlined">grid_on</span>As displayed (matrix)
-      </button>
-      <button class="btn btn-ghost" onclick="exportDetail('flat')" data-mat="mat-stroked-button">
-        <span class="material-symbols-outlined">table_rows</span>Flat list
-      </button>
+    <div class="modal-foot" data-src="Customer feedback 29/07/2026 — export this record in two shapes: as displayed (matrix) and as a flat airport list; 31/07/2026 — group the two buttons next to their label instead of next to Close/Edit">
+      <div class="foot-export-group">
+        <span class="foot-hint"><span class="material-symbols-outlined" style="font-size:16px;">download</span>Export this record:</span>
+        <button class="btn btn-ghost" onclick="exportDetail('matrix')" data-mat="mat-stroked-button">
+          <span class="material-symbols-outlined">grid_on</span>As displayed (matrix)
+        </button>
+        <button class="btn btn-ghost" onclick="exportDetail('flat')" data-mat="mat-stroked-button">
+          <span class="material-symbols-outlined">table_rows</span>Flat list
+        </button>
+      </div>
       <button class="btn btn-ghost" onclick="closeModal('mdDetail')">Close</button>
       <button class="btn btn-blue" onclick="closeModal('mdDetail'); openForm('edit',curRow)"><span class="material-symbols-outlined">edit</span>Edit</button>
     </div>
