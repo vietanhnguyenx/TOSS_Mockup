@@ -315,6 +315,11 @@
   .t tbody tr:hover{background:var(--bg-tertiary)}
   .t tbody tr.sel{background:var(--primary-accent);box-shadow:inset 3px 0 0 var(--primary)}
   .t .fno{font-weight:700;color:var(--gold)}
+  .device.iphone .t th,
+  .device.iphone .t td {
+    padding: 7px 5px;
+    font-size: 11px;
+  }
   .device.iphone .t .hide-mobile{display:none}
 
   .yn{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%}
@@ -660,7 +665,7 @@
               <table class="t">
                 <thead><tr>
                   <th>FLT No</th><th>AC Reg</th><th>Dep → Arr</th><th class="hide-mobile">Date</th><th>ETD</th>
-                  <th style="text-align:right;">Request Fuel</th>
+                  <th style="text-align:right;">Req Fuel</th>
                 </tr></thead>
                 <tbody id="fltBody"></tbody>
               </table>
@@ -963,7 +968,7 @@ function renderFlights(){
 
   document.getElementById('fltBody').innerHTML = list.map((f)=>{
     const i = FLIGHTS.indexOf(f);
-    const fuelVal = f.ofpState >= 3 ? '5,944 KG' : '—';
+    const fuelVal = f.ofpState >= 3 ? '5,944' : '—';
     return `<tr class="${i===cur?'sel':''}" onclick="selectFlight(${i})">
       <td class="fno">${f.no}</td>
       <td style="font-weight:600;color:var(--text-primary);">${f.reg}</td>
