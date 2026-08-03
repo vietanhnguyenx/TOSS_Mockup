@@ -659,16 +659,15 @@
               <div class="table-scroll">
               <table class="t">
                 <thead><tr>
-                  <th>FLT No</th><th>Dep → Arr</th><th class="hide-mobile">Date</th><th>ETD</th>
-                  <th class="hide-mobile">AC Reg</th><th style="text-align:center;">FR</th><th style="text-align:center;">CFM</th><th style="text-align:center;">E-CFP</th>
+                  <th>FLT No</th><th>AC Reg</th><th>Dep → Arr</th><th class="hide-mobile">Date</th><th>ETD</th>
+                  <th style="text-align:right;">Request Fuel</th>
                 </tr></thead>
                 <tbody id="fltBody"></tbody>
               </table>
               </div>
             </div>
             <div style="font-size:10px;color:var(--text-muted);display:flex;gap:11px;flex-wrap:wrap;padding:0 2px;">
-              <span><b style="color:var(--text-secondary);">FR</b> = Flight release</span><span><b style="color:var(--text-secondary);">CFM</b> = Confirm doc</span>
-              <span><span class="yn y" style="width:15px;height:15px;"><span class="material-symbols-outlined" style="font-size:11px;">check</span></span> available · <span class="yn n" style="width:15px;height:15px;"><span class="material-symbols-outlined" style="font-size:11px;">close</span></span> missing</span>
+              <span><b style="color:var(--text-secondary);">Request Fuel</b> = Fuel quantity requested from OFP (in KG)</span>
             </div>
           </div>
 
@@ -964,17 +963,16 @@ function renderFlights(){
 
   document.getElementById('fltBody').innerHTML = list.map((f)=>{
     const i = FLIGHTS.indexOf(f);
+    const fuelVal = f.ofpState >= 3 ? '5,944 KG' : '—';
     return `<tr class="${i===cur?'sel':''}" onclick="selectFlight(${i})">
       <td class="fno">${f.no}</td>
+      <td style="font-weight:600;color:var(--text-primary);">${f.reg}</td>
       <td>${f.dep} → ${f.arr}</td>
       <td class="hide-mobile">${f.date}</td>
       <td>${f.etd}</td>
-      <td class="hide-mobile">${f.reg}</td>
-      <td style="text-align:center;">${yn(f.fr)}</td>
-      <td style="text-align:center;">${yn(f.cfm)}</td>
-      <td style="text-align:center;">${yn(f.ecfp)}</td>
+      <td style="text-align:right;font-weight:700;color:${fuelVal==='—'?'var(--text-muted)':'var(--primary)'}">${fuelVal}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="8" style="text-align:center;padding:22px;color:var(--text-muted);font-style:italic;">No flights match current filter</td></tr>`;
+  }).join('') || `<tr><td colspan="6" style="text-align:center;padding:22px;color:var(--text-muted);font-style:italic;">No flights match current filter</td></tr>`;
 }
 function yn(v){ return v ? `<span class="yn y"><span class="material-symbols-outlined">check</span></span>` : `<span class="yn n"><span class="material-symbols-outlined">close</span></span>`; }
 
@@ -1021,20 +1019,14 @@ function renderReleases(f){
       <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">verified</span>Flight Release — Active Version</h3>
       <button class="btn btn-ghost btn-sm" onclick="toast('Downloading Flight Release… (simulation)')"><span class="material-symbols-outlined">download</span>Download</button>
     </div>
-    <div class="field-grid">
-      <div class="field-row"><span class="k">CFP No</span><span class="v">${d.cfpNo}</span></div>
-      <div class="field-row"><span class="k">Trip time</span><span class="v">${d.trip}</span></div>
-      <div class="field-row"><span class="k">From</span><span class="v">${f.dep}</span></div>
-      <div class="field-row"><span class="k">Alternate</span><span class="v">${d.alternate}</span></div>
-      <div class="field-row"><span class="k">To</span><span class="v">${f.arr}</span></div>
-      <div class="field-row"><span class="k">STD / STA</span><span class="v">${d.std} / ${d.sta}</span></div>
-      <div class="field-row"><span class="k">PIC</span><span class="v">CAPT Tran V.A</span></div>
-      <div class="field-row"><span class="k">ETD / ETA</span><span class="v">${f.etd} / ${f.eta}</span></div>
-      <div class="field-row"><span class="k">EDTO FLT</span><span class="v">${d.edtoFlt?d.edtoMins+' mins':'No'}</span></div>
-      <div class="field-row"><span class="k">EDTO Extra</span><span class="v">${d.edtoExtra}</span></div>
+
+    <!-- PIC Section (compact) -->
+    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:11.5px;font-weight:700;color:var(--text-muted);display:inline-flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">person</span>PIC</span>
+      <span style="font-size:12.5px;font-weight:700;color:var(--text-primary);">CAPT Tran V.A</span>
     </div>
 
-    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;">
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
       <span>WEIGHT AND FUEL — IN KGS</span>
       <span style="font-size:9.5px;font-weight:700;color:var(--gold);background:var(--gold-accent);padding:2px 7px;border-radius:4px;">OFP DATA</span>
     </div>
