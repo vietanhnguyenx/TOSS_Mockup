@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  MOCKUP v0.8 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
+  MOCKUP v0.9 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
   Scope: Function list v1.0, sheet "Function list", rows 185–191 (7 functions, SP3, September)
          plus "Change History" (A-8) and "Import" (A-9) added on top of the source rows.
 
@@ -193,6 +193,22 @@
                                  and will report against the previous period's values afterwards. If
                                  the deleted record was the fleet group's ONLY record, behaviour is
                                  unchanged from A-16 (confirmed allowed, 31/07/2026).
+    A-20 History table redraw  → *** REVISED (v0.9) — BA directive, 06/08/2026 ***
+                                 Change History table redrawn to the shared common layout used
+                                 across other TOSS modules: No. / Time / Action / Update details /
+                                 Updated by — replacing the previous 6-column layout (Timestamp /
+                                 Account / Action / Changed Item / Old Value / New Value). The
+                                 3 separate columns for field/old/new are merged into ONE "Update
+                                 details" cell, rendered as "[field]: [old] → [new]" (old value
+                                 struck through). Fields changed by the SAME action (same
+                                 timestamp + same action type + same account) are grouped into a
+                                 single row, one line per field — instead of one row per field —
+                                 matching the reference layout's "Sync" row pattern. Delete and
+                                 Update stay on separate rows even when they share a timestamp
+                                 (A-19's absorption pair): they are two different actions on two
+                                 different records, not multiple fields of one action. Filter bar
+                                 (From date / To date / Account / Action) is UNCHANGED — kept as
+                                 is, not redrawn to the reference layout's filter bar.
   ===========================================================================
   STATUS MODEL — *** REVISED (v0.5) — feedback from Đặng Văn Hiệp, 29/07/2026 ***
     >>> SUPERSEDED by A-18 (06/08/2026, see DECISION LOG above) — Scheduled was re-added.
@@ -234,7 +250,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.8)</title>
+  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.9)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
   <style>
     :root{
@@ -525,6 +541,10 @@
     .act-pill.mod{background:#e0f2fe;color:#0369a1}
     .act-pill.del{background:#fee2e2;color:#b91c1c}
     .field-pill{display:inline-flex;align-items:center;padding:3px 8px;background:#eef2f7;color:#334155;border-radius:4px;font-size:10.5px;font-weight:700;white-space:nowrap}
+    .his-no{color:var(--md-text-secondary);font-variant-numeric:tabular-nums}
+    .his-detail{display:flex;flex-direction:column;gap:4px}
+    .his-line{line-height:1.5}
+    .his-line b{color:#334155;font-weight:700;margin-right:2px}
 
     .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1e293b;color:#fff;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:1200;box-shadow:var(--md-elev3);display:flex;align-items:center;gap:8px}
     .toast .material-symbols-outlined{font-size:18px;color:#4ade80}
@@ -894,14 +914,13 @@
       </div>
 
       <div class="his-wrap">
-        <table class="his-table">
+        <table class="his-table" data-src="Decision A-20 (v0.9, 06/08/2026) — history table redrawn to the shared common standard used across other TOSS modules: No. / Time / Action / Update details / Updated by, replacing the previous 6-column layout (Timestamp / Account / Action / Changed Item / Old Value / New Value)">
           <thead><tr>
-            <th style="width:132px;">Timestamp</th>
-            <th style="width:96px;">Account</th>
+            <th style="width:42px;">No.</th>
+            <th style="width:132px;">Time</th>
             <th style="width:82px;">Action</th>
-            <th style="width:178px;">Changed Item</th>
-            <th>Old Value</th>
-            <th>New Value</th>
+            <th>Update details</th>
+            <th style="width:110px;">Updated by</th>
           </tr></thead>
           <tbody id="hisBody"></tbody>
         </table>
@@ -910,6 +929,7 @@
         Records changes at both <b>header level</b> (fleet group, effective period) and <b>matrix cell level</b> (Region × minute band).
         <b>Copy from previous period</b> (A-4), <b>auto-trim of the earlier record</b> (A-7) and
         <b>deletion of a Scheduled or Active period</b> (A-19 — logged on both the deleted record and the earlier record that absorbs its end date) are logged here as well.
+        When one action changes several fields at once, they are grouped into a single row — one line per field under <b>Update details</b> — instead of one row per field (A-20).
       </p>
     </div>
     <div class="modal-foot">
@@ -1466,13 +1486,17 @@ const HISTORY = [
   /* A-19 (06/08/2026, PA2): xóa 1 kỳ Scheduled/Active của fleet group -> kỳ liền trước HẤP THỤ
      đúng Effective To của kỳ vừa xóa (rỗng nếu xóa kỳ cuối chuỗi — như mẫu dưới đây; một ngày cụ
      thể nếu xóa kỳ giữa chuỗi). Cả hai vế đều phải ghi log, nên hiển thị 2 dòng cùng mốc giờ:
-     dòng Delete là nguyên nhân, dòng Update Effective To là hệ quả trên chính bản ghi này. */
+     dòng Delete là nguyên nhân, dòng Update Effective To là hệ quả trên chính bản ghi này. Đây
+     là 2 bản ghi KHÁC NHAU cùng lúc (Delete ≠ Update) nên KHÔNG gộp chung dòng dù trùng giờ —
+     xem A-20: gộp dòng chỉ áp dụng khi cùng giờ + cùng loại hành động + cùng người thao tác. */
   { dt:'06/08/2026 09:12:30', by:'hiep.dv', act:'del', obj:'Next period deleted (chain pop)',   old:'A320 / A321 · 01/09/2026 → Ongoing · 44 airports', nw:null },
   { dt:'06/08/2026 09:12:30', by:'hiep.dv', act:'mod', obj:'Effective To — reopened',           old:'31/08/2026',              nw:'Ongoing' },
   { dt:'29/07/2026 10:15:22', by:'quan.nm', act:'add', obj:'Import from file (A-9)',           old:null,                      nw:'4 airports imported from sample-taxi-time-import.xlsx' },
+  /* A-20: 3 ô ma trận đổi trong CÙNG một lần bấm Save -> cùng giờ + cùng account + cùng loại
+     hành động (mod) -> gộp thành 1 dòng "Update details" với 3 dòng con, minh họa quy tắc gộp. */
   { dt:'27/07/2026 14:32:10', by:'quan.nm', act:'mod', obj:'Domestic VN × 25&#39;',            old:null,                      nw:'+ VVNB' },
-  { dt:'27/07/2026 14:31:55', by:'quan.nm', act:'mod', obj:'Domestic VN × 30&#39;',            old:'VVNB',                    nw:null },
-  { dt:'27/07/2026 14:28:03', by:'quan.nm', act:'mod', obj:'NEA × 30&#39;',                    old:null,                      nw:'+ RJAA, + RJTT' },
+  { dt:'27/07/2026 14:32:10', by:'quan.nm', act:'mod', obj:'Domestic VN × 30&#39;',            old:'VVNB',                    nw:null },
+  { dt:'27/07/2026 14:32:10', by:'quan.nm', act:'mod', obj:'NEA × 30&#39;',                    old:null,                      nw:'+ RJAA, + RJTT' },
   { dt:'27/07/2026 14:20:47', by:'quan.nm', act:'add', obj:'Copy from previous period (A-4)',  old:null,                      nw:'43 airports from period 01/07/2026 → 31/08/2026' },
   { dt:'25/06/2026 09:15:41', by:'quan.nm', act:'mod', obj:'Effective To',                     old:'30/09/2026',              nw:'31/08/2026' },
   { dt:'25/06/2026 09:15:41', by:'quan.nm', act:'mod', obj:'Auto-trim earlier record (A-7)',   old:'01/02/2026 → 30/09/2026', nw:'01/02/2026 → 30/06/2026' },
@@ -1526,15 +1550,27 @@ function goPage(n){
   page = n; renderList();
 }
 
+/* A-20 (06/08/2026, v0.9): bảng lịch sử vẽ lại theo chuẩn common — No./Time/Action/Update
+   details/Updated by. Nhiều trường đổi trong CÙNG một hành động (cùng giờ + cùng account + cùng
+   loại hành động add/mod/del) được GOM vào 1 dòng, mỗi trường là 1 dòng con trong ô "Update
+   details" — thay cho kiểu cũ mỗi trường 1 dòng bảng riêng. */
 function renderHistory(){
-  document.getElementById('hisBody').innerHTML = HISTORY.map(h=>`
+  const groups = [];
+  const byKey = new Map();
+  HISTORY.forEach(h => {
+    const key = h.dt + '|' + h.act + '|' + h.by;
+    let g = byKey.get(key);
+    if(!g){ g = { dt:h.dt, act:h.act, by:h.by, fields:[] }; byKey.set(key, g); groups.push(g); }
+    g.fields.push(h);
+  });
+  document.getElementById('hisBody').innerHTML = groups.map((g,i)=>`
     <tr>
-      <td class="cell-dt">${h.dt}</td>
-      <td style="font-weight:600;">${h.by}</td>
-      <td><span class="act-pill ${h.act}">${ACT_LABEL[h.act]}</span></td>
-      <td><span class="field-pill">${h.obj}</span></td>
-      <td>${h.old ? '<span class="val-old">'+h.old+'</span>' : '<span class="val-nil">—</span>'}</td>
-      <td>${h.nw  ? '<span class="val-new">'+h.nw+'</span>'  : '<span class="val-nil">— (removed)</span>'}</td>
+      <td class="his-no">${i+1}</td>
+      <td class="cell-dt">${g.dt}</td>
+      <td><span class="act-pill ${g.act}">${ACT_LABEL[g.act]}</span></td>
+      <td><div class="his-detail">${g.fields.map(f=>`
+        <div class="his-line"><b>${f.obj}:</b> ${f.old ? '<span class="val-old">'+f.old+'</span>' : '<span class="val-nil">—</span>'} → ${f.nw ? '<span class="val-new">'+f.nw+'</span>' : '<span class="val-nil">— (removed)</span>'}</div>`).join('')}</div></td>
+      <td style="font-weight:600;">${g.by}</td>
     </tr>`).join('');
 }
 
