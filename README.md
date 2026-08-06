@@ -8,7 +8,7 @@ UI mockups for the **TOSS** (Total Operations Steering System) project, publishe
 
 | Screen | Module | Version | Link |
 |---|---|---|---|
-| Taxi Time | Data Maintenance › Airport Master Data | v0.4 | [taxi-time.html](https://vietanhnguyenx.github.io/TOSS_Mockup/taxi-time.html) |
+| Taxi Time | Data Maintenance › Airport Master Data | v0.8 | [taxi-time.html](https://vietanhnguyenx.github.io/TOSS_Mockup/taxi-time.html) |
 
 ## Notes
 

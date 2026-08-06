@@ -1,15 +1,240 @@
 <!DOCTYPE html>
 <!--
-  TOSS — Data Maintenance / Airport Master Data › TAXI TIME (mockup v0.7)
-  Interactive click-through mockup for review. All data shown is SAMPLE DATA,
-  not real operational data. Layout and colours are a proposal, pending
-  final BA/UI approval.
+  MOCKUP v0.8 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
+  Scope: Function list v1.0, sheet "Function list", rows 185–191 (7 functions, SP3, September)
+         plus "Change History" (A-8) and "Import" (A-9) added on top of the source rows.
+
+  ===========================================================================
+  DECISION LOG — agreed 28/07/2026 (BA owner of the Taxi time scope)
+  ===========================================================================
+    A-1  Minute columns        → 10 FIXED BANDS (5,10,…,50). Users cannot add bands.
+    A-2  Assigning airports    → MULTI-SELECT (searchable dropdown). No drag & drop.
+    A-2b Moving airports       → CLICK-TO-SELECT, CLICK-TO-PLACE:
+                                 click an airport chip → click the target cell in the same
+                                 Region → the airport moves there.
+                                 Rationale: once "Copy from previous period" was introduced
+                                 (A-4), the matrix opens FULL, so the dominant action
+                                 shifted from "assign new" to "move between cells" —
+                                 multi-select costs 4 steps per move. Click-to-place was
+                                 chosen over drag & drop because the 12-column matrix ALWAYS
+                                 scrolls horizontally: drag & drop would need edge auto-scroll
+                                 (error-prone, hard to test), whereas click-to-place lets the
+                                 user release and scroll between the two clicks. It is also
+                                 keyboard-operable.
+                                 Constraint: moves are allowed only WITHIN the same Region.
+    A-3  Duplicate airports    → BLOCKED. An airport belongs to exactly one cell per record.
+    A-4  Unassigned airports   → "COPY FROM PREVIOUS PERIOD" button loads every value of the
+                                 previous period into the new record as REAL DATA; the user
+                                 then edits only the deltas. Airports still unassigned at save
+                                 time have NO value in TOSS; TOSS pushes nothing to Lido and
+                                 Lido keeps using its own figure. The system warns in the
+                                 save-confirmation dialog. Data direction: TOSS → Lido
+                                 (BR-160; KS 11/06 §14 / FUNC-418-05).
+    A-5  Airport changes Region→ NOT HANDLED in this phase.
+    A-6  taxi-out / taxi-in    → A SINGLE "Taxi time" value; in/out not distinguished.
+                                 (Note: source row 187 reads "Taxiout time" → re-confirm at review.)
+    A-7  Period chaining       → *** REVISED (v0.5) — feedback from Đặng Văn Hiệp, 29/07/2026 ***
+                                 Superseded rule, unifying the former "overlap" and "gap" cases
+                                 into ONE rule: for a given fleet group, every period must
+                                 dovetail exactly with the next — "From của lần sau gối liền
+                                 kề To của lần trước" (the next period's Effective From must be
+                                 exactly one day after the previous period's Effective To, no
+                                 overlap and no gap). Reason given: downstream reports must be
+                                 able to look up a value for ANY date without a hole in the
+                                 timeline ("báo cáo của mình rút ra nó đảm bảo tính liên tục").
+                                 Enforced by construction: creating a new record for a fleet
+                                 group AUTO-CLOSES that fleet group's current active record on
+                                 (new record's Effective From − 1 day), shown in a confirmation
+                                 dialog before saving. This single mechanism now covers what
+                                 used to be two separate cases (trim on overlap / extend on gap).
+    A-8  BR-443 scope          → Only FUNC-418-06 (Change History) is added.
+                                 FUNC-418-02/03/04 are out of scope → NO approval state machine.
+    A-10 Add-airport affordance→ *** ADDED (v0.6) — CUSTOMER feedback, 29/07/2026 ***
+                                 "+Add Airport xuất hiện nhiều gây rối. Cho một dấu cộng (+) là
+                                 được. Với dấu cộng đó luôn căn ở đáy ô được ko?"
+                                 The full "+ Add airport" caption repeated in up to ~50 visible
+                                 cells at once was too noisy at ~98px column width, and the button
+                                 sat directly after the last chip so it landed at a different
+                                 height in every column of a row. Reduced to a compact + icon
+                                 (tooltip "Add airport to the N minute band" preserves the meaning)
+                                 and pinned to the bottom of the cell. Implementation note: the
+                                 <td> must stay a table-cell for the matrix columns to keep
+                                 aligning with the sticky header, so the vertical layout is done
+                                 by an inner .cell-inner flex column + margin-top:auto on the
+                                 button, not by making the <td> itself a flex container.
+    A-11 Export from Details   → *** ADDED (v0.6) — CUSTOMER feedback, 29/07/2026 ***
+                                 "Cần export Excel ở màn này với 2 dạng: 1 dạng như hiển thị.
+                                 1 dạng bảng gồm các cột sân bay, Region, Taxi Time."
+                                 The Details screen previously had NO export at all — the only
+                                 Export button lived on the list screen and exports the LIST OF
+                                 RECORDS, not one record's matrix, which is a different thing.
+                                 Added two buttons to the Details footer:
+                                   • "As displayed (matrix)" — mirrors the Region × minute-band grid
+                                   • "Flat list" — one row per airport: Airport | Region | Taxi Time
+                                 CONFIRMED with the customer 29/07/2026: these two buttons are wanted
+                                 on the Details screen ONLY — NOT on the Create/Edit screen.
+                                 Sample output files produced and reviewed (same folder as this mockup):
+                                   • TaxiTime_matrix_A350-B787-Wide-body_01092026.xlsx
+                                   • TaxiTime_list_A350-B787-Wide-body_01092026.xlsx
+                                 "As displayed" reproduces the full grid including empty cells, and adds
+                                 an "Unassigned" column so the 44th airport is still accounted for.
+                                 Both carry a metadata header (fleet group, period, counts, export time).
+    A-12 Import template       → *** ADDED (v0.6) — CUSTOMER request, 29/07/2026 ***
+                                 Sample template produced for review: taxi-time-import-template.xlsx
+                                 (same folder as this mockup). Two columns only — Airport Code and
+                                 Taxi time (min) — because Fleet Group and Effective From are chosen
+                                 on screen, and Region is derived from Airport Master Data [BR-432]
+                                 rather than re-typed (one less column is one less way to get it wrong).
+                                 The template also carries the validation rules as text, cell comments
+                                 on both headers, and an Excel dropdown on the Taxi time column limited
+                                 to the 10 fixed bands (A-1) so an invalid value cannot be typed in.
+    A-9  Import                → *** ADDED (v0.5) — feedback from Đặng Văn Hiệp, 29/07/2026 ***
+                                 "Bổ sung thêm cái import" + "Template import". A 2-column
+                                 template (Airport Code, Taxi time) is imported for one fleet
+                                 group at a time. Import always CREATES A NEW chained period
+                                 (same auto-close mechanism as A-7 — see Q2 below), matching the
+                                 pattern already used by Destination Alternate (row 193) and Fuel
+                                 Pricing (row 213). Rows are validated before import: unknown
+                                 airport code, value outside the 10 fixed bands, and duplicate
+                                 airport within the file are flagged and SKIPPED; valid rows are
+                                 imported, matching the non-blocking style already used for A-4's
+                                 unassigned-airport warning.
+    A-13 Dynamic region rows   → *** ADDED (v0.7) — feedback from Đặng Văn Hiệp, 31/07/2026 ***
+                                 "Cái bảng thêm mới này sẽ cho phép thêm bớt row chọn region,
+                                 nghĩa là mình không cố định cái column region. Và tất cả các
+                                 column taxi time bên cạnh sẽ chỉ cho chọn các airport thuộc
+                                 region đó" (the second half is A-2's existing region-scoped
+                                 picker rule, unchanged). Previously the matrix always rendered
+                                 all 5 Regions as fixed rows, even ones with zero airports
+                                 assigned. Now: a NEW record starts with ZERO region rows; the
+                                 user adds rows one at a time via a "+ Add region" selector, which
+                                 only offers Regions not already added (a Region cannot appear
+                                 twice). Each row can be removed via a trash icon; if it still
+                                 holds assigned airports, a confirmation popup lists them, because
+                                 removing the row un-shows them — they still count as "unassigned"
+                                 in the assign-counter and in the save-confirmation warning (A-4),
+                                 so the gap stays visible rather than silent. "Copy from previous
+                                 period" (A-4) now copies the SET OF REGION ROWS from the previous
+                                 period as well, not only the cell values inside them.
+    A-14 ICAO instead of IATA  → *** CHANGED (v0.7) — feedback from Đặng Văn Hiệp, 31/07/2026 ***
+                                 "lưu ý những chỗ nào chọn airport thì chọn mã ICAO, mã IATA ít
+                                 dùng. Hiển thị cũng hiển thị ưu tiên mã ICAO." Interpreted as
+                                 DROP IATA, don't show both (confirmed 31/07/2026). Every sample
+                                 airport code switched from IATA (3 letters) to ICAO (4 letters):
+                                 matrix chips, picker, history log, list-screen sample rows, and
+                                 the three sample .xlsx files.
+    A-15 Remove list export    → *** REMOVED (v0.7) — feedback from Đặng Văn Hiệp, 31/07/2026 ***
+                                 "Chỗ taxi time thì cho kết xuất bên trong màn chi tiết thôi. Mình
+                                 không kết xuất danh sách bên ngoài, không có giá trị sử dụng."
+                                 The list screen's "Export to Excel" toolbar button (exporting ALL
+                                 records as a flat list) is REMOVED. The two export actions on the
+                                 Details screen (A-11) — "As displayed (matrix)" and "Flat list",
+                                 both scoped to ONE record — are the only export left on this
+                                 screen. Change History (A-8) keeps its own separate Export Excel
+                                 button; that one was not part of this feedback.
+    A-16 Delete rule reversed  → *** CHANGED (v0.7) — feedback from Đặng Văn Hiệp, 31/07/2026 ***
+                                 "Cái xóa 1 bản ghi taxi time thì sẽ chỉ cho xóa cái bản ghi đang
+                                 active … khi xóa 1 bản ghi taxi của 1 cate thì sẽ update bản ghi
+                                 trước đó lại thành active … nghĩa là cái 'to' của nó chưa có … Em
+                                 hiểu kiểu như là 1 chuỗi số 1-2-3-4-5 thì mình phải xóa từ 5 về 1
+                                 để đảm bảo không bị lủng." REVERSES this mockup's previous
+                                 BA-authored placeholder (which blocked deleting the Active record
+                                 and allowed deleting Expired ones — the opposite rule). Now: ONLY
+                                 the Active record (Effective To = Ongoing) of a fleet group may be
+                                 deleted; the Delete action is disabled for Expired records. Deleting
+                                 the Active record re-opens the record immediately before it (by
+                                 Effective From) — its Effective To is cleared back to Ongoing —
+                                 which becomes the new Active record. If the deleted record was the
+                                 fleet group's ONLY record, the fleet group simply has no record left
+                                 (confirmed allowed, 31/07/2026).
+                                 >>> Wording SUPERSEDED by A-17, then A-19, below — both keep the
+                                 >>> "only record left" outcome unchanged.
+    A-17 Delete rule refined   → *** REVISED (v0.8) — BA follow-up, 06/08/2026 ***
+                                 A-16's wording ("only the Active record") turned ambiguous once a
+                                 fleet group's last record could show as Scheduled instead of Active
+                                 (see A-18 below): "Active" and "last record of the chain" are NOT
+                                 always the same record. Re-worded strictly by chain position: ONLY
+                                 the LAST record of a fleet group's chain (Effective To empty) may be
+                                 deleted, whatever status it currently displays; Expired records stay
+                                 non-deletable. Behaves exactly like A-16 whenever there is no
+                                 future-dated record. >>> SUPERSEDED by A-19 below.
+    A-18 Scheduled status      → *** REVISED (v0.8) — BA follow-up, 06/08/2026 ***
+                                 Re-adds a third status, SUPERSEDING the STATUS MODEL note further
+                                 below (v0.5, 29/07/2026, which had removed it). Trigger: a record
+                                 created with a future Effective From must no longer read as ACTIVE
+                                 immediately — the list needs to tell "in force now" apart from
+                                 "declared ahead" (needed to pre-declare Tết / summer-peak periods
+                                 in advance). Status is DERIVED at render time from today's date,
+                                 never stored: Active = Effective From ≤ today ≤ Effective To (or
+                                 To empty) · Scheduled = Effective From > today · Expired =
+                                 Effective To < today. No background job needed — a record flips to
+                                 Active on its own once its From date arrives.
+    A-19 Delete rule — PA2     → *** REVISED (v0.8) — BA follow-up, 06/08/2026 ***
+                                 "đáng lẽ phải cho xóa cả bản active và scheduled chứ nhỉ? scheduled
+                                 thì tạo trước xóa có ảnh hưởng j đâu. còn active thì cứ như rules
+                                 cũ?" A-17's "last record of the chain only" test was still too
+                                 strict: it happened to allow deleting an Active record only when
+                                 that record was ALSO the chain tail, with no rule at all for
+                                 deleting a Scheduled/Active record in the MIDDLE of the chain (a
+                                 later Scheduled record already exists) — and naively reopening the
+                                 previous record to Ongoing in that case would create an overlap.
+                                 Adopted PA2, decoupling deletability from chain position: deletable
+                                 = Status is Scheduled or Active; Status = Expired stays
+                                 non-deletable (rewriting a closed period would falsify the taxi
+                                 times already applied to flights that already flew under it).
+                                 ABSORPTION RULE replaces "reopen previous record to Ongoing": the
+                                 record immediately before the deleted one (by Effective From) takes
+                                 over the deleted record's exact Effective To — Ongoing if a
+                                 chain-tail record was deleted, a specific date if a middle-of-chain
+                                 record was deleted — so the chain never gains a gap or an overlap
+                                 either way, and its Effective From never changes. Deleting an
+                                 ACTIVE record additionally warns the user that flights already flown
+                                 between its Effective From and today used this period's taxi times
+                                 and will report against the previous period's values afterwards. If
+                                 the deleted record was the fleet group's ONLY record, behaviour is
+                                 unchanged from A-16 (confirmed allowed, 31/07/2026).
+  ===========================================================================
+  STATUS MODEL — *** REVISED (v0.5) — feedback from Đặng Văn Hiệp, 29/07/2026 ***
+    >>> SUPERSEDED by A-18 (06/08/2026, see DECISION LOG above) — Scheduled was re-added.
+    >>> Kept here for history only; do not implement against this block.
+    Removed "Scheduled". Only two statuses remain: ACTIVE / EXPIRED.
+    "Status chỉ cần lấy cái đã hết hiệu lực và đang hiệu lực thôi là đc" +
+    "Cái đang hiệu lực là mới nhất của 1 cate tàu."
+    Implemented literally: ACTIVE = the one record per fleet group whose Effective To is
+    open-ended (null) — by construction (A-7) there is always exactly one such record per
+    fleet group, and it is always the most recently created one. Status is therefore DERIVED
+    from `to === null`, not computed against today's date. Its Effective To field is LOCKED
+    (no manual end date) — it only closes when a newer record is created for that fleet group.
+  ===========================================================================
+  STILL OPEN — to be confirmed at review:
+    • Is FUNC-418-05 (push Standard Taxi Time to Lido) in scope for SP3?
+      If NOT, Lido uses its own figure for EVERY airport and this catalogue is
+      reference-only in SP3.
+    • Delete behaviour (row 190) — RESOLVED. WHICH record can be deleted, and soft vs. hard
+      delete, are both decided — see A-19 (06/08/2026, PA2) in DECISION LOG above.
+    • Q1 — can a future-dated period be created in advance (e.g. for Tết)? Implemented as
+      YES: a record with a future Effective From is created normally and shows status
+      Scheduled (A-18) until that date arrives, when it flips to Active on its own — no
+      background job needed. Flag for confirmation with Đặng Văn Hiệp.
+    • Q2 — does Import overwrite the current active record, or create a new period? Implemented
+      as: Import ALWAYS creates a new chained period, same as manual "New Record" (A-9). Flag
+      for confirmation.
+  ===========================================================================
+
+  CLAUDE.md §0 COMPLIANCE: every field/label cites its source via data-src ·
+                ALL FIGURES ARE SAMPLE DATA · LAYOUT & COLOURS ARE A PROPOSAL
+                PENDING BA/UI APPROVAL.
+
+  SOURCES: [FL-185..191] Function list rows 185–191, 193, 213 · [BR-443][BR-432] TOSS.DM.ALL.BRD.v0.6 ·
+           [BR-160] TOSS.FD.ALL.BRD.v0.8 · [CAT3] SRS-TOSS-PH4-II-1 §2.3 · [KS14] KS 11/06 §14
+  Terminology per TRANSLATION-TABLE-v3-VI-EN.md
+  Design system inherited from: mockup/Aircraft Catalog Management-v4-en.html (v4)
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.7)</title>
+  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.8)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
   <style>
     :root{
@@ -122,8 +347,10 @@
 
     .table-container{background:#fff;border-radius:var(--md-radius);border:1px solid var(--md-outline-variant);overflow-x:auto;box-shadow:var(--md-elev1)}
     .user-table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}
-    .user-table th{background:#f1f5f9;color:var(--md-text-secondary);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--md-outline-variant);white-space:nowrap;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px}
-    .user-table td{padding:10px 12px;border-bottom:1px solid var(--md-outline-variant);vertical-align:middle;white-space:nowrap}
+    /* A-18: padding ngang giảm 12px -> 9px để bù phần cột Status nở ra vì nhãn SCHEDULED,
+       giữ đủ chỗ cho 4 nút ở cột Actions mà không phải cuộn ngang. */
+    .user-table th{background:#f1f5f9;color:var(--md-text-secondary);font-weight:600;padding:10px 9px;border-bottom:1px solid var(--md-outline-variant);white-space:nowrap;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px}
+    .user-table td{padding:10px 9px;border-bottom:1px solid var(--md-outline-variant);vertical-align:middle;white-space:nowrap}
     .user-table tbody tr{cursor:pointer;transition:background .15s}
     .user-table tbody tr:hover{background:#f8fafc}
     .row-actions{display:flex;gap:2px}
@@ -135,8 +362,11 @@
     .miss-tag{display:inline-flex;align-items:center;gap:3px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:800;margin-left:6px}
     .miss-tag .material-symbols-outlined{font-size:12px}
 
-    .status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+    /* A-18: nhãn SCHEDULED dài hơn ACTIVE/EXPIRED nên nới cột Status, đẩy cột Actions
+       tràn khỏi khung. Thu gọn padding + letter-spacing để 4 nút thao tác vẫn nằm trọn. */
+    .status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;white-space:nowrap}
     .status-badge.active{background:#d1fae5;color:#047857}
+    .status-badge.scheduled{background:#dbeafe;color:#1d4ed8}   /* A-18: declared ahead, not yet in force */
     .status-badge.expired{background:#f1f5f9;color:#475569}
     .ongoing-tag{color:var(--toss-primary);font-weight:700;font-style:italic}
 
@@ -419,9 +649,10 @@
             </div>
             <div class="filter-item">
               <label for="fStatus">Status</label>
-              <select id="fStatus" class="filter-input filter-select" data-mat="mat-select" data-src="Decision A-7 (v0.5) — status is DERIVED from the effective-period chain: Active = the one open-ended record per fleet group">
+              <select id="fStatus" class="filter-input filter-select" data-mat="mat-select" data-src="Decision A-18 (06/08/2026) — status is DERIVED by comparing the effective period with today: Active = in force now · Scheduled = declared ahead · Expired = ended">
                 <option value="">All</option>
                 <option>Active</option>
+                <option>Scheduled</option>
                 <option>Expired</option>
               </select>
             </div>
@@ -437,7 +668,7 @@
           <div class="list-title-wrap">
             <h2>Taxi Time Records</h2>
             <button class="refresh-btn" title="Refresh" onclick="toast('List refreshed')"><span class="material-symbols-outlined">refresh</span></button>
-            <span style="font-size:11.5px;color:var(--md-text-secondary);">Sorted with the most recent record first</span>
+            <span style="font-size:11.5px;color:var(--md-text-secondary);">Sorted with the most recent record first <span style="color:var(--md-text-muted)">[FL-185]</span></span>
           </div>
           <div class="list-actions">
             <button class="btn btn-ghost" onclick="openImport()" data-mat="mat-stroked-button" data-src="Decision A-9 (v0.5) — Import, added per feedback; template pattern per rows 193/213">
@@ -677,7 +908,8 @@
       </div>
       <p style="font-size:11.5px;color:var(--md-text-secondary);margin-top:9px;line-height:1.55;">
         Records changes at both <b>header level</b> (fleet group, effective period) and <b>matrix cell level</b> (Region × minute band).
-        <b>Copy from previous period</b> (A-4) and <b>auto-trim of the earlier record</b> (A-7) are logged here as well.
+        <b>Copy from previous period</b> (A-4), <b>auto-trim of the earlier record</b> (A-7) and
+        <b>deletion of a Scheduled or Active period</b> (A-19 — logged on both the deleted record and the earlier record that absorbs its end date) are logged here as well.
       </p>
     </div>
     <div class="modal-foot">
@@ -698,12 +930,12 @@
     <div class="modal-body">
       <p style="font-size:13.5px;line-height:1.65;">Delete the taxi time record for fleet group <b id="delName">—</b>, effective <b id="delValid">—</b>?</p>
 
-      <div class="cf-block" id="delPromoteNote" data-src="Decision A-16 (v0.7) — feedback from Đặng Văn Hiệp, 31/07/2026">
-        <div class="cf-head info"><span class="material-symbols-outlined">arrow_upward</span>Previous record becomes Active</div>
+      <div class="cf-block" id="delPromoteNote" data-src="Decision A-19 (06/08/2026, PA2) — absorption rule: the record immediately before the deleted one takes over its exact Effective To, keeping the chain (BR-TAXI-01) continuous whether the deleted record was the chain tail or in the middle of the chain">
+        <div class="cf-head info"><span class="material-symbols-outlined">arrow_upward</span>Previous period absorbs this one</div>
         <div class="cf-body">
-          Only the <b>Active</b> record of a fleet group may be deleted. To keep the chain of effective periods
-          continuous (BR-TAXI-01), deleting it re-opens the record immediately before it, which becomes the new
-          Active period.
+          To keep the chain of effective periods continuous (BR-TAXI-01), the period immediately before
+          this one <b>takes over its end date</b> — so it covers the stretch being removed and no gap forms.
+          Its <b>Effective From stays unchanged</b>; only the end date moves.
           <table>
             <tr><th>Record</th><th>Effective period</th></tr>
             <tr><td>Before deleting</td><td class="val-old" id="delPromoteFrom">—</td></tr>
@@ -712,11 +944,28 @@
         </div>
       </div>
 
-      <div class="cf-block" id="delNoPromoteNote" style="display:none;">
-        <div class="cf-head warn"><span class="material-symbols-outlined">info</span>No record left afterwards</div>
-        <div class="cf-body">This is the only record for this fleet group. After deleting, the fleet group will have no Standard Taxi Time record at all (confirmed 31/07/2026).</div>
+      <!-- A-19 (06/08/2026): xóa kỳ ĐANG hiệu lực làm các chuyến ĐÃ BAY trong kỳ đó chuyển
+           sang dùng giá trị của kỳ trước -> phải cảnh báo rõ khoảng ngày bị ảnh hưởng. -->
+      <div class="cf-block" id="delActiveWarn" style="display:none;" data-src="Decision A-19 (06/08/2026) — PA2: cho xóa kỳ Active nhưng phải cảnh báo ảnh hưởng tới chuyến đã bay">
+        <div class="cf-head warn"><span class="material-symbols-outlined">warning</span>This period is in force today</div>
+        <div class="cf-body">
+          Flights from <b id="delActiveFrom">—</b> up to today already used this period's taxi times.
+          After deleting, that stretch falls back to the previous period's values — reports for those
+          flights will change accordingly.
+        </div>
       </div>
 
+      <div class="cf-block" id="delNoPromoteNote" style="display:none;">
+        <div class="cf-head warn"><span class="material-symbols-outlined">info</span><span id="delNoPromoteTitle">No record left afterwards</span></div>
+        <div class="cf-body" id="delNoPromoteBody">This is the only record for this fleet group. After deleting, the fleet group will have no Standard Taxi Time record at all (confirmed 31/07/2026).</div>
+      </div>
+
+      <!-- A-18 (06/08/2026): điểm mở soft/hard delete ĐÃ CHỐT — dùng xóa mềm theo quy chuẩn
+           nền tảng dùng chung của TOSS, nên gỡ ô "TO BE CONFIRMED" cũ và thay bằng ghi chú. -->
+      <p style="font-size:11px;color:var(--md-text-secondary);margin-top:12px;line-height:1.55;font-style:italic;">
+        Soft delete: the record is flagged and hidden from the list, not physically removed — past flights can
+        still be traced. The deletion is written to the change history, on both this record and the one reopened.
+      </p>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('mdDelete')">Cancel</button>
@@ -1188,15 +1437,38 @@ const ROWS = [
   { cat:NB, regions:5, aps:41, miss:3, from:'01/10/2025', to:'19/01/2026',  upd:'25/09/2025 10:55', by:'Tran Thu Ha'      },
   { cat:WB, regions:5, aps:43, miss:1, from:'01/10/2025', to:'19/01/2026',  upd:'25/09/2025 10:41', by:'Tran Thu Ha'      }
 ];
-const ST_LABEL = { active:'Active', expired:'Expired' };
-/* Status is DERIVED, not stored: the record with no end date is the fleet group's active one (A-7 v0.5) */
-function statusOf(r){ return r.to === null ? 'active' : 'expired'; }
+const ST_LABEL = { active:'Active', scheduled:'Scheduled', expired:'Expired' };
+
+/* A-18 (06/08/2026) — THREE statuses, not two.
+   Pinned "today" so the demo is deterministic for reviewers; production compares with the
+   real current date (UTC). Status is DERIVED at render time, never stored — no background
+   job needed, a record flips to Active on its own once its From date arrives. */
+const TODAY = '06/08/2026';
+function dmy(s){ const p = s.split('/'); return +(p[2] + p[1] + p[0]); }   /* dd/MM/yyyy -> 20260806 */
+function statusOf(r){
+  const t = dmy(TODAY);
+  if(dmy(r.from) > t)                     return 'scheduled';  /* declared ahead, not yet in force */
+  if(r.to === null || dmy(r.to) >= t)     return 'active';     /* in force today — this is what Lido uses */
+  return 'expired';
+}
 function toLabel(r){ return r.to === null ? 'Ongoing' : r.to; }
-/* The record currently active for a fleet group, if any */
-function currentActiveOf(cat){ return ROWS.find(r => r.cat === cat && r.to === null) || null; }
+
+/* LAST record of a fleet group's chain = the one with no end date.
+   DELIBERATELY NOT called "active": since A-18 a chain-tail record whose From is still in the
+   future shows as Scheduled, not Active. Drives chain linking (A-7) and, prior to A-19, also
+   decided which record could be deleted (A-16/A-17) — that link was cut by A-19 (PA2): deletion
+   eligibility is now Status-based (Scheduled/Active), not chain position. Still used to find the
+   one record per fleet group whose Effective To is open-ended. */
+function lastInChainOf(cat){ return ROWS.find(r => r.cat === cat && r.to === null) || null; }
 let page = 1;
 
 const HISTORY = [
+  /* A-19 (06/08/2026, PA2): xóa 1 kỳ Scheduled/Active của fleet group -> kỳ liền trước HẤP THỤ
+     đúng Effective To của kỳ vừa xóa (rỗng nếu xóa kỳ cuối chuỗi — như mẫu dưới đây; một ngày cụ
+     thể nếu xóa kỳ giữa chuỗi). Cả hai vế đều phải ghi log, nên hiển thị 2 dòng cùng mốc giờ:
+     dòng Delete là nguyên nhân, dòng Update Effective To là hệ quả trên chính bản ghi này. */
+  { dt:'06/08/2026 09:12:30', by:'hiep.dv', act:'del', obj:'Next period deleted (chain pop)',   old:'A320 / A321 · 01/09/2026 → Ongoing · 44 airports', nw:null },
+  { dt:'06/08/2026 09:12:30', by:'hiep.dv', act:'mod', obj:'Effective To — reopened',           old:'31/08/2026',              nw:'Ongoing' },
   { dt:'29/07/2026 10:15:22', by:'quan.nm', act:'add', obj:'Import from file (A-9)',           old:null,                      nw:'4 airports imported from sample-taxi-time-import.xlsx' },
   { dt:'27/07/2026 14:32:10', by:'quan.nm', act:'mod', obj:'Domestic VN × 25&#39;',            old:null,                      nw:'+ VVNB' },
   { dt:'27/07/2026 14:31:55', by:'quan.nm', act:'mod', obj:'Domestic VN × 30&#39;',            old:'VVNB',                    nw:null },
@@ -1217,6 +1489,9 @@ function renderList(){
   document.getElementById('listBody').innerHTML = slice.map((r,k)=>{
     const i = (page-1)*size + k;
     const st = statusOf(r);
+    /* A-19 (PA2): deletable = Scheduled hoặc Active. Chặn Expired vì xóa kỳ đã đóng sẽ viết
+       lại giá trị taxi time của các chuyến đã bay xong. Chuỗi vẫn liền nhờ quy tắc hấp thụ. */
+    const isLast = st !== 'expired';
     return `<tr onclick="openDetail(${i})">
       <td>${i+1}</td>
       <td style="font-weight:600;color:var(--vna-navy);">${r.cat}</td>
@@ -1232,7 +1507,7 @@ function renderList(){
           <button class="icon-btn" title="View details" onclick="openDetail(${i})"><span class="material-symbols-outlined">visibility</span></button>
           <button class="icon-btn" title="Edit" onclick="openForm('edit',${i})"><span class="material-symbols-outlined">edit</span></button>
           <button class="icon-btn" title="Change history" onclick="openHistory(${i})"><span class="material-symbols-outlined">history</span></button>
-          <button class="icon-btn danger" title="${st==='active' ? 'Delete' : 'Only the active record of a fleet group can be deleted (A-16)'}" ${st!=='active' ? 'disabled' : ''} onclick="openDelete(${i})"><span class="material-symbols-outlined">delete</span></button>
+          <button class="icon-btn danger" title="${isLast ? 'Delete' : 'Expired periods cannot be deleted — that would rewrite the taxi times already applied to past flights (A-19)'}" ${isLast ? '' : 'disabled'} onclick="openDelete(${i})"><span class="material-symbols-outlined">delete</span></button>
         </div>
       </td>
     </tr>`;
@@ -1335,7 +1610,7 @@ function updateChainHint(){
     return;
   }
 
-  const active = currentActiveOf(cat);
+  const active = lastInChainOf(cat);
   if(!active){
     txtEl.innerHTML = 'No existing period for this fleet group yet — this will become its first record.';
     return;
@@ -1358,7 +1633,7 @@ function trySave(){
 
   let chainRecord = null;
   if(!isEditMode){
-    const active = currentActiveOf(cat);
+    const active = lastInChainOf(cat);
     if(active){
       if(new Date(from) <= new Date(isoFromDmy(active.from))){
         toast('Effective From must be later than ' + active.from + ' for ' + cat);
@@ -1430,7 +1705,7 @@ function updateImportHint(){
   const txtEl = document.getElementById('impChainHintTxt');
   hintEl.classList.remove('err');
 
-  const active = currentActiveOf(cat);
+  const active = lastInChainOf(cat);
   if(!active){
     txtEl.innerHTML = 'No existing period for this fleet group yet — this import will become its first record.';
     return;
@@ -1488,7 +1763,7 @@ function confirmImport(){
   const cat  = document.getElementById('impCat3').value;
   const from = document.getElementById('impFrom').value;
   if(!from){ toast('Effective From is required'); return; }
-  const active = currentActiveOf(cat);
+  const active = lastInChainOf(cat);
   if(active && new Date(from) <= new Date(isoFromDmy(active.from))){
     toast('Effective From must be later than ' + active.from + ' for ' + cat);
     updateImportHint();
@@ -1533,10 +1808,13 @@ function openHistory(idx){
   renderHistory();
   openModal('mdHistory');
 }
-/* ---------- A-16 (v0.7): only the Active record may be deleted; the previous record (by
-   Effective From) is promoted back to Active, since the fleet group's chain (BR-TAXI-01) always
-   needs exactly one open-ended record — "như là 1 chuỗi số 1-2-3-4-5 thì mình phải xóa từ 5 về 1
-   để đảm bảo không bị lủng" (Đặng Văn Hiệp, 31/07/2026). ---------- */
+/* ---------- A-19 (v0.8, PA2, 06/08/2026): deletable = Status is Scheduled or Active; Status =
+   Expired is blocked (rewriting a closed period would falsify taxi times already applied to
+   flights that already flew). ABSORPTION RULE: the record immediately before the deleted one (by
+   Effective From) takes over the deleted record's exact Effective To, keeping the fleet group's
+   chain (BR-TAXI-01) continuous whether the deleted record was the chain tail or in the middle of
+   the chain — generalises A-16's "chỉ xóa Active, mở lại bản ghi trước" (Đặng Văn Hiệp,
+   31/07/2026) and A-17's "chỉ xóa kỳ cuối chuỗi" (06/08/2026). ---------- */
 let delRowIdx = null;
 function previousRecordOf(cat, idx){
   const cur = ROWS[idx];
@@ -1550,29 +1828,64 @@ function previousRecordOf(cat, idx){
 }
 function openDelete(idx){
   const r = ROWS[idx];
-  if(statusOf(r) !== 'active'){ toast('Only the active record of a fleet group can be deleted'); return; }
+  const st = statusOf(r);
+  /* A-19 (PA2, 06/08/2026): cho xóa kỳ Scheduled và Active, CHẶN kỳ Expired.
+     Lý do chặn Expired: kỳ đã đóng thì mọi chuyến trong kỳ đều đã bay xong; xóa nó chỉ để
+     dọn dẹp nhưng đánh đổi bằng việc viết lại giá trị taxi time của toàn bộ chuyến quá khứ. */
+  if(st === 'expired'){
+    toast('Expired periods cannot be deleted — that would rewrite the taxi times already applied to past flights');
+    return;
+  }
   delRowIdx = idx;
   document.getElementById('delName').textContent  = r.cat;
   document.getElementById('delValid').textContent = r.from + ' → ' + toLabel(r);
+
+  /* Cảnh báo chỉ khi xóa kỳ ĐANG hiệu lực — kỳ Scheduled chưa tới ngày nên vô hại */
+  const actWarn = document.getElementById('delActiveWarn');
+  actWarn.style.display = st === 'active' ? '' : 'none';
+  if(st === 'active') document.getElementById('delActiveFrom').textContent = r.from;
 
   const prevEntry = previousRecordOf(r.cat, idx);
   document.getElementById('delPromoteNote').style.display   = prevEntry ? '' : 'none';
   document.getElementById('delNoPromoteNote').style.display = prevEntry ? 'none' : '';
   if(prevEntry){
+    /* QUY TẮC HẤP THỤ: kỳ trước nhận đúng Effective To của kỳ bị xóa (có thể là rỗng).
+       Một công thức duy nhất phủ cả 2 tình huống — xóa kỳ cuối chuỗi (To rỗng -> kỳ trước
+       mở lại) và xóa kỳ giữa chuỗi (kỳ trước nới dài ra, kỳ sau giữ nguyên). */
     document.getElementById('delPromoteFrom').textContent = prevEntry.r.from + ' → ' + prevEntry.r.to;
-    document.getElementById('delPromoteTo').textContent   = prevEntry.r.from + ' → Ongoing';
+    document.getElementById('delPromoteTo').textContent   = prevEntry.r.from + ' → ' + toLabel(r);
+  } else {
+    /* Không có kỳ trước để hấp thụ: phân biệt "hết sạch bản ghi" với "còn kỳ sau" */
+    const others = ROWS.filter((x, i) => x.cat === r.cat && i !== idx);
+    const title = document.getElementById('delNoPromoteTitle');
+    const bodyEl = document.getElementById('delNoPromoteBody');
+    if(!others.length){
+      title.textContent = 'No record left afterwards';
+      bodyEl.textContent = 'This is the only record for this fleet group. After deleting, the fleet group '
+        + 'will have no Standard Taxi Time record at all.';
+    } else {
+      const nextFrom = others.map(x => x.from)
+        .sort((a, b) => new Date(isoFromDmy(a)) - new Date(isoFromDmy(b)))[0];
+      title.textContent = 'No earlier period to absorb this one';
+      bodyEl.innerHTML = 'There is no period before this one. After deleting, the fleet group has '
+        + '<b>no taxi time in force</b> until the next period starts on <b>' + nextFrom + '</b>.';
+    }
   }
   openModal('mdDelete');
 }
 function confirmDelete(){
   const r = ROWS[delRowIdx];
   const prevEntry = previousRecordOf(r.cat, delRowIdx);
+  const absorbedTo = r.to;           /* giữ lại TRƯỚC khi splice */
   ROWS.splice(delRowIdx, 1);
-  if(prevEntry) ROWS[ROWS.indexOf(prevEntry.r)].to = null;
+  /* Quy tắc hấp thụ (A-19): kỳ trước nhận đúng Effective To của kỳ vừa xóa — rỗng nếu xóa
+     kỳ cuối chuỗi, hoặc ngày kết thúc cũ nếu xóa kỳ giữa chuỗi. Chuỗi không bao giờ hở. */
+  if(prevEntry) ROWS[ROWS.indexOf(prevEntry.r)].to = absorbedTo;
   closeModal('mdDelete');
   toast(prevEntry
-    ? ('Deleted. ' + r.cat + ' ' + prevEntry.r.from + ' → Ongoing is now the active record (simulated)')
-    : (r.cat + ' now has no record left (simulated)'));
+    ? ('Deleted. ' + r.cat + ' ' + prevEntry.r.from + ' → ' + (absorbedTo === null ? 'Ongoing' : absorbedTo)
+       + ' now covers the removed period (simulated)')
+    : (r.cat + ' — period removed, no earlier period to absorb it (simulated)'));
   delRowIdx = null;
   page = 1;
   renderList();
