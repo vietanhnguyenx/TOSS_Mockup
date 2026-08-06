@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-  MOCKUP v0.3 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
+  MOCKUP v0.4 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
   Phạm vi: Function list v1.0 dòng 72–79 (WBS TOSS.14.1–14.8, SP3, Tháng 9)
-           BA PIC: Nguyễn Lê Việt Anh · v0.2 chốt 31/07/2026
+           BA PIC: Nguyễn Lê Việt Anh · v0.4 chốt 05/08/2026 (theo bố cục SRS)
 
   ĐÂY LÀ MODULE "STATION MANAGER" TRONG BRD — không phải module mồ côi:
     BR-TOSS-034 (BRD-TOSS-001-v0.2 §231) · SH-13 · BR-514 (cây menu) ·
@@ -68,6 +68,44 @@
                                          thực hiện, không tự điền/nộp trên màn này.
                                          Thêm thành sub-tab riêng trong Checklist.
   ===========================================================================
+  DECISION LOG — chốt 05/08/2026 (v0.4 · BO-CUC-SRS-AIRPORT-OPS-v0.2.md)
+  ===========================================================================
+    Q2  "base" (nối tiếp B-3)         → SÂN BAY ĐƠN, không phải cụm căn cứ bay —
+                                         khép lại mâu thuẫn nêu ở B-3.
+    Q3  8 trường lọc (nối tiếp B-14)  → BỎ 3 dropdown Flight release/Confirm doc/
+                                         E-CFP. Filter card còn lại 5 trường.
+    Q4  Phân trang danh sách?         → CÓ. 10/25/50, MẶC ĐỊNH 25 — #fltPager.
+    Q5  Cột Req Fuel lấy trạng thái?  → TỪ TRẠNG THÁI (3). Tab Flight Release ở
+                                         trạng thái (3) hiện CHẾ ĐỘ TẠM TÍNH (banner
+                                         cảnh báo + khối Weight&Fuel/EDTO, khóa nút
+                                         Export Excel) — khớp đúng ngưỡng cột Req Fuel,
+                                         không còn cảnh "ngoài có số, mở vào trống".
+    Q6  Lưới 10 ô CFP/EDTO cũ?        → BỎ, chỉ giữ PIC (đã áp từ v0.3).
+    Q7  Ds các bản Flight Release?    → BỎ (đảo B-12) — chỉ hiện bản đang hiệu lực.
+    Q8  Danh mục checklist cố định?   → ĐỘNG, lấy từ e-checklist. Mockup vẫn hard-code
+                                         CK_CREW/CK_SEC làm DỮ LIỆU MẪU minh họa.
+    Q9  Checklist có người/giờ nộp?   → CÓ — "Submitted by [tên] · [dd/MM/yyyy HH:mm]".
+    Q10 Cột Rev + sắp xếp tài liệu?   → BỎ.
+    Q11 Đã xem/chưa xem tài liệu?     → GIỮ — tên đậm+nổi khi chưa xem, thường+nhạt
+                                         khi đã xem; lưu THEO TỪNG NGƯỜI DÙNG. Xem cũng
+                                         như tải đều tính là đã xem.
+    Q12 Log hành vi xem/tải?          → KHÔNG CẦN.
+    Q13 Phân hệ Cargo?                → GIỮ CHỖ (không đổi).
+    #1  Chú thích "Request Fuel = …"  → BỎ khỏi dưới bảng danh sách.
+    #2  Phân trang                    → 10/25/50, mặc định 25 (= Q4).
+    #3  Nút Download tab Release      → ĐỔI THÀNH "Export Excel"; DISABLE ở trạng
+                                         thái (3), ENABLE ở trạng thái (4).
+    #4  Export Excel màn danh sách    → THÊM, cạnh nút Search trong filter-actions.
+    #5  Chân tab "Read-only view…"    → BỎ khỏi tab Flight Release (BR-AOPS-02 giữ ở
+                                         mục Quy tắc nghiệp vụ chung của SRS, không lặp
+                                         lại trên từng màn).
+    Loại tài khoản đăng nhập          → CẢ 4 LOẠI (Local/LDAP-VNA/VIAGS/Vasco), giống
+                                         hệt màn Login của System Admin — không thu hẹp.
+                                         (Chưa dựng màn hình — mockup này bắt đầu từ sau
+                                         khi đăng nhập; xem SRS System Admin, mục Login.)
+    Download All tài liệu             → Gói .zip, tên
+                                         TOSS_Flight_Docs_[FLTNO]_[FLTDATE].zip.
+  ===========================================================================
   THEME — dark, kế thừa nguyên bộ token từ mockup/dsp_monitoring_poc_v0.1.html
           (nguồn: .ai-rules.md dark tokens) để đồng bộ ngôn ngữ thiết kế TOSS.
           Cấu trúc sidebar/badge/bảng tham khảo 3 ảnh chụp màn hình TOSS dark
@@ -90,7 +128,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TOSS — Station Manager › Airport Ops (Mockup v0.3)</title>
+<title>TOSS — Station Manager › Airport Ops (Mockup v0.4)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Material+Symbols+Outlined" rel="stylesheet">
 <style>
   :root{
@@ -263,6 +301,17 @@
   .btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border-light)}
   .btn-ghost:hover{border-color:var(--text-muted);color:var(--text-primary)}
   .btn-sm{height:28px;padding:0 10px;font-size:11px}
+  .btn:disabled,.btn[disabled]{opacity:.4;cursor:not-allowed;pointer-events:none}
+
+  /* ===== Phân trang (v0.4 — Decision Q4, 05/08/2026: 10/25/50, mặc định 25) ===== */
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 13px;font-size:11.5px;color:var(--text-muted);border-top:1px solid var(--border);background:var(--bg-card);border-radius:0 0 var(--radius-md) var(--radius-md)}
+  .pager-size{display:flex;align-items:center;gap:6px}
+  .pager-size select{height:26px;padding:0 22px 0 8px;border:1px solid var(--border-light);border-radius:var(--radius-sm);font-family:inherit;font-size:11.5px;background:var(--bg-secondary);color:var(--text-primary);outline:none}
+  .pager-nav{display:flex;align-items:center;gap:4px}
+  .pager-nav button{width:26px;height:26px;border-radius:var(--radius-sm);border:1px solid var(--border-light);background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  .pager-nav button:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
+  .pager-nav button:disabled{opacity:.35;cursor:not-allowed}
+  .pager-nav .material-symbols-outlined{font-size:16px}
 
   /* ===== Scope toggle (như MY FLIGHTS của MO) ===== */
   .scope-bar{display:flex;align-items:center;gap:10px;padding:9px 13px;flex-wrap:wrap}
@@ -429,6 +478,13 @@
   .field-row .v{color:var(--text-primary);font-weight:600;text-align:right}
   .section-label{font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px}
   .section-label:first-child{margin-top:0}
+
+  /* ===== Chế độ TẠM TÍNH — Flight Release ở trạng thái OFP (3) (v0.4 — Decision Q5, 05/08/2026) =====
+     REQUEST FUEL = OFP BLOCK FUEL + PILOT EXTRA FUEL; PILOT EXTRA FUEL do PIC tự thêm khi ký release,
+     nên ở trạng thái (3) con số CHƯA CHỐT. Vẫn hiện sớm vì việc của đại diện sân bay bắt đầu ngay sau
+     Dispatch Release (= trạng thái (3)), nhưng phải gắn nhãn rõ + chặn Export Excel. */
+  .fr-provisional-banner{display:flex;align-items:center;gap:8px;background:var(--warning-bg);border:1px solid oklch(75% 0.15 75 / 0.4);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:11.5px;font-weight:700;color:oklch(85% 0.1 75)}
+  .fr-provisional-banner .material-symbols-outlined{font-size:17px;color:var(--warning)}
   .edto-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:4px}
   .edto-table th{text-align:left;color:var(--text-muted);font-weight:700;padding:5px 8px;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border)}
   .edto-table td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
@@ -449,6 +505,13 @@
   .doc-status{font-size:9.5px;font-weight:800;text-transform:uppercase;padding:2px 8px;border-radius:999px;flex-shrink:0}
   .doc-status.uploaded{background:var(--success-bg);color:var(--success)}
   .doc-status.missing{background:var(--bg-tertiary);color:var(--text-muted)}
+
+  /* ===== Đã xem / Chưa xem tài liệu (v0.4 — Decision Q11, 05/08/2026: giữ, học từ MO) =====
+     Mặc định CHƯA XEM: tên file đậm + màu nổi (kế thừa .doc-name gốc). Sau khi mở popup xem
+     hoặc bấm tải, đánh dấu ĐÃ XEM: chữ thường + màu nhạt. Lưu theo TỪNG NGƯỜI DÙNG (mockup mô
+     phỏng bằng biến phiên, không phải theo sân bay). */
+  .doc-name.seen{font-weight:500;color:var(--text-muted)}
+  .doc-unread-dot{display:inline-block;vertical-align:middle;width:6px;height:6px;border-radius:50%;background:var(--primary);margin-right:5px;margin-bottom:2px}
 
   /* ===== Cờ điểm mở (chỉ còn 3 điểm thật sự chưa chốt) ===== */
   .q-flag{display:inline-flex;align-items:center;gap:3px;background:oklch(60% 0.18 25 / 0.18);color:#fca5a5;border:1px solid oklch(60% 0.18 25 / 0.4);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;cursor:help;vertical-align:middle}
@@ -531,7 +594,7 @@
 <!-- ===== Thanh xem thử thiết bị — nguồn d.71 ===== -->
 <div class="devbar">
   <span class="material-symbols-outlined" style="font-size:16px;">devices</span>
-  <span><b>MOCKUP v0.3</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
+  <span><b>MOCKUP v0.4</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
   <div class="seg">
     <button class="active" id="dvDesktop" onclick="setDevice('desktop',this)"><span class="material-symbols-outlined">desktop_windows</span>Desktop</button>
     <button id="dvIpad" onclick="setDevice('ipad',this)"><span class="material-symbols-outlined">tablet_mac</span>iPad</button>
@@ -628,8 +691,8 @@
 
       <div class="body-wrap" id="bodyWrap">
 
-        <!-- ===== TOSS.14.4 — Lọc, 8 trường (Decision B-14, v0.2) ===== -->
-        <section class="card filter-card" data-src="[FL d.75] TOSS.14.4 · EFF §3.1 — Decision B-14 (v0.2): 8 trường đầy đủ, không rút gọn như v0.1">
+        <!-- ===== TOSS.14.4 — Lọc, 5 trường (Decision Q3, v0.4, 05/08/2026: bỏ 3 dropdown Flight release/Confirm doc/E-CFP) ===== -->
+        <section class="card filter-card" data-src="[FL d.75] TOSS.14.4 · Decision Q3 (v0.4, 05/08/2026) — 5 trường, bỏ 3 dropdown so với B-14 (v0.2)">
           <button class="filter-toggle-btn open" id="filterToggle" onclick="toggleFilter()">
             <span class="material-symbols-outlined" style="font-size:16px;">filter_alt</span>Filters
             <span class="material-symbols-outlined arrow">expand_more</span>
@@ -648,6 +711,7 @@
             <div class="filter-actions">
               <button class="btn btn-ghost btn-sm" onclick="toast('Filters reset')"><span class="material-symbols-outlined">restart_alt</span>Reset</button>
               <button class="btn btn-primary btn-sm" onclick="toast('Filters applied (simulation)')"><span class="material-symbols-outlined">search</span>Search</button>
+              <button class="btn btn-ghost btn-sm" onclick="toast('Exporting flight list… (simulation)')" title="Export the filtered flight list to Excel" data-src="Chỉnh sửa #4 (v0.4, 05/08/2026) — thêm Export Excel ở màn danh sách"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
             </div>
           </div>
         </section>
@@ -670,9 +734,26 @@
                 <tbody id="fltBody"></tbody>
               </table>
               </div>
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);display:flex;gap:11px;flex-wrap:wrap;padding:0 2px;">
-              <span><b style="color:var(--text-secondary);">Request Fuel</b> = Fuel quantity requested from OFP (in KG)</span>
+              <!-- ===== Phân trang (v0.4 — Decision Q4, 05/08/2026: 10/25/50, mặc định 25) ===== -->
+              <div class="pager" id="fltPager" data-src="Chỉnh sửa #2 (v0.4, 05/08/2026) — thêm phân trang 10/25/50, mặc định 25; bỏ chú thích Request Fuel dưới bảng">
+                <span id="pagerInfo">—</span>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="pager-size">
+                    <span>Rows per page</span>
+                    <select id="pagerSize" onchange="changePageSize(this)">
+                      <option value="10">10</option>
+                      <option value="25" selected>25</option>
+                      <option value="50">50</option>
+                    </select>
+                  </div>
+                  <div class="pager-nav" data-src="Thiết kế dùng chung v0.4 §5.3 — 4 nút Đầu/Trước/Sau/Cuối; option 10/25/50 khớp chuẩn, chỉ khác mặc định (25 thay vì 10)">
+                    <button id="pagerFirst" onclick="changePage('first')" title="First page"><span class="material-symbols-outlined">first_page</span></button>
+                    <button id="pagerPrev" onclick="changePage(-1)" title="Previous page"><span class="material-symbols-outlined">chevron_left</span></button>
+                    <button id="pagerNext" onclick="changePage(1)" title="Next page"><span class="material-symbols-outlined">chevron_right</span></button>
+                    <button id="pagerLast" onclick="changePage('last')" title="Last page"><span class="material-symbols-outlined">last_page</span></button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -710,7 +791,7 @@
                 <div class="dpanel" id="tabDOC">
                   <div class="dpanel-head">
                     <h3>Flight Documents</h3>
-                    <button class="btn btn-ghost btn-sm" onclick="toast('Downloading all documents… (simulation)')"><span class="material-symbols-outlined">download</span>Download All</button>
+                    <button class="btn btn-ghost btn-sm" onclick="downloadAllDocs()"><span class="material-symbols-outlined">download</span>Download All</button>
                   </div>
                   <div id="docList"></div>
                   <p class="hint">File naming convention per EFF: <code>Flight Release_FLTNO_DEP_FLTDATE_submissiondatetime.pdf</code>. 10 fixed document types per MO Plus Request document screen.</p>
@@ -953,6 +1034,15 @@ const RELEASE_DETAIL = {
 let cur = 0;
 let curSub = 'ckCrew';
 
+/* v0.4 (Decision Q4, 05/08/2026) — phân trang danh sách chuyến bay: 10/25/50, mặc định 25 */
+let pageSize = 25;
+let pageNum = 1;
+let lastTotalPages = 1;
+
+/* v0.4 (Decision Q11, 05/08/2026) — trạng thái ĐÃ XEM tài liệu, lưu THEO TỪNG NGƯỜI DÙNG.
+   Mockup mô phỏng bằng biến phiên (Set tên file); mở popup xem hoặc bấm tải đều đánh dấu đã xem. */
+const seenDocs = new Set();
+
 /* ---------- Helpers ---------- */
 function inBase(f){ return f.dep === MY_AIRPORT || f.arr === MY_AIRPORT; }
 function missingDocs(f){ return DOC_TYPES.filter(t => !f.docs.includes(t)); }
@@ -960,13 +1050,18 @@ function missingCk(f){ return CK_CREW.filter(t=>!f.ckCrew.includes(t)).length + 
 function ofpLabel(s){ return {1:'NO OFP',2:'WAITING DISPATCH RELEASE',3:'WAITING PIC RELEASE',4:'DISPATCH + PIC RELEASED'}[s]; }
 function ofpClass(s){ return s===4?'ok':(s===1?'pending':'warn'); }
 
-/* ---------- Render: danh sách chuyến ---------- */
+/* ---------- Render: danh sách chuyến (v0.4 — có phân trang) ---------- */
 function renderFlights(){
-  const list = FLIGHTS.filter(inBase);
+  const full = FLIGHTS.filter(inBase);
   document.getElementById('fltCount').innerHTML =
-    `Airport <b style="color:var(--text-primary);">${MY_AIRPORT}</b> · ${list.length} flights`;
+    `Airport <b style="color:var(--text-primary);">${MY_AIRPORT}</b> · ${full.length} flights`;
 
-  document.getElementById('fltBody').innerHTML = list.map((f)=>{
+  const totalPages = Math.max(1, Math.ceil(full.length / pageSize));
+  if(pageNum > totalPages) pageNum = totalPages;
+  const startIdx = (pageNum - 1) * pageSize;
+  const pageList = full.slice(startIdx, startIdx + pageSize);
+
+  document.getElementById('fltBody').innerHTML = pageList.map((f)=>{
     const i = FLIGHTS.indexOf(f);
     const fuelVal = f.ofpState >= 3 ? '5,944' : '—';
     return `<tr class="${i===cur?'sel':''}" onclick="selectFlight(${i})">
@@ -978,6 +1073,27 @@ function renderFlights(){
       <td style="text-align:right;font-weight:700;color:${fuelVal==='—'?'var(--text-muted)':'var(--primary)'}">${fuelVal}</td>
     </tr>`;
   }).join('') || `<tr><td colspan="6" style="text-align:center;padding:22px;color:var(--text-muted);font-style:italic;">No flights match current filter</td></tr>`;
+
+  document.getElementById('pagerInfo').textContent =
+    full.length === 0 ? 'Total: 0 records' : `Total: ${full.length} records | Page ${pageNum} of ${totalPages}`;
+  /* Thiết kế dùng chung v0.4 §5.3 — trang 1: khóa Đầu+Trước; trang cuối: khóa Sau+Cuối;
+     chỉ 1 trang vẫn hiện đủ thanh phân trang (không ẩn) */
+  document.getElementById('pagerFirst').disabled = pageNum <= 1;
+  document.getElementById('pagerPrev').disabled = pageNum <= 1;
+  document.getElementById('pagerNext').disabled = pageNum >= totalPages;
+  document.getElementById('pagerLast').disabled = pageNum >= totalPages;
+  lastTotalPages = totalPages;
+}
+function changePageSize(sel){
+  pageSize = parseInt(sel.value, 10);
+  pageNum = 1;
+  renderFlights();
+}
+function changePage(target){
+  if(target === 'first') pageNum = 1;
+  else if(target === 'last') pageNum = lastTotalPages;
+  else pageNum += target;
+  renderFlights();
 }
 function yn(v){ return v ? `<span class="yn y"><span class="material-symbols-outlined">check</span></span>` : `<span class="yn n"><span class="material-symbols-outlined">close</span></span>`; }
 
@@ -1008,8 +1124,10 @@ function renderCtx(f){
 }
 
 /* ---------- Render: Flight release tab ---------- */
+/* v0.4 (Decision Q5, 05/08/2026) — 3 trạng thái hiển thị:
+   (1)(2) màn rỗng · (3) chế độ TẠM TÍNH (Weight & Fuel + EDTO, Export Excel khóa) · (4) đầy đủ */
 function renderReleases(f){
-  if(f.ofpState < 4){
+  if(f.ofpState < 3){
     document.getElementById('frDetail').innerHTML = `
       <div class="empty-state" style="padding:36px 0;">
         <span class="material-symbols-outlined" style="font-size:44px;color:var(--warning);">hourglass_empty</span>
@@ -1019,18 +1137,9 @@ function renderReleases(f){
     return;
   }
   const d = RELEASE_DETAIL;
-  document.getElementById('frDetail').innerHTML = `
-    <div class="dpanel-head">
-      <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">verified</span>Flight Release — Active Version</h3>
-      <button class="btn btn-ghost btn-sm" onclick="toast('Downloading Flight Release… (simulation)')"><span class="material-symbols-outlined">download</span>Download</button>
-    </div>
+  const isFinal = f.ofpState === 4;
 
-    <!-- PIC Section (compact) -->
-    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:11.5px;font-weight:700;color:var(--text-muted);display:inline-flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">person</span>PIC</span>
-      <span style="font-size:12.5px;font-weight:700;color:var(--text-primary);">CAPT Tran V.A</span>
-    </div>
-
+  const weightFuelBlock = `
     <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
       <span>WEIGHT AND FUEL — IN KGS</span>
       <span style="font-size:9.5px;font-weight:700;color:var(--gold);background:var(--gold-accent);padding:2px 7px;border-radius:4px;">OFP DATA</span>
@@ -1053,15 +1162,49 @@ function renderReleases(f){
 
     <div class="section-label" style="margin-top:16px;">EDTO ENRT</div>
     <table class="edto-table"><thead><tr><th>Alternate</th><th>Status</th><th>Window</th></tr></thead>
-      <tbody>${d.enrt.map(r=>`<tr><td style="color:var(--text-primary);font-weight:600;">${r[0]}</td><td class="suit">${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>
-    <p class="hint">Read-only view — Data editing or submission is not available.</p>`;
+      <tbody>${d.enrt.map(r=>`<tr><td style="color:var(--text-primary);font-weight:600;">${r[0]}</td><td class="suit">${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>`;
+
+  if(!isFinal){
+    /* Trạng thái (3) — WAITING PIC RELEASE: tạm tính, chưa cho kết xuất */
+    document.getElementById('frDetail').innerHTML = `
+      <div class="dpanel-head">
+        <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--warning);">pending</span>Flight Release — Not Yet Active</h3>
+        <button class="btn btn-ghost btn-sm" disabled title="Export Excel is disabled until the flight reaches state (4) — Dispatch + PIC Release"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
+      </div>
+      <div class="fr-provisional-banner"><span class="material-symbols-outlined">info</span>OFP data — pending PIC release. Figures below are provisional and may still change.</div>
+      ${weightFuelBlock}`;
+    return;
+  }
+
+  /* Trạng thái (4) — DISPATCH + PIC RELEASED: đầy đủ */
+  document.getElementById('frDetail').innerHTML = `
+    <div class="dpanel-head">
+      <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">verified</span>Flight Release — Active Version</h3>
+      <button class="btn btn-ghost btn-sm" onclick="toast('Exporting Flight Release… (simulation)')"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
+    </div>
+
+    <!-- PIC Section (compact) -->
+    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:11.5px;font-weight:700;color:var(--text-muted);display:inline-flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">person</span>PIC</span>
+      <span style="font-size:12.5px;font-weight:700;color:var(--text-primary);">CAPT Tran V.A</span>
+    </div>
+
+    ${weightFuelBlock}`;
 }
 
-/* ---------- Render: checklist rows ---------- */
-function ckRow(name, present, submittedBy){
+/* ---------- Render: checklist rows (v0.4 — Decision Q9, 05/08/2026: thêm người nộp + thời điểm nộp) ---------- */
+const CK_CREW_NAMES = ['FA Nguyen T.H','FA Le M.K','FA Vu N.A'];
+const CK_SEC_NAMES  = ['Sec. Officer Pham Q.D','Sec. Officer Tran B.L'];
+function offsetTime(etd, minutesBefore){
+  const [h,m] = etd.split(':').map(Number);
+  let total = h*60 + m - minutesBefore;
+  if(total < 0) total += 24*60;
+  return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+}
+function ckRow(name, present, by, at){
   return present
     ? `<div class="doc-row"><div class="doc-ic"><span class="material-symbols-outlined">check_circle</span></div>
-        <div class="doc-main"><div class="doc-name">${name}</div><div class="doc-sub">Submitted · ${submittedBy}</div></div>
+        <div class="doc-main"><div class="doc-name">${name}</div><div class="doc-sub">Submitted by ${by} · ${at}</div></div>
         <span class="doc-status uploaded">Submitted</span>
         <div class="doc-act"><button class="icon-btn" title="View" onclick="viewDoc('${name}')"><span class="material-symbols-outlined">visibility</span></button></div></div>`
     : `<div class="doc-row"><div class="doc-ic missing"><span class="material-symbols-outlined">radio_button_unchecked</span></div>
@@ -1070,33 +1213,54 @@ function ckRow(name, present, submittedBy){
 }
 function renderChecklists(f){
   let html = `<div class="section-label" style="margin-top:0;">Flight Crew Checklist</div>`;
-  html += CK_CREW.map(n=>ckRow(n, f.ckCrew.includes(n), 'e-checklist')).join('');
-  
+  html += CK_CREW.map((n,idx)=>ckRow(
+    n, f.ckCrew.includes(n),
+    CK_CREW_NAMES[idx % CK_CREW_NAMES.length],
+    `${f.date} ${offsetTime(f.etd, 90 - idx*20)}`
+  )).join('');
+
   html += `<div class="section-label" style="margin-top:16px;">Security Checklist</div>`;
-  html += CK_SEC.map(n=>ckRow(n, f.ckSec.includes(n), 'e-checklist')).join('');
+  html += CK_SEC.map((n,idx)=>ckRow(
+    n, f.ckSec.includes(n),
+    CK_SEC_NAMES[idx % CK_SEC_NAMES.length],
+    `${f.date} ${offsetTime(f.etd, 120 - idx*15)}`
+  )).join('');
 
   document.getElementById('ckListAll').innerHTML = html;
 }
 
-/* ---------- Render: documents ---------- */
+/* ---------- Render: documents (v0.4 — Decision Q11, 05/08/2026: đã xem/chưa xem) ---------- */
+function markSeen(name){ seenDocs.add(name); if(cur>=0) renderDocs(FLIGHTS[cur]); }
 function docRow(name, present){
-  return present
-    ? `<div class="doc-row"><div class="doc-ic"><span class="material-symbols-outlined">description</span></div>
-        <div class="doc-main"><div class="doc-name">${name}</div><div class="doc-sub">Updated 05/08/2026 04:1${Math.floor(Math.random()*9)}</div></div>
+  if(!present){
+    return `<div class="doc-row"><div class="doc-ic missing"><span class="material-symbols-outlined">description</span></div>
+        <div class="doc-main"><div class="doc-name muted">${name}</div><div class="doc-sub">Missing</div></div>
+        <span class="doc-status missing">Missing</span></div>`;
+  }
+  const seen = seenDocs.has(name);
+  return `<div class="doc-row"><div class="doc-ic"><span class="material-symbols-outlined">description</span></div>
+        <div class="doc-main"><div class="doc-name${seen?' seen':''}">${seen?'':'<span class="doc-unread-dot" title="Not viewed yet"></span>'}${name}</div><div class="doc-sub">Updated 05/08/2026 04:1${Math.floor(Math.random()*9)}</div></div>
         <span class="doc-status uploaded">Uploaded</span>
         <div class="doc-act">
           <button class="icon-btn" title="View" onclick="viewDoc('${name}')"><span class="material-symbols-outlined">visibility</span></button>
-          <button class="icon-btn" title="Download" onclick="toast('Downloading ${name}… (simulation)')"><span class="material-symbols-outlined">download</span></button>
-        </div></div>`
-    : `<div class="doc-row"><div class="doc-ic missing"><span class="material-symbols-outlined">description</span></div>
-        <div class="doc-main"><div class="doc-name muted">${name}</div><div class="doc-sub">Missing</div></div>
-        <span class="doc-status missing">Missing</span></div>`;
+          <button class="icon-btn" title="Download" onclick="markSeen('${name}');toast('Downloading ${name}… (simulation)')"><span class="material-symbols-outlined">download</span></button>
+        </div></div>`;
 }
 function renderDocs(f){
   const d = f.date.replace(/\//g,'');
   let html = docRow(`Flight Release_${f.no}_${f.dep}_${d}.pdf`, f.ofpState===4);
   html += DOC_TYPES.map(t=>docRow(`${t}_${f.no}.pdf`, f.docs.includes(t))).join('');
   document.getElementById('docList').innerHTML = html;
+}
+/* v0.4 — Download All (gói .zip, TOSS_Flight_Docs_[FLTNO]_[FLTDATE].zip) đánh dấu mọi tài liệu đã có là đã xem */
+function downloadAllDocs(){
+  if(cur < 0) return;
+  const f = FLIGHTS[cur];
+  const d = f.date.replace(/\//g,'');
+  if(f.ofpState===4) seenDocs.add(`Flight Release_${f.no}_${f.dep}_${d}.pdf`);
+  f.docs.forEach(t=>seenDocs.add(`${t}_${f.no}.pdf`));
+  renderDocs(f);
+  toast(`Downloading TOSS_Flight_Docs_${f.no}_${d}.zip… (simulation)`);
 }
 
 /* ---------- Badge (Decision B-16 — đếm số mục CÒN THIẾU) ---------- */
@@ -1230,6 +1394,9 @@ function viewDoc(name){
   document.getElementById('vwName').textContent = name;
   document.getElementById('vwName2').textContent = name;
   openModal('mdView');
+  /* v0.4 (Decision Q11, 05/08/2026) — mở xem cũng đánh dấu đã xem, theo từng người dùng */
+  seenDocs.add(name);
+  if(cur>=0) renderDocs(FLIGHTS[cur]);
 }
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
