@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <!--
-  MOCKUP v0.5 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
+  MOCKUP v0.6 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
   Phạm vi: Function list v1.0 dòng 72–79 (WBS TOSS.14.1–14.8, SP3, Tháng 9)
-           BA PIC: Nguyễn Lê Việt Anh · v0.5 chốt 06/08/2026 (góp ý chi tiết bản ghi chuyến bay)
+           BA PIC: Nguyễn Lê Việt Anh · v0.6 chốt 08/08/2026 (sửa theo vòng tự review ba-reviewer:
+           sân bay dự bị đổi sang chuỗi string từ OFP; bỏ hẳn đã xem/chưa xem tài liệu; PIC+SĐT+REV+
+           chênh lệch fuel hiện từ trạng thái (3) thay vì chỉ (4))
 
   ĐÂY LÀ MODULE "STATION MANAGER" TRONG BRD — không phải module mồ côi:
     BR-TOSS-034 (BRD-TOSS-001-v0.2 §231) · SH-13 · BR-514 (cây menu) ·
@@ -128,7 +130,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TOSS — Station Manager › Airport Ops (Mockup v0.5)</title>
+<title>TOSS — Station Manager › Airport Ops (Mockup v0.6)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Material+Symbols+Outlined" rel="stylesheet">
 <style>
   :root{
@@ -536,11 +538,10 @@
   .fuel-delta.up{background:var(--danger-bg);color:var(--danger)}
   .fuel-delta.down{background:var(--success-bg);color:var(--success)}
   .fuel-delta.same{background:var(--bg-tertiary);color:var(--text-muted)}
-  .edto-table .unsuit{color:var(--danger);font-weight:700}
-  .edto-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:4px}
-  .edto-table th{text-align:left;color:var(--text-muted);font-weight:700;padding:5px 8px;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border)}
-  .edto-table td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
-  .edto-table .suit{color:var(--success);font-weight:700}
+  /* v0.6 — sân bay dự bị dạng chuỗi thô từ OFP (thay .edto-table cũ) */
+  .altn-row{display:flex;align-items:baseline;gap:10px;margin-top:10px;padding:8px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);flex-wrap:wrap}
+  .altn-label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+  .altn-val{font-size:12px;font-weight:600;color:var(--text-primary);font-variant-numeric:tabular-nums;word-break:break-all}
 
   /* ===== Document rows ===== */
   .doc-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--bg-secondary)}
@@ -558,18 +559,11 @@
   .doc-status.uploaded{background:var(--success-bg);color:var(--success)}
   .doc-status.missing{background:var(--bg-tertiary);color:var(--text-muted)}
 
-  /* ===== Đã xem / Chưa xem tài liệu (v0.4 — Decision Q11, 05/08/2026: giữ, học từ MO) =====
-     Mặc định CHƯA XEM: tên file đậm + màu nổi (kế thừa .doc-name gốc). Sau khi mở popup xem
-     hoặc bấm tải, đánh dấu ĐÃ XEM: chữ thường + màu nhạt. Lưu theo TỪNG NGƯỜI DÙNG (mockup mô
-     phỏng bằng biến phiên, không phải theo sân bay). */
-  .doc-name.seen{font-weight:500;color:var(--text-muted)}
-  .doc-unread-dot{display:inline-block;vertical-align:middle;width:6px;height:6px;border-radius:50%;background:var(--primary);margin-right:5px;margin-bottom:2px}
-
   /* ===== Bảng bản ghi dùng chung cho Checklist + Flight Documents (v0.5, 06/08/2026) =====
-     Thay dạng thẻ 2 dòng cũ: thời gian nay là CỘT RIÊNG ngang hàng bản ghi, dễ quét mắt. */
+     Thay dạng thẻ 2 dòng cũ: thời gian nay là CỘT RIÊNG ngang hàng bản ghi, dễ quét mắt.
+     v0.6 (08/08/2026): bỏ hẳn biến thể .seen — không còn tính năng đã xem/chưa xem. */
   .rec-table td{vertical-align:middle}
   .rec-table .rec-name{color:var(--text-primary);font-weight:600}
-  .rec-table .rec-name.seen{font-weight:500;color:var(--text-muted)}
   .rec-table .rec-time{font-variant-numeric:tabular-nums;color:var(--text-secondary);white-space:nowrap}
   .rec-table .icon-btn{vertical-align:middle}
   /* Cho tên + người nộp XUỐNG DÒNG để bảng vừa panel (mặc định .t td là nowrap, làm
@@ -676,7 +670,7 @@
 <!-- ===== Thanh xem thử thiết bị — nguồn d.71 ===== -->
 <div class="devbar">
   <span class="material-symbols-outlined" style="font-size:16px;">devices</span>
-  <span><b>MOCKUP v0.5</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
+  <span><b>MOCKUP v0.6</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
   <div class="seg">
     <button class="active" id="dvDesktop" onclick="setDevice('desktop',this)"><span class="material-symbols-outlined">desktop_windows</span>Desktop</button>
     <button id="dvIpad" onclick="setDevice('ipad',this)"><span class="material-symbols-outlined">tablet_mac</span>iPad</button>
@@ -1149,12 +1143,12 @@ const RELEASE_DETAIL = {
   requestFuel:5944, prevRequestFuel:5744,
   dispatchReleaseAt:'05/08/2026 04:12',
   picReleaseAt:'05/08/2026 04:37',
-  /* Dữ liệu CỐ TÌNH giữ cả dòng UNSUITABLE để chứng minh bộ lọc hoạt động:
-     màn hình chỉ hiện sân ĐỦ ĐIỀU KIỆN (SUITABLE), dòng UNSUITABLE bị lọc bỏ,
-     không hiển thị và không có cột trạng thái (chốt 06/08/2026). */
-  destAltn:[ ['VVCR','SUITABLE','02:11/01:26'], ['VVDL','UNSUITABLE','02:40/01:05'] ],
-  enrtAltn:[ ['VVPK','SUITABLE','02:11/01:26'], ['VVNB','SUITABLE','01:52/02:04'],
-             ['RPLL','SUITABLE','03:20/02:15'], ['VVTS','UNSUITABLE','01:09/13:09'] ]
+  /* v0.6 (chốt 08/08/2026) — sân bay dự bị lấy NGUYÊN VĂN dạng chuỗi từ bản ghi OFP,
+     giống hệt cách OFP thật in ra (vd "RCKH/VHHH/VMMC/VVNB") — không còn bảng
+     Alternate/Window/Status, không lọc SUITABLE ở tầng FE/BE. Có chuyến lên tới ~20 sân
+     dự bị trong một dòng nên không có ý nghĩa tách bảng theo từng sân. */
+  destAltn: 'VVCR',
+  enrtAltn: 'VVPK/VVNB/RPLL'
 };
 
 let cur = 0;
@@ -1164,10 +1158,6 @@ let curSub = 'ckCrew';
 let pageSize = 25;
 let pageNum = 1;
 let lastTotalPages = 1;
-
-/* v0.4 (Decision Q11, 05/08/2026) — trạng thái ĐÃ XEM tài liệu, lưu THEO TỪNG NGƯỜI DÙNG.
-   Mockup mô phỏng bằng biến phiên (Set tên file); mở popup xem hoặc bấm tải đều đánh dấu đã xem. */
-const seenDocs = new Set();
 
 /* ---------- Helpers ---------- */
 /* v0.5 — phạm vi theo sân bay ĐANG CHỌN; 'ALL' = mọi sân được cấp quyền.
@@ -1316,7 +1306,9 @@ function renderReleases(f){
 
   /* v0.5 — chênh lệch REQUEST FUEL so với bản release liền trước.
      Lý do nghiệp vụ: đại diện sân bay có thể ĐÃ điều phối nạp dầu theo bản trước;
-     fuel đổi mà không biết là rủi ro thật => phải hiện rõ ngay cạnh con số. */
+     fuel đổi mà không biết là rủi ro thật => phải hiện rõ ngay cạnh con số.
+     v0.6 (chốt 08/08/2026) — hiện từ TRẠNG THÁI (3), không chỉ (4): đây là lúc thông
+     tin có giá trị nhất, đại diện sân bay đang điều phối nạp dầu theo bản đang chờ ký. */
   const fuelDelta = d.requestFuel - d.prevRequestFuel;
   const deltaChip = d.rev <= 1 ? ''
     : fuelDelta === 0
@@ -1325,20 +1317,29 @@ function renderReleases(f){
            <span class="material-symbols-outlined">${fuelDelta>0?'arrow_upward':'arrow_downward'}</span>
            ${fuelDelta>0?'+':'−'}${fmtKg(Math.abs(fuelDelta))} KG vs REV ${d.prevRev}</span>`;
 
-  /* v0.5 (chốt 06/08/2026) — sân bay dự bị: CHỈ hiện sân ĐỦ ĐIỀU KIỆN (SUITABLE),
-     sân không đủ điều kiện thì không hiện, và BỎ hẳn cột Status.
-     Cùng nguyên tắc đã áp cho tab Tài liệu và Checklist: chỉ liệt kê cái dùng được.
-     Khối nào không còn sân nào đủ điều kiện thì ẩn luôn cả khối. */
-  const altnBlock = (label, rows) => {
-    const ok = rows.filter(r => r[1] === 'SUITABLE');
-    if(!ok.length) return '';
+  /* v0.6 (chốt 08/08/2026) — sân bay dự bị hiển thị NGUYÊN VĂN dạng chuỗi lấy từ OFP,
+     không còn bảng Alternate/Window/Status. Chuỗi rỗng ⇒ ẩn cả dòng. */
+  const altnBlock = (label, str) => {
+    if(!str) return '';
     return `
-      <div class="section-label" style="margin-top:16px;">${label}</div>
-      <table class="edto-table"><thead><tr><th>Alternate</th><th>Window</th></tr></thead>
-        <tbody>${ok.map(r=>`<tr>
-          <td style="color:var(--text-primary);font-weight:600;">${r[0]}</td>
-          <td>${r[2]}</td></tr>`).join('')}</tbody></table>`;
+      <div class="altn-row"><span class="altn-label">${label}</span><span class="altn-val">${str}</span></div>`;
   };
+
+  /* v0.6 (chốt 08/08/2026) — PIC + SĐT + thẻ REV hiện từ TRẠNG THÁI (3): mục đích chính
+     của SĐT liên lạc là để đại diện sân bay chủ động gọi thúc cơ trưởng ký release —
+     hữu ích nhất đúng lúc đang CHỜ ký, không phải sau khi việc đã xong. Ở trạng thái (3)
+     thẻ REV thêm hậu tố "(provisional)" vì bản chưa được PIC ký, chưa phải bản chính thức. */
+  const picRevBlock = `
+    <div class="pic-box">
+      <span class="pic-label"><span class="material-symbols-outlined">person</span>PIC</span>
+      <div class="pic-info">
+        <span class="pic-name">${d.pic.name}</span>
+        <a class="pic-phone" href="tel:${d.pic.phone.replace(/[^0-9+]/g,'')}"
+           title="Contact phone — source: Pilot catalog (synced from AVES)">
+          <span class="material-symbols-outlined">call</span>${d.pic.phone}</a>
+      </div>
+      <span class="rev-chip">REV ${d.rev}${isFinal?'':' (provisional)'}</span>
+    </div>`;
 
   const weightFuelBlock = `
     <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
@@ -1366,18 +1367,20 @@ function renderReleases(f){
 
     <!-- v0.5 (chốt 06/08/2026): 2 loại sân bay dự bị — ĐẾN và DỌC ĐƯỜNG.
          Tên khối theo tờ OFP thật (OFP-SGN-SFO-RECLEARANCE). Takeoff ALTN bỏ theo chốt.
-         Chỉ hiện sân đủ điều kiện, không cột trạng thái — xem altnBlock(). -->
+         v0.6: hiển thị chuỗi thô, không lọc/bảng — xem altnBlock(). -->
     ${altnBlock('DESTINATION ALTERNATE', d.destAltn)}
     ${altnBlock('EN-ROUTE ALTERNATE', d.enrtAltn)}`;
 
   if(!isFinal){
-    /* Trạng thái (3) — WAITING PIC RELEASE: tạm tính, chưa cho kết xuất */
+    /* Trạng thái (3) — WAITING PIC RELEASE: tạm tính, chưa cho kết xuất.
+       v0.6: PIC+SĐT+REV(provisional) đã hiện từ đây, qua picRevBlock() dùng chung. */
     document.getElementById('frDetail').innerHTML = `
       <div class="dpanel-head">
         <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--warning);">pending</span>Flight Release — Not Yet Active</h3>
         <button class="btn btn-ghost btn-sm" disabled title="Export Excel is disabled until the flight reaches state (4) — Dispatch + PIC Release"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
       </div>
       <div class="fr-provisional-banner"><span class="material-symbols-outlined">info</span>OFP data — pending PIC release. Figures below are provisional and may still change.</div>
+      ${picRevBlock}
       <div class="rel-meta">
         <div class="rm-item"><span class="rm-k">Dispatch Release</span><span class="rm-v">${d.dispatchReleaseAt}</span></div>
         <div class="rm-item"><span class="rm-k">PIC Release</span><span class="rm-v pending">Pending</span></div>
@@ -1386,26 +1389,14 @@ function renderReleases(f){
     return;
   }
 
-  /* Trạng thái (4) — DISPATCH + PIC RELEASED: đầy đủ */
+  /* Trạng thái (4) — DISPATCH + PIC RELEASED: đầy đủ. picRevBlock() dùng chung với (3). */
   document.getElementById('frDetail').innerHTML = `
     <div class="dpanel-head">
-      <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">verified</span>Flight Release — Active Version
-        <span class="rev-chip">REV ${d.rev}</span></h3>
+      <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">verified</span>Flight Release — Active Version</h3>
       <button class="btn btn-ghost btn-sm" onclick="toast('Exporting Flight Release… (simulation)')"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
     </div>
 
-    <!-- PIC — v0.5 thêm SĐT liên lạc.
-         Nguồn: Danh mục Phi công (Data Maintenance), trường phone_number/phoneNumber,
-         định dạng (+84)xxx.xxx.xxx, gốc đồng bộ từ AVES theo Crewcode, chu kỳ 1 ngày/lần. -->
-    <div class="pic-box">
-      <span class="pic-label"><span class="material-symbols-outlined">person</span>PIC</span>
-      <div class="pic-info">
-        <span class="pic-name">${d.pic.name}</span>
-        <a class="pic-phone" href="tel:${d.pic.phone.replace(/[^0-9+]/g,'')}"
-           title="Contact phone — source: Pilot catalog (synced from AVES)">
-          <span class="material-symbols-outlined">call</span>${d.pic.phone}</a>
-      </div>
-    </div>
+    ${picRevBlock}
 
     <!-- v0.5: 2 mốc chữ ký. Trạng thái (4) cần đủ CẢ HAI nên hiện cả hai để đối chiếu. -->
     <div class="rel-meta">
@@ -1472,9 +1463,9 @@ function renderChecklists(f){
 
 /* ---------- Render: documents (v0.5 — bảng cột, chỉ hiện tài liệu ĐÃ CÓ) ----------
    · KHÔNG hiện dòng Missing, KHÔNG chip trạng thái (chốt 06/08/2026)
-   · GIỮ quy tắc đã xem/chưa xem (Q11) — đây là chỉ báo cá nhân, không phải trạng thái tài liệu
+   · v0.6 (chốt 08/08/2026): BỎ HẲN quy tắc đã xem/chưa xem — gỡ khỏi phạm vi để đơn giản
+     hóa (nhiều câu hỏi mở về nơi lưu/khóa dữ liệu, giá trị nghiệp vụ không đủ lớn)
    · Thời gian cập nhật ngang hàng bản ghi, cùng kiểu bảng với Checklist cho nhất quán */
-function markSeen(name){ seenDocs.add(name); if(cur>=0) renderDocs(FLIGHTS[cur]); }
 function renderDocs(f){
   const d = f.date.replace(/\//g,'');
   const rows = [];
@@ -1495,26 +1486,20 @@ function renderDocs(f){
     <div class="table-container"><div class="table-scroll">
     <table class="t rec-table">
       <thead><tr><th>Document</th><th>Last updated</th><th style="text-align:right;">Action</th></tr></thead>
-      <tbody>${rows.map(r=>{
-        const seen = seenDocs.has(r.name);
-        return `<tr>
-          <td class="rec-name ${seen?'seen':''}">${seen?'':'<span class="doc-unread-dot" title="Not viewed yet"></span>'}${r.name}</td>
+      <tbody>${rows.map(r=>`<tr>
+          <td class="rec-name">${r.name}</td>
           <td class="rec-time">${r.at}</td>
           <td style="text-align:right;white-space:nowrap;">
             <button class="icon-btn" title="View" onclick="viewDoc('${r.name}')"><span class="material-symbols-outlined">visibility</span></button>
-            <button class="icon-btn" title="Download" onclick="markSeen('${r.name}');toast('Downloading ${r.name}… (simulation)')"><span class="material-symbols-outlined">download</span></button>
-          </td></tr>`;
-      }).join('')}</tbody>
+            <button class="icon-btn" title="Download" onclick="toast('Downloading ${r.name}… (simulation)')"><span class="material-symbols-outlined">download</span></button>
+          </td></tr>`).join('')}</tbody>
     </table></div></div>`;
 }
-/* v0.4 — Download All (gói .zip, TOSS_Flight_Docs_[FLTNO]_[FLTDATE].zip) đánh dấu mọi tài liệu đã có là đã xem */
+/* v0.4 — Download All (gói .zip, TOSS_Flight_Docs_[FLTNO]_[FLTDATE].zip) */
 function downloadAllDocs(){
   if(cur < 0) return;
   const f = FLIGHTS[cur];
   const d = f.date.replace(/\//g,'');
-  if(f.ofpState===4) seenDocs.add(`Flight Release_${f.no}_${f.dep}_${d}.pdf`);
-  f.docs.forEach(t=>seenDocs.add(`${t}_${f.no}.pdf`));
-  renderDocs(f);
   toast(`Downloading TOSS_Flight_Docs_${f.no}_${d}.zip… (simulation)`);
 }
 
@@ -1535,6 +1520,11 @@ function selectFlight(i){
   cur = i;
   const f = FLIGHTS[i];
   goSubModule('sm');   // mỗi chuyến mở ra luôn bắt đầu ở Station Manager
+  /* Mô tả luồng xử lý, Bước 3 (mục Màn hình ngữ cảnh chuyến bay): mỗi chuyến mở ra luôn
+     bắt đầu ở tab Flight Release, bất kể lần trước đang ở tab nào (fix 08/08/2026 — phát
+     hiện qua smoke test: chọn chuyến mới trước đây giữ nguyên tab đang xem). */
+  const frBtn = document.querySelector('button[data-tab="tabFR"]');
+  if(frBtn) switchTab(frBtn, 'tabFR');
   renderCtx(f); renderReleases(f); renderChecklists(f); renderDocs(f);
   renderFlights();
   document.getElementById('content').classList.add('split');
@@ -1780,9 +1770,6 @@ function viewDoc(name){
   document.getElementById('vwContent').style.fontSize = '';
   document.getElementById('vwPage').scrollTop = 0;
   openModal('mdView');
-  /* v0.4 (Decision Q11, 05/08/2026) — mở xem cũng đánh dấu đã xem, theo từng người dùng */
-  seenDocs.add(name);
-  if(cur>=0) renderDocs(FLIGHTS[cur]);
 }
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
