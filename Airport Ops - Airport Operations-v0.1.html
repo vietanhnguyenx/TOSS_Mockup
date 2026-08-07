@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-  MOCKUP v0.4 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
+  MOCKUP v0.5 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
   Phạm vi: Function list v1.0 dòng 72–79 (WBS TOSS.14.1–14.8, SP3, Tháng 9)
-           BA PIC: Nguyễn Lê Việt Anh · v0.4 chốt 05/08/2026 (theo bố cục SRS)
+           BA PIC: Nguyễn Lê Việt Anh · v0.5 chốt 06/08/2026 (góp ý chi tiết bản ghi chuyến bay)
 
   ĐÂY LÀ MODULE "STATION MANAGER" TRONG BRD — không phải module mồ côi:
     BR-TOSS-034 (BRD-TOSS-001-v0.2 §231) · SH-13 · BR-514 (cây menu) ·
@@ -128,7 +128,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TOSS — Station Manager › Airport Ops (Mockup v0.4)</title>
+<title>TOSS — Station Manager › Airport Ops (Mockup v0.5)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Material+Symbols+Outlined" rel="stylesheet">
 <style>
   :root{
@@ -253,6 +253,24 @@
   .clock b{color:var(--text-primary);font-weight:700}
   .base-chip{display:inline-flex;align-items:center;gap:6px;background:var(--primary-accent);color:var(--primary);border:1px solid var(--border-light);border-radius:999px;padding:5px 11px;font-size:11.5px;font-weight:700;cursor:help}
   .base-chip .material-symbols-outlined{font-size:15px}
+
+  /* ===== Chọn sân bay theo phân quyền (v0.5 — 06/08/2026) =====
+     1 sân => .base-chip tĩnh (ở trên). N sân => .base-select dạng dropdown. */
+  .base-wrap{position:relative;display:inline-flex}
+  .base-select{display:inline-flex;align-items:center;gap:6px;background:var(--primary-accent);color:var(--primary);border:1px solid var(--primary);border-radius:999px;padding:5px 9px 5px 11px;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
+  .base-select:hover{background:oklch(60% 0.16 250 / 0.28)}
+  .base-select .material-symbols-outlined{font-size:15px}
+  .base-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:230px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-md);box-shadow:0 12px 32px rgba(0,0,0,.5);padding:5px;z-index:60;display:none}
+  .base-menu.open{display:block}
+  .base-menu .bm-head{font-size:9.5px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;padding:7px 10px 5px}
+  .base-menu a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);font-size:12px;color:var(--text-secondary);cursor:pointer;text-decoration:none}
+  .base-menu a:hover{background:var(--bg-tertiary);color:var(--text-primary)}
+  .base-menu a.sel{background:var(--primary-accent);color:var(--primary);font-weight:700}
+  .base-menu a .material-symbols-outlined{font-size:16px}
+  .base-menu a .bm-name{color:var(--text-muted);font-size:10.5px;margin-left:auto}
+  .base-menu .bm-div{height:1px;background:var(--border);margin:4px 0}
+  .device.iphone .base-wrap{order:4;flex-basis:100%}
+  .device.iphone .base-menu{min-width:100%}
   .topbar-spacer{margin-left:auto}
   .user-btn{display:flex;align-items:center;gap:7px;background:none;border:1px solid var(--border);border-radius:999px;padding:3px 10px 3px 3px;cursor:pointer;font-family:inherit;color:var(--text-primary)}
   .user-btn:hover{background:var(--bg-tertiary)}
@@ -485,6 +503,40 @@
      Dispatch Release (= trạng thái (3)), nhưng phải gắn nhãn rõ + chặn Export Excel. */
   .fr-provisional-banner{display:flex;align-items:center;gap:8px;background:var(--warning-bg);border:1px solid oklch(75% 0.15 75 / 0.4);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:11.5px;font-weight:700;color:oklch(85% 0.1 75)}
   .fr-provisional-banner .material-symbols-outlined{font-size:17px;color:var(--warning)}
+
+  /* ===== Flight Release v0.5 (06/08/2026) ===== */
+  /* Số hiệu bản release — "release lần thứ mấy" */
+  .rev-chip{display:inline-flex;align-items:center;background:var(--gold-accent);color:var(--gold);border:1px solid oklch(75% 0.12 85 / 0.45);border-radius:999px;padding:2px 9px;font-size:10px;font-weight:800;letter-spacing:.4px;margin-left:8px}
+
+  /* PIC + số điện thoại liên lạc */
+  .pic-box{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:10px;flex-wrap:wrap}
+  .pic-label{font-size:11.5px;font-weight:700;color:var(--text-muted);display:inline-flex;align-items:center;gap:6px}
+  .pic-label .material-symbols-outlined{font-size:16px;color:var(--primary)}
+  .pic-info{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .pic-name{font-size:12.5px;font-weight:700;color:var(--text-primary)}
+  .pic-phone{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--primary);text-decoration:none;background:var(--primary-accent);border:1px solid var(--border-light);border-radius:999px;padding:3px 10px}
+  .pic-phone:hover{border-color:var(--primary)}
+  .pic-phone .material-symbols-outlined{font-size:15px}
+
+  /* 2 mốc chữ ký Dispatch / PIC Release */
+  .rel-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .rm-item{flex:1 1 190px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px}
+  .rm-k{font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px}
+  .rm-v{font-size:12px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums}
+  .rm-v.pending{color:var(--warning)}
+
+  /* REQUEST FUEL + chênh lệch so với bản trước */
+  .request-fuel-box{background:var(--primary-accent);border:1px solid var(--primary);border-radius:6px;padding:8px 10px;margin-top:8px}
+  .rf-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .rf-label{font-size:12px;color:var(--primary);font-weight:700}
+  .rf-value{color:var(--primary);font-weight:800;font-size:13.5px}
+  .rf-delta-row{margin-top:6px;padding-top:6px;border-top:1px solid oklch(60% 0.16 250 / 0.3)}
+  .fuel-delta{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 8px}
+  .fuel-delta .material-symbols-outlined{font-size:13px}
+  .fuel-delta.up{background:var(--danger-bg);color:var(--danger)}
+  .fuel-delta.down{background:var(--success-bg);color:var(--success)}
+  .fuel-delta.same{background:var(--bg-tertiary);color:var(--text-muted)}
+  .edto-table .unsuit{color:var(--danger);font-weight:700}
   .edto-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:4px}
   .edto-table th{text-align:left;color:var(--text-muted);font-weight:700;padding:5px 8px;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border)}
   .edto-table td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
@@ -512,6 +564,23 @@
      phỏng bằng biến phiên, không phải theo sân bay). */
   .doc-name.seen{font-weight:500;color:var(--text-muted)}
   .doc-unread-dot{display:inline-block;vertical-align:middle;width:6px;height:6px;border-radius:50%;background:var(--primary);margin-right:5px;margin-bottom:2px}
+
+  /* ===== Bảng bản ghi dùng chung cho Checklist + Flight Documents (v0.5, 06/08/2026) =====
+     Thay dạng thẻ 2 dòng cũ: thời gian nay là CỘT RIÊNG ngang hàng bản ghi, dễ quét mắt. */
+  .rec-table td{vertical-align:middle}
+  .rec-table .rec-name{color:var(--text-primary);font-weight:600}
+  .rec-table .rec-name.seen{font-weight:500;color:var(--text-muted)}
+  .rec-table .rec-time{font-variant-numeric:tabular-nums;color:var(--text-secondary);white-space:nowrap}
+  .rec-table .icon-btn{vertical-align:middle}
+  /* Cho tên + người nộp XUỐNG DÒNG để bảng vừa panel (mặc định .t td là nowrap, làm
+     bảng 4 cột của Checklist tràn ngang và cắt mất cột Action). Cột Action co theo
+     nội dung bằng thủ thuật width:1% + nowrap. */
+  .rec-table .rec-name,
+  .rec-table td:nth-child(2){white-space:normal;word-break:break-word}
+  .rec-table th:last-child,
+  .rec-table td:last-child{width:1%;white-space:nowrap}
+  .device.iphone .rec-table th:nth-child(2),
+  .device.iphone .rec-table td:nth-child(2){display:none}   /* mobile: ẩn cột người nộp, giữ tên + thời gian */
 
   /* ===== Cờ điểm mở (chỉ còn 3 điểm thật sự chưa chốt) ===== */
   .q-flag{display:inline-flex;align-items:center;gap:3px;background:oklch(60% 0.18 25 / 0.18);color:#fca5a5;border:1px solid oklch(60% 0.18 25 / 0.4);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:800;cursor:help;vertical-align:middle}
@@ -572,6 +641,19 @@
   .pdf-stub{background:var(--bg-secondary);border:2px dashed var(--border-light);border-radius:10px;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-muted);text-align:center;padding:20px}
   .pdf-stub .material-symbols-outlined{font-size:48px;color:var(--border-light)}
 
+  /* ===== Viewer tài liệu FULL-SCREEN (v0.5, 06/08/2026) =====
+     Mục tiêu: đọc trọn tài liệu ngay trên màn hình, không phải tải file về. */
+  .modal-viewer{width:min(1180px,96vw);max-width:96vw;height:92vh;display:flex;flex-direction:column}
+  .modal-viewer .modal-body{flex:1;min-height:0;overflow:auto;background:#3a3a3a;padding:18px}
+  .vw-tools{display:flex;align-items:center;gap:2px}
+  .vw-zoom{font-size:11px;font-weight:700;color:var(--text-muted);min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
+  /* Trang tài liệu: nền sáng như giấy để đọc lâu đỡ mỏi, tương phản với khung tối */
+  .doc-page{background:#fff;color:#111;max-width:960px;margin:0 auto;padding:26px 30px;border-radius:3px;box-shadow:0 4px 22px rgba(0,0,0,.45)}
+  .doc-pre{font-family:'Consolas','Courier New',monospace;font-size:11px;line-height:1.5;white-space:pre;margin:0;color:#111}
+  .device.iphone .modal-viewer{width:96vw;height:94vh}
+  .device.iphone .doc-page{padding:14px 12px}
+  .device.iphone .doc-pre{font-size:8.5px;line-height:1.45}
+
   /* ===== Accordion ===== */
   .acc{border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:var(--bg-card)}
   .acc-head{padding:10px 13px;background:var(--bg-secondary);font-size:12px;font-weight:700;color:var(--text-primary);cursor:pointer;display:flex;align-items:center;gap:8px}
@@ -594,7 +676,7 @@
 <!-- ===== Thanh xem thử thiết bị — nguồn d.71 ===== -->
 <div class="devbar">
   <span class="material-symbols-outlined" style="font-size:16px;">devices</span>
-  <span><b>MOCKUP v0.4</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
+  <span><b>MOCKUP v0.5</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
   <div class="seg">
     <button class="active" id="dvDesktop" onclick="setDevice('desktop',this)"><span class="material-symbols-outlined">desktop_windows</span>Desktop</button>
     <button id="dvIpad" onclick="setDevice('ipad',this)"><span class="material-symbols-outlined">tablet_mac</span>iPad</button>
@@ -664,12 +746,17 @@
         <span class="topbar-title">Airport Ops</span>
         <span class="clock"><span class="material-symbols-outlined" style="font-size:14px;">schedule</span><b id="clockTxt">—</b></span>
 
-        <!-- TOSS.14.3 — Phân quyền theo base = 1 SÂN BAY ĐƠN (Decision B-3, v0.3, 03/08/2026) -->
-        <span class="base-chip" data-src="[FL d.74] '(Phân quyền theo base)' · [BR-502] · Decision B-3 (v0.3, 03/08/2026, đảo ngược v0.2) — base = 1 SÂN BAY ĐƠN."
-              title="User Base Airport">
-          <span class="material-symbols-outlined">verified_user</span>
-          Airport: VVDN
-        </span>
+        <!-- TOSS.14.3 — Phạm vi sân bay theo PHÂN QUYỀN (v0.5, 06/08/2026) ===============
+             Tài khoản được gán N sân bay qua System Admin (trường Main Base, multi-select,
+             mapping main_base/mainBase; nguồn danh mục: Danh mục Mainbase).
+             · 1 sân  => chip tĩnh, không dropdown
+             · N sân  => dropdown chọn 1 sân/lần + mục "All my airports" xem gộp
+             Đây là lần đổi thứ 4 của phạm vi (v0.1 đơn → v0.2 cụm căn cứ → v0.3 đơn →
+             v0.5 N sân theo phân quyền). Mô hình này hòa giải mâu thuẫn nguồn cũ: Khảo sát
+             09/06 §91-95 lo "luân chuyển ca trực giữa các sân bay" — phân quyền N sân giải
+             quyết đúng lo ngại đó mà không cần khái niệm "căn cứ bay" cứng. -->
+        <div class="base-wrap" id="baseWrap"
+             data-src="[FL d.74] '(Phân quyền theo base)' · [BR-502] · SRS System Admin mục Thêm mới người dùng — trường Main Base (Multi-dropdown list, main_base/mainBase)"></div>
 
         <div class="topbar-spacer"></div>
         <button class="user-btn" onclick="toggleUserMenu(event)">
@@ -705,7 +792,7 @@
             <div class="filter-item"><label>FLT No</label><input type="text" class="filter-input" placeholder="VN…" maxlength="15" data-src="EFF §3.1 — max 15 ký tự, TRIM, tìm tương đối"></div>
             <div class="filter-item"><label>AC Reg</label><input type="text" class="filter-input" placeholder="VNA…" data-src="EFF §3.1 — tìm tương đối"></div>
             <div class="dep-arr-wrap">
-              <div class="filter-item"><label>DEP (ICAO)</label><input type="text" class="filter-input" placeholder="VVDN" maxlength="4" style="text-transform:uppercase;" data-src="Decision B-15 (v0.2) — ICAO 4 ký tự"></div>
+              <div class="filter-item"><label>DEP (ICAO)</label><input type="text" class="filter-input" id="fDep" placeholder="ALL" maxlength="4" style="text-transform:uppercase;" data-src="Decision B-15 (v0.2) — ICAO 4 ký tự. v0.5: placeholder ALL vì phạm vi đã do bộ chọn sân bay trên thanh tiêu đề quyết định; bộ lọc này chỉ thu hẹp THÊM trong phạm vi đó (BR-AOPS-01)"></div>
               <div class="filter-item"><label>ARR (ICAO)</label><input type="text" class="filter-input" placeholder="ALL" maxlength="4" style="text-transform:uppercase;"></div>
             </div>
             <div class="filter-actions">
@@ -770,8 +857,10 @@
               <div id="panelStationManager" style="margin-top:10px;">
                 <div class="dtabs" role="tablist">
                   <button class="dtab active" data-tab="tabFR" onclick="switchTab(this,'tabFR')"><span class="material-symbols-outlined">verified</span>Flight Release</button>
-                  <button class="dtab" data-tab="tabCK" onclick="switchTab(this,'tabCK')"><span class="material-symbols-outlined">checklist</span>Checklist<span class="miss-badge" id="badgeCkTab" style="display:none;"></span></button>
-                  <button class="dtab" data-tab="tabDOC" onclick="switchTab(this,'tabDOC')"><span class="material-symbols-outlined">folder_open</span>Flight Documents<span class="miss-badge" id="badgeDocTab" style="display:none;"></span></button>
+                  <!-- v0.5 (chốt 06/08/2026): BỎ huy hiệu đếm thiếu trên 2 tab.
+                       Bỏ trạng thái/dòng thiếu => không còn khái niệm "thiếu" để đếm. -->
+                  <button class="dtab" data-tab="tabCK" onclick="switchTab(this,'tabCK')"><span class="material-symbols-outlined">checklist</span>Checklist</button>
+                  <button class="dtab" data-tab="tabDOC" onclick="switchTab(this,'tabDOC')"><span class="material-symbols-outlined">folder_open</span>Flight Documents</button>
                 </div>
 
                 <!-- ===== Flight Release Tab ===== -->
@@ -794,7 +883,9 @@
                     <button class="btn btn-ghost btn-sm" onclick="downloadAllDocs()"><span class="material-symbols-outlined">download</span>Download All</button>
                   </div>
                   <div id="docList"></div>
-                  <p class="hint">File naming convention per EFF: <code>Flight Release_FLTNO_DEP_FLTDATE_submissiondatetime.pdf</code>. 10 fixed document types per MO Plus Request document screen.</p>
+                  <!-- v0.5: bỏ vế "10 fixed document types" vì màn này chỉ còn hiện tài liệu ĐÃ CÓ,
+                       không liệt kê danh mục cố định nữa (chốt 06/08/2026). -->
+                  <p class="hint">File naming convention per EFF: <code>Flight Release_FLTNO_DEP_FLTDATE_submissiondatetime.pdf</code>. Only documents already received are listed.</p>
                 </div>
               </div><!-- /panelStationManager -->
 
@@ -826,19 +917,25 @@
 </div><!-- /device -->
 </div><!-- /stage -->
 
-<!-- ===== Modal xem tài liệu ===== -->
+<!-- ===== Modal xem tài liệu — v0.5: FULL-SCREEN, đọc được ngay không cần tải =====
+     Chốt 06/08/2026. Nội dung mẫu lấy từ tài liệu THẬT trong kho dự án
+     (OFP-SGN-SFO-RECLEARANCE, LOADSHEET_VN1237_R02_19JUN26) để đánh giá đúng
+     trải nghiệm đọc. Dựng bằng HTML monospace thay vì nhúng PDF vì mockup phải
+     TỰ CHỨA để chạy offline/GitHub Pages; PDF base64 sẽ làm file phình rất to
+     và không co giãn theo khổ màn hình. -->
 <div class="modal-overlay" id="mdView">
-  <div class="modal">
+  <div class="modal modal-viewer">
     <div class="modal-head">
       <h3><span class="material-symbols-outlined">picture_as_pdf</span><span class="tn" id="vwName">—</span></h3>
-      <button class="icon-btn" onclick="closeModal('mdView')"><span class="material-symbols-outlined">close</span></button>
-    </div>
-    <div class="modal-body">
-      <div class="pdf-stub">
-        <span class="material-symbols-outlined">picture_as_pdf</span>
-        <div style="font-size:12.5px;font-weight:600;color:var(--text-secondary);" id="vwName2">—</div>
-        <div style="font-size:11px;">PDF Preview area — mock environment.</div>
+      <div class="vw-tools">
+        <button class="icon-btn" onclick="zoomDoc(-1)" title="Zoom out"><span class="material-symbols-outlined">zoom_out</span></button>
+        <span class="vw-zoom" id="vwZoom">100%</span>
+        <button class="icon-btn" onclick="zoomDoc(1)" title="Zoom in"><span class="material-symbols-outlined">zoom_in</span></button>
+        <button class="icon-btn" onclick="closeModal('mdView')" title="Close"><span class="material-symbols-outlined">close</span></button>
       </div>
+    </div>
+    <div class="modal-body vw-body">
+      <div class="doc-page" id="vwPage"><pre class="doc-pre" id="vwContent">—</pre></div>
     </div>
     <div class="modal-foot">
       <span class="fh">Read-only / Download — No write permissions</span>
@@ -872,14 +969,26 @@
    Mã sân bay ICAO (Decision B-15) — dùng chung bộ mã với mockup Taxi Time
    ===================================================================== */
 
-/* Decision B-3 (v0.3, 03/08/2026) — ĐỔI LẠI phân quyền theo TỪNG SÂN BAY ĐƠN
-   (1 tài khoản chỉ xem đúng 1 sân bay), thay cho mô hình "căn cứ bay = cụm nhiều sân
-   bay" của v0.2. Đây là lần đảo ngược THỨ HAI của B-3 — v0.1 vốn đã là sân bay đơn,
-   v0.2 đổi sang cụm cụ thể vì Khảo sát 09/06/2026 §91-95 và BRD khung v0.12 §159/268
-   nêu "KHÔNG phân quyền nhỏ hơn cấp căn cứ bay, vì phá vỡ luân chuyển ca trực giữa
-   các sân bay" — quyết định này CHƯA được gỡ bỏ khỏi nguồn, giữ nguyên mâu thuẫn đó
-   để BA Lead biết khi đối chiếu, không tự ý sửa nguồn. */
-const MY_AIRPORT = 'VVDN';
+/* PHẠM VI SÂN BAY THEO PHÂN QUYỀN (v0.5, 06/08/2026) ============================
+   Tài khoản được gán N sân bay qua System Admin — trường Main Base (Multi-dropdown
+   list, mapping main_base/mainBase, droplist lấy từ Danh mục Mainbase).
+   Đây là lần đổi thứ 4 của phạm vi:
+     v0.1 sân bay đơn → v0.2 cụm căn cứ bay → v0.3 sân bay đơn → v0.5 N sân theo phân quyền.
+   Mô hình này KHÉP LẠI mâu thuẫn nguồn tồn từ v0.2: Khảo sát 09/06/2026 §91-95 và BRD
+   khung v0.12 §159/268 nêu "KHÔNG phân quyền nhỏ hơn cấp căn cứ bay, vì phá vỡ luân
+   chuyển ca trực giữa các sân bay" — phân quyền N sân bay giải quyết đúng lo ngại đó
+   mà không cần khái niệm "căn cứ bay" cứng.
+
+   LƯU Ý ĐỐI CHIẾU: System Admin hiển thị Main Base dạng "8386 - Airport Nội Bài"
+   (mã nội bộ). Airport Ops hiển thị ICAO 4 ký tự theo BR-AOPS-03 => cần ánh xạ
+   main_base code <-> ICAO ở tầng API. */
+const MY_AIRPORTS = [
+  { icao:'VVDN', name:'Da Nang' },
+  { icao:'VVCR', name:'Cam Ranh' },
+  { icao:'VVPQ', name:'Phu Quoc' }
+];
+/* Sân bay đang chọn: mã ICAO, hoặc 'ALL' = xem gộp mọi sân được cấp quyền */
+let selectedBase = MY_AIRPORTS[0].icao;
 
 const DOC_TYPES = ['CFP','NOTAM','WX','GD','LOADSHEET','PM','NOTOC-Baggage','NOTOC-Cargo','CARGO-MANIFEST','OTHER DOCUMENT'];
 const CK_CREW = ['Pre-flight Checklist','Cabin Security Checklist','Dangerous Goods Checklist'];
@@ -1024,11 +1133,28 @@ const FLIGHTS = [
     ckCrew:['Pre-flight Checklist','Cabin Security Checklist','Dangerous Goods Checklist'], ckSec:['Security Walk-around Check','Aircraft Security Search'] }
 ];
 
-/* Chi tiết Flight Release của bản đang hiệu lực — theo E-CFP của MO (mục 3.1 doc phân tích) */
+/* Chi tiết Flight Release của bản đang hiệu lực — theo E-CFP của MO (mục 3.1 doc phân tích).
+   v0.5 (06/08/2026) bổ sung:
+     · pic.phone  — nguồn Danh mục Phi công (Data Maintenance), trường phone_number/
+                    phoneNumber, định dạng (+84)xxx.xxx.xxx, gốc đồng bộ từ AVES theo Crewcode
+     · rev / prevRev / prevRequestFuel — phục vụ "release lần thứ mấy" + "fuel đổi gì"
+     · dispatchReleaseAt / picReleaseAt — 2 mốc chữ ký (trạng thái 4 cần đủ cả hai)
+     · destAltn / enrtAltn — 2 loại sân bay dự bị (bỏ Takeoff ALTN theo chốt 06/08/2026).
+       Tên khối và trạng thái SUITABLE/UNSUITABLE lấy theo tờ OFP thật trong kho dự án
+       (OFP-SGN-SFO-RECLEARANCE): DESTINATION ALTN / ENROUTE ALTN. */
 const RELEASE_DETAIL = {
-  cfpNo:'VNA504', from:'VVTS', to:'VVDN', alternate:'VVCR', trip:'01:12',
-  std:'—', sta:'—', edtoFlt:true, edtoMins:180, edtoExtra:0,
-  enrt:[ ['VVCR','SUITABLE','02:11/01:26'], ['VVPK','SUITABLE','02:11/01:26'] ]
+  cfpNo:'VNA504', from:'VVTS', to:'VVDN', trip:'01:12',
+  pic:{ name:'CAPT Tran V.A', phone:'(+84)912.345.678' },
+  rev:2, prevRev:1,
+  requestFuel:5944, prevRequestFuel:5744,
+  dispatchReleaseAt:'05/08/2026 04:12',
+  picReleaseAt:'05/08/2026 04:37',
+  /* Dữ liệu CỐ TÌNH giữ cả dòng UNSUITABLE để chứng minh bộ lọc hoạt động:
+     màn hình chỉ hiện sân ĐỦ ĐIỀU KIỆN (SUITABLE), dòng UNSUITABLE bị lọc bỏ,
+     không hiển thị và không có cột trạng thái (chốt 06/08/2026). */
+  destAltn:[ ['VVCR','SUITABLE','02:11/01:26'], ['VVDL','UNSUITABLE','02:40/01:05'] ],
+  enrtAltn:[ ['VVPK','SUITABLE','02:11/01:26'], ['VVNB','SUITABLE','01:52/02:04'],
+             ['RPLL','SUITABLE','03:20/02:15'], ['VVTS','UNSUITABLE','01:09/13:09'] ]
 };
 
 let cur = 0;
@@ -1044,17 +1170,66 @@ let lastTotalPages = 1;
 const seenDocs = new Set();
 
 /* ---------- Helpers ---------- */
-function inBase(f){ return f.dep === MY_AIRPORT || f.arr === MY_AIRPORT; }
-function missingDocs(f){ return DOC_TYPES.filter(t => !f.docs.includes(t)); }
-function missingCk(f){ return CK_CREW.filter(t=>!f.ckCrew.includes(t)).length + CK_SEC.filter(t=>!f.ckSec.includes(t)).length; }
+/* v0.5 — phạm vi theo sân bay ĐANG CHỌN; 'ALL' = mọi sân được cấp quyền.
+   Quy tắc vẫn là DEP hoặc ARR thuộc phạm vi (BR-AOPS-01), chỉ mở rộng từ 1 sân thành tập sân. */
+function baseScope(){
+  return selectedBase === 'ALL' ? MY_AIRPORTS.map(a=>a.icao) : [selectedBase];
+}
+function inBase(f){
+  const scope = baseScope();
+  return scope.includes(f.dep) || scope.includes(f.arr);
+}
 function ofpLabel(s){ return {1:'NO OFP',2:'WAITING DISPATCH RELEASE',3:'WAITING PIC RELEASE',4:'DISPATCH + PIC RELEASED'}[s]; }
 function ofpClass(s){ return s===4?'ok':(s===1?'pending':'warn'); }
+function fmtKg(n){ return n.toLocaleString('en-US'); }
+
+/* ---------- Render: bộ chọn sân bay trên thanh tiêu đề (v0.5) ----------
+   1 sân được cấp quyền  => chip TĨNH, không dropdown (đúng yêu cầu 06/08/2026)
+   N sân được cấp quyền  => dropdown chọn 1 sân/lần + mục "All my airports" */
+function renderBaseSelector(){
+  const wrap = document.getElementById('baseWrap');
+  if(MY_AIRPORTS.length <= 1){
+    wrap.innerHTML = `<span class="base-chip" title="User Base Airport">
+        <span class="material-symbols-outlined">verified_user</span>Airport: ${MY_AIRPORTS[0].icao}</span>`;
+    return;
+  }
+  const label = selectedBase === 'ALL' ? `All airports (${MY_AIRPORTS.length})` : selectedBase;
+  wrap.innerHTML = `
+    <button class="base-select" onclick="toggleBaseMenu(event)" title="Airports assigned to your account">
+      <span class="material-symbols-outlined">verified_user</span>Airport: ${label}
+      <span class="material-symbols-outlined" style="font-size:16px;">expand_more</span>
+    </button>
+    <div class="base-menu" id="baseMenu">
+      <div class="bm-head">Your airports (${MY_AIRPORTS.length})</div>
+      ${MY_AIRPORTS.map(a=>`<a class="${selectedBase===a.icao?'sel':''}" onclick="pickBase('${a.icao}')">
+          <span class="material-symbols-outlined">${selectedBase===a.icao?'radio_button_checked':'radio_button_unchecked'}</span>
+          ${a.icao}<span class="bm-name">${a.name}</span></a>`).join('')}
+      <div class="bm-div"></div>
+      <a class="${selectedBase==='ALL'?'sel':''}" onclick="pickBase('ALL')">
+        <span class="material-symbols-outlined">${selectedBase==='ALL'?'radio_button_checked':'radio_button_unchecked'}</span>
+        All my airports</a>
+    </div>`;
+}
+function toggleBaseMenu(e){
+  e.stopPropagation();
+  document.getElementById('baseMenu')?.classList.toggle('open');
+}
+function pickBase(icao){
+  selectedBase = icao;
+  pageNum = 1;
+  closeDetail();          // đổi phạm vi => chuyến đang mở có thể ngoài phạm vi mới
+  renderBaseSelector();
+  renderFlights();
+  toast(icao === 'ALL' ? 'Showing all your airports' : `Switched to ${icao}`);
+}
+document.addEventListener('click', ()=>document.getElementById('baseMenu')?.classList.remove('open'));
 
 /* ---------- Render: danh sách chuyến (v0.4 — có phân trang) ---------- */
 function renderFlights(){
   const full = FLIGHTS.filter(inBase);
+  const scopeLabel = selectedBase === 'ALL' ? MY_AIRPORTS.map(a=>a.icao).join(', ') : selectedBase;
   document.getElementById('fltCount').innerHTML =
-    `Airport <b style="color:var(--text-primary);">${MY_AIRPORT}</b> · ${full.length} flights`;
+    `Airport <b style="color:var(--text-primary);">${scopeLabel}</b> · ${full.length} flights`;
 
   const totalPages = Math.max(1, Math.ceil(full.length / pageSize));
   if(pageNum > totalPages) pageNum = totalPages;
@@ -1139,6 +1314,32 @@ function renderReleases(f){
   const d = RELEASE_DETAIL;
   const isFinal = f.ofpState === 4;
 
+  /* v0.5 — chênh lệch REQUEST FUEL so với bản release liền trước.
+     Lý do nghiệp vụ: đại diện sân bay có thể ĐÃ điều phối nạp dầu theo bản trước;
+     fuel đổi mà không biết là rủi ro thật => phải hiện rõ ngay cạnh con số. */
+  const fuelDelta = d.requestFuel - d.prevRequestFuel;
+  const deltaChip = d.rev <= 1 ? ''
+    : fuelDelta === 0
+      ? `<span class="fuel-delta same">No change vs REV ${d.prevRev}</span>`
+      : `<span class="fuel-delta ${fuelDelta>0?'up':'down'}">
+           <span class="material-symbols-outlined">${fuelDelta>0?'arrow_upward':'arrow_downward'}</span>
+           ${fuelDelta>0?'+':'−'}${fmtKg(Math.abs(fuelDelta))} KG vs REV ${d.prevRev}</span>`;
+
+  /* v0.5 (chốt 06/08/2026) — sân bay dự bị: CHỈ hiện sân ĐỦ ĐIỀU KIỆN (SUITABLE),
+     sân không đủ điều kiện thì không hiện, và BỎ hẳn cột Status.
+     Cùng nguyên tắc đã áp cho tab Tài liệu và Checklist: chỉ liệt kê cái dùng được.
+     Khối nào không còn sân nào đủ điều kiện thì ẩn luôn cả khối. */
+  const altnBlock = (label, rows) => {
+    const ok = rows.filter(r => r[1] === 'SUITABLE');
+    if(!ok.length) return '';
+    return `
+      <div class="section-label" style="margin-top:16px;">${label}</div>
+      <table class="edto-table"><thead><tr><th>Alternate</th><th>Window</th></tr></thead>
+        <tbody>${ok.map(r=>`<tr>
+          <td style="color:var(--text-primary);font-weight:600;">${r[0]}</td>
+          <td>${r[2]}</td></tr>`).join('')}</tbody></table>`;
+  };
+
   const weightFuelBlock = `
     <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;">
       <span>WEIGHT AND FUEL — IN KGS</span>
@@ -1152,17 +1353,22 @@ function renderReleases(f){
         <div class="field-row"><span class="k">COR. TRIP FUEL</span><span class="v">3,396</span></div>
         <div class="field-row"><span class="k">COR. EST PLD</span><span class="v">15,700</span></div>
         <div class="field-row"><span class="k">PILOT EXTRA FUEL</span><span class="v">0</span></div>
-        <div class="field-row"><span class="k">OFP BLOCK FUEL</span><span class="v">5,944</span></div>
-        <div class="field-row" style="background:var(--primary-accent);border:1px solid var(--primary);border-radius:6px;padding:6px 10px;margin-top:4px;">
-          <span class="k" style="color:var(--primary);font-weight:700;">REQUEST FUEL</span>
-          <span class="v" style="color:var(--primary);font-weight:800;font-size:13.5px;">5,944 KG</span>
+        <div class="field-row"><span class="k">OFP BLOCK FUEL</span><span class="v">${fmtKg(d.requestFuel)}</span></div>
+      </div>
+      <div class="request-fuel-box">
+        <div class="rf-top">
+          <span class="rf-label">REQUEST FUEL</span>
+          <span class="rf-value">${fmtKg(d.requestFuel)} KG</span>
         </div>
+        ${deltaChip ? `<div class="rf-delta-row">${deltaChip}</div>` : ''}
       </div>
     </div>
 
-    <div class="section-label" style="margin-top:16px;">EDTO ENRT</div>
-    <table class="edto-table"><thead><tr><th>Alternate</th><th>Status</th><th>Window</th></tr></thead>
-      <tbody>${d.enrt.map(r=>`<tr><td style="color:var(--text-primary);font-weight:600;">${r[0]}</td><td class="suit">${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>`;
+    <!-- v0.5 (chốt 06/08/2026): 2 loại sân bay dự bị — ĐẾN và DỌC ĐƯỜNG.
+         Tên khối theo tờ OFP thật (OFP-SGN-SFO-RECLEARANCE). Takeoff ALTN bỏ theo chốt.
+         Chỉ hiện sân đủ điều kiện, không cột trạng thái — xem altnBlock(). -->
+    ${altnBlock('DESTINATION ALTERNATE', d.destAltn)}
+    ${altnBlock('EN-ROUTE ALTERNATE', d.enrtAltn)}`;
 
   if(!isFinal){
     /* Trạng thái (3) — WAITING PIC RELEASE: tạm tính, chưa cho kết xuất */
@@ -1172,6 +1378,10 @@ function renderReleases(f){
         <button class="btn btn-ghost btn-sm" disabled title="Export Excel is disabled until the flight reaches state (4) — Dispatch + PIC Release"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
       </div>
       <div class="fr-provisional-banner"><span class="material-symbols-outlined">info</span>OFP data — pending PIC release. Figures below are provisional and may still change.</div>
+      <div class="rel-meta">
+        <div class="rm-item"><span class="rm-k">Dispatch Release</span><span class="rm-v">${d.dispatchReleaseAt}</span></div>
+        <div class="rm-item"><span class="rm-k">PIC Release</span><span class="rm-v pending">Pending</span></div>
+      </div>
       ${weightFuelBlock}`;
     return;
   }
@@ -1179,14 +1389,28 @@ function renderReleases(f){
   /* Trạng thái (4) — DISPATCH + PIC RELEASED: đầy đủ */
   document.getElementById('frDetail').innerHTML = `
     <div class="dpanel-head">
-      <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">verified</span>Flight Release — Active Version</h3>
+      <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">verified</span>Flight Release — Active Version
+        <span class="rev-chip">REV ${d.rev}</span></h3>
       <button class="btn btn-ghost btn-sm" onclick="toast('Exporting Flight Release… (simulation)')"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
     </div>
 
-    <!-- PIC Section (compact) -->
-    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:11.5px;font-weight:700;color:var(--text-muted);display:inline-flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">person</span>PIC</span>
-      <span style="font-size:12.5px;font-weight:700;color:var(--text-primary);">CAPT Tran V.A</span>
+    <!-- PIC — v0.5 thêm SĐT liên lạc.
+         Nguồn: Danh mục Phi công (Data Maintenance), trường phone_number/phoneNumber,
+         định dạng (+84)xxx.xxx.xxx, gốc đồng bộ từ AVES theo Crewcode, chu kỳ 1 ngày/lần. -->
+    <div class="pic-box">
+      <span class="pic-label"><span class="material-symbols-outlined">person</span>PIC</span>
+      <div class="pic-info">
+        <span class="pic-name">${d.pic.name}</span>
+        <a class="pic-phone" href="tel:${d.pic.phone.replace(/[^0-9+]/g,'')}"
+           title="Contact phone — source: Pilot catalog (synced from AVES)">
+          <span class="material-symbols-outlined">call</span>${d.pic.phone}</a>
+      </div>
+    </div>
+
+    <!-- v0.5: 2 mốc chữ ký. Trạng thái (4) cần đủ CẢ HAI nên hiện cả hai để đối chiếu. -->
+    <div class="rel-meta">
+      <div class="rm-item"><span class="rm-k">Dispatch Release</span><span class="rm-v">${d.dispatchReleaseAt}</span></div>
+      <div class="rm-item"><span class="rm-k">PIC Release</span><span class="rm-v">${d.picReleaseAt}</span></div>
     </div>
 
     ${weightFuelBlock}`;
@@ -1201,56 +1425,87 @@ function offsetTime(etd, minutesBefore){
   if(total < 0) total += 24*60;
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
 }
-function ckRow(name, present, by, at){
-  return present
-    ? `<div class="doc-row"><div class="doc-ic"><span class="material-symbols-outlined">check_circle</span></div>
-        <div class="doc-main"><div class="doc-name">${name}</div><div class="doc-sub">Submitted by ${by} · ${at}</div></div>
-        <span class="doc-status uploaded">Submitted</span>
-        <div class="doc-act"><button class="icon-btn" title="View" onclick="viewDoc('${name}')"><span class="material-symbols-outlined">visibility</span></button></div></div>`
-    : `<div class="doc-row"><div class="doc-ic missing"><span class="material-symbols-outlined">radio_button_unchecked</span></div>
-        <div class="doc-main"><div class="doc-name muted">${name}</div><div class="doc-sub">Not Submitted</div></div>
-        <span class="doc-status missing">Missing</span></div>`;
-}
+/* v0.5 (chốt 06/08/2026) — Checklist dựng dạng BẢNG CỘT:
+     · KHÔNG phân nhóm Flight Crew / Security — có gì hiện nấy, danh sách phẳng
+     · KHÔNG hiện dòng chưa nộp, KHÔNG chip trạng thái
+     · Thời gian nộp NGANG HÀNG bản ghi (cột riêng), không còn là dòng phụ chữ nhỏ
+   Hệ quả tốt: chỉ cần danh sách ĐÃ NỘP từ e-checklist, không cần danh sách kỳ vọng
+   => bỏ được hạng mục khó nhất trong hợp đồng API. */
 function renderChecklists(f){
-  let html = `<div class="section-label" style="margin-top:0;">Flight Crew Checklist</div>`;
-  html += CK_CREW.map((n,idx)=>ckRow(
-    n, f.ckCrew.includes(n),
-    CK_CREW_NAMES[idx % CK_CREW_NAMES.length],
-    `${f.date} ${offsetTime(f.etd, 90 - idx*20)}`
-  )).join('');
+  const rows = [];
+  CK_CREW.forEach((n,idx)=>{
+    if(f.ckCrew.includes(n)) rows.push({
+      name:n, by:CK_CREW_NAMES[idx % CK_CREW_NAMES.length],
+      at:`${f.date} ${offsetTime(f.etd, 90 - idx*20)}`
+    });
+  });
+  CK_SEC.forEach((n,idx)=>{
+    if(f.ckSec.includes(n)) rows.push({
+      name:n, by:CK_SEC_NAMES[idx % CK_SEC_NAMES.length],
+      at:`${f.date} ${offsetTime(f.etd, 120 - idx*15)}`
+    });
+  });
 
-  html += `<div class="section-label" style="margin-top:16px;">Security Checklist</div>`;
-  html += CK_SEC.map((n,idx)=>ckRow(
-    n, f.ckSec.includes(n),
-    CK_SEC_NAMES[idx % CK_SEC_NAMES.length],
-    `${f.date} ${offsetTime(f.etd, 120 - idx*15)}`
-  )).join('');
-
-  document.getElementById('ckListAll').innerHTML = html;
-}
-
-/* ---------- Render: documents (v0.4 — Decision Q11, 05/08/2026: đã xem/chưa xem) ---------- */
-function markSeen(name){ seenDocs.add(name); if(cur>=0) renderDocs(FLIGHTS[cur]); }
-function docRow(name, present){
-  if(!present){
-    return `<div class="doc-row"><div class="doc-ic missing"><span class="material-symbols-outlined">description</span></div>
-        <div class="doc-main"><div class="doc-name muted">${name}</div><div class="doc-sub">Missing</div></div>
-        <span class="doc-status missing">Missing</span></div>`;
+  const el = document.getElementById('ckListAll');
+  if(!rows.length){
+    el.innerHTML = `<div class="empty-state" style="padding:30px 0;">
+        <span class="material-symbols-outlined" style="font-size:40px;">checklist</span>
+        <div class="es-title" style="font-size:12.5px;font-weight:700;margin-top:6px;">No checklist submitted yet</div>
+      </div>`;
+    return;
   }
-  const seen = seenDocs.has(name);
-  return `<div class="doc-row"><div class="doc-ic"><span class="material-symbols-outlined">description</span></div>
-        <div class="doc-main"><div class="doc-name${seen?' seen':''}">${seen?'':'<span class="doc-unread-dot" title="Not viewed yet"></span>'}${name}</div><div class="doc-sub">Updated 05/08/2026 04:1${Math.floor(Math.random()*9)}</div></div>
-        <span class="doc-status uploaded">Uploaded</span>
-        <div class="doc-act">
-          <button class="icon-btn" title="View" onclick="viewDoc('${name}')"><span class="material-symbols-outlined">visibility</span></button>
-          <button class="icon-btn" title="Download" onclick="markSeen('${name}');toast('Downloading ${name}… (simulation)')"><span class="material-symbols-outlined">download</span></button>
-        </div></div>`;
+  el.innerHTML = `
+    <div class="table-container"><div class="table-scroll">
+    <table class="t rec-table">
+      <thead><tr><th>Checklist</th><th>Submitted by</th><th>Submitted at</th><th style="text-align:right;">Action</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td class="rec-name">${r.name}</td>
+        <td>${r.by}</td>
+        <td class="rec-time">${r.at}</td>
+        <td style="text-align:right;white-space:nowrap;">
+          <button class="icon-btn" title="View" onclick="viewDoc('${r.name}')"><span class="material-symbols-outlined">visibility</span></button>
+          <button class="icon-btn" title="Download" onclick="toast('Downloading ${r.name}… (simulation)')"><span class="material-symbols-outlined">download</span></button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
 }
+
+/* ---------- Render: documents (v0.5 — bảng cột, chỉ hiện tài liệu ĐÃ CÓ) ----------
+   · KHÔNG hiện dòng Missing, KHÔNG chip trạng thái (chốt 06/08/2026)
+   · GIỮ quy tắc đã xem/chưa xem (Q11) — đây là chỉ báo cá nhân, không phải trạng thái tài liệu
+   · Thời gian cập nhật ngang hàng bản ghi, cùng kiểu bảng với Checklist cho nhất quán */
+function markSeen(name){ seenDocs.add(name); if(cur>=0) renderDocs(FLIGHTS[cur]); }
 function renderDocs(f){
   const d = f.date.replace(/\//g,'');
-  let html = docRow(`Flight Release_${f.no}_${f.dep}_${d}.pdf`, f.ofpState===4);
-  html += DOC_TYPES.map(t=>docRow(`${t}_${f.no}.pdf`, f.docs.includes(t))).join('');
-  document.getElementById('docList').innerHTML = html;
+  const rows = [];
+  if(f.ofpState === 4) rows.push({ name:`Flight Release_${f.no}_${f.dep}_${d}.pdf`, at:'05/08/2026 04:12' });
+  DOC_TYPES.forEach((t,idx)=>{
+    if(f.docs.includes(t)) rows.push({ name:`${t}_${f.no}.pdf`, at:`05/08/2026 04:1${idx%9}` });
+  });
+
+  const el = document.getElementById('docList');
+  if(!rows.length){
+    el.innerHTML = `<div class="empty-state" style="padding:30px 0;">
+        <span class="material-symbols-outlined" style="font-size:40px;">folder_open</span>
+        <div class="es-title" style="font-size:12.5px;font-weight:700;margin-top:6px;">No document available yet</div>
+      </div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="table-container"><div class="table-scroll">
+    <table class="t rec-table">
+      <thead><tr><th>Document</th><th>Last updated</th><th style="text-align:right;">Action</th></tr></thead>
+      <tbody>${rows.map(r=>{
+        const seen = seenDocs.has(r.name);
+        return `<tr>
+          <td class="rec-name ${seen?'seen':''}">${seen?'':'<span class="doc-unread-dot" title="Not viewed yet"></span>'}${r.name}</td>
+          <td class="rec-time">${r.at}</td>
+          <td style="text-align:right;white-space:nowrap;">
+            <button class="icon-btn" title="View" onclick="viewDoc('${r.name}')"><span class="material-symbols-outlined">visibility</span></button>
+            <button class="icon-btn" title="Download" onclick="markSeen('${r.name}');toast('Downloading ${r.name}… (simulation)')"><span class="material-symbols-outlined">download</span></button>
+          </td></tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`;
 }
 /* v0.4 — Download All (gói .zip, TOSS_Flight_Docs_[FLTNO]_[FLTDATE].zip) đánh dấu mọi tài liệu đã có là đã xem */
 function downloadAllDocs(){
@@ -1263,21 +1518,11 @@ function downloadAllDocs(){
   toast(`Downloading TOSS_Flight_Docs_${f.no}_${d}.zip… (simulation)`);
 }
 
-/* ---------- Badge (Decision B-16 — đếm số mục CÒN THIẾU) ---------- */
-function setBadge(elId, n){
-  const el = document.getElementById(elId);
-  if(!el) return;
-  if(n > 0){ el.textContent = n; el.style.display = 'inline-flex'; }
-  else { el.style.display = 'none'; }
-}
-/* Badge chỉ còn trên tab tầng 3 (Checklist/Tài liệu) — bottom nav cũ (badgeCkBn/
-   badgeDocBn) đã bị bỏ khi bottom nav đổi sang menu module (tầng 1). */
-function renderBadges(f){
-  const md = missingDocs(f).length + (f.ofpState===4?0:1); // +1 cho Flight Release chưa sinh
-  const mc = missingCk(f);
-  setBadge('badgeDocTab', md);
-  setBadge('badgeCkTab', mc);
-}
+/* ---------- Huy hiệu đếm thiếu: ĐÃ BỎ ở v0.5 (chốt 06/08/2026) ----------
+   Trước đây Decision B-16 quy định huy hiệu đếm số mục CÒN THIẾU trên tab
+   Checklist/Flight Documents. Nay hai tab chỉ hiện những gì đang có, không còn
+   trạng thái/dòng thiếu => không còn khái niệm "thiếu" để đếm.
+   Đồng thời gỡ luôn nhu cầu lấy "danh mục kỳ vọng" từ e-checklist. */
 
 /* ---------- Chọn chuyến (TẦNG 3 — giống hệt hành vi trên cả 3 khổ màn hình) ----------
    Desktop/iPad: thêm .split vào .content => panel trượt vào từ phải, danh sách co lại.
@@ -1290,7 +1535,7 @@ function selectFlight(i){
   cur = i;
   const f = FLIGHTS[i];
   goSubModule('sm');   // mỗi chuyến mở ra luôn bắt đầu ở Station Manager
-  renderCtx(f); renderReleases(f); renderChecklists(f); renderDocs(f); renderBadges(f);
+  renderCtx(f); renderReleases(f); renderChecklists(f); renderDocs(f);
   renderFlights();
   document.getElementById('content').classList.add('split');
   document.getElementById('paneList').classList.add('hide');
@@ -1390,9 +1635,150 @@ function doLogout(){
 function toggleUserMenu(e){ e.stopPropagation(); document.getElementById('userMenu').classList.toggle('open'); }
 document.addEventListener('click', ()=>document.getElementById('userMenu').classList.remove('open'));
 
+/* ===== Nội dung tài liệu mẫu cho viewer (v0.5) =====
+   TRÍCH TỪ TÀI LIỆU THẬT trong kho dự án để đánh giá đúng trải nghiệm đọc:
+     · SAMPLE_OFP       ← OFP-SGN-SFO-RECLEARANCE.extracted.md
+     · SAMPLE_LOADSHEET ← LOADSHEET_VN1237_R02_19JUN26.extracted.md
+   CLAUDE.md §0: đây là dữ liệu mẫu, số hiệu/tên người trong tài liệu là của bản gốc. */
+const SAMPLE_OFP = `                            FLIGHT BRIEF
+HVN 1999      OFP 10/1/1 (01MAY26 0439 UTC)
+A359          DEP: 01MAY           DEST: 02MAY           DEST ALT:
+VNA897        VVTS/SGN             KSFO/SFO              KSJC/SJC
+
+WX PROG: 0109 0112 0115
+TYPE OF OPERATIONS: IFR SCHEDULED /EDTO/RCL
+
+                                TIME
+                                ----
+              SCHEDULED         ESTIMATED           ACTUAL
+OFF BLOCK     1040UTC/1740LT                        ......... UTC
+TAKE OFF                        1055UTC/1755LT      ......... UTC
+LANDING                         0008UTC/1708LT      ......... UTC
+IN BLOCK      0055UTC/1755LT                        ......... UTC
+              BLOCK TIME 13:38  FLIGHT TIME 13:13
+
+FMS COST INDEX:        CLB/ 320/M.85
+                       CRS/ CI15/M.85/CI15/M.85/CI15/M.85/CI15
+                       DSC/ 300/M.85
+
+SPECIAL OPS:           PBN/PBCS/RNAV/RVSM
+EDTO:                  YES/180 MINS
+SUPPL INFO / MISC:     AIR DIST 6377    GND DIST 6983
+                       AVG W/C  P048    AVG WIND 269/048 ISA DEV P03
+                       MAX SHR 06/45E70
+ROUTE:                 E/MCT/R
+                       VVTS 25L BIXEX5T BIXEX W15 CRA .. NITOM Q15
+                       MESOX L628 ARESI L625 MEVIN .. 2252N12441E ..
+                       ALBAX Y533 AZAMA Y57 YULIA Y89 GUPER Y81 MOE
+                       A590 POROT .. ADNAP R591 ADGOR .. KALIG ..
+                       44N160E .. 45N170E .. 46N180E .. 47N170W ..
+                       48N160W .. 48N150W .. 46N140W .. UNVER ..
+                       AMAKR BDEGA4 KSFO 28R
+
+FLT LVL:               VVTS/F350 ARESI/F360 MEVIN/F370 MOE/F390
+                       47N170W/F410
+--------------------------------------------------------------------
+TAKEOFF ALTN:          NOT REQD
+ENROUTE ALTN:          VVTS/VVDN/RPLL/RCTP/ROAH/RJBB/RJTT/RJCC
+DESTINATION ALTN:      KSJC
+--------- --------- --------- --------- --------- --------- --------
+ASC APRT          APPRCH              MINIMA    WX         W/C   XWC
+    WX PERIOD
+DEP
+    VVTS/SGN/25L TKOF                  0/500   9999/9999  +7.6   6.5
+    (1055-1155)
+DEST
+    KSFO/SFO/28R CAT2                100/365   9999/9999 -13.4  10.0
+    (2308-0108)
+DEST ALTN
+    KSJC/SJC/12L                      - U N S U I T A B L E -
+    (2339-0139)
+EDTO ALTN
+    RJCC/CTS/19L                      - U N S U I T A B L E -
+    (1648-2242)
+    KSEA/SEA/34R CIRC LOC@16L       1000/4013 20000/9999  -6.1   3.5
+    (2253-0120)
+    KSFO/SFO/28R CAT2                300/1200  9999/9999 -13.4  10.0
+    (2306-0120)
+--------- --------- --------- --------- --------- --------- --------
+MEL/CDL ITEMS      DESCRIPTION           REMARK
+-------------      -----------           ------
+21-50-07AX1        PACK RAM AIR INLET    *FUEL CONSUMPTION INCREASED
+                   DOOR - IF ONE PACK    BY 0.5%. REDUCE THE OEI
+                   RAM AIR INLET DOOR IS EN-ROUTE PERFORMANCE
+                   FAILED IN THE OPEN    LIMITING WEIGHT BY 810 KG
+                   POSITION              (1 785 LB) OR 0.32 %
+                                         WHICHEVER IS LOWER.*
+
+46-21-02A          ADS-C DATALINK -      *ADS-C IS NOT AVAILABLE.
+                   PROCEDURES DO NOT     ATC DATALINK REQUIRED
+                   REQUIRE ADS-C         SURVEILLANCE PERFORMANCE
+                   DATALINK              (RSP FOR ADS-C)
+                                         CAPABILITIES ARE LOST.*`;
+
+const SAMPLE_LOADSHEET = `L O A D S H E E T          CHECKED         APPROVED        EDNO
+ALL WEIGHTS IN KILOGRAMS   C VU CHI CONG                     02
+
+FROM/TO FLIGHT      A/C REG  VERSION      CREW     DATE    TIME
+HAN PQC VN1237/19   VN-A329  J16W18Y150   2/6      19JUN26 0726
+
+                        WEIGHT           DISTRIBUTION
+LOAD IN COMPARTMENTS      2883     1/     0 2/   625 3/  1461
+                                   4/   787 5/    10 0/     0
+
+PASSENGER/CABIN BAG       9140 113/ 19/  0     TTL 132 CAB 0
+                               PAX  13/  5/114 SOC   0/  0/  0
+                               BLKD  9
+TOTAL TRAFFIC LOAD       12023
+DRY OPERATING WEIGHT     49765
+ZERO FUEL WEIGHT ACTUAL  61788 MAX  71500      ADJ
+TAKE OFF FUEL             9054
+TAKE OFF WEIGHT  ACTUAL  70842 MAX  89000      ADJ
+TRIP FUEL                 4893
+LANDING WEIGHT   ACTUAL  65949 MAX  75500  L   ADJ
+
+BALANCE AND SEATING CONDITIONS .      LAST MINUTE CHANGES
+                 DOI      39.0 .DEST  SPEC    CL/CPT | - WEIGHT
+                 LIZFW    46.4 .
+MACZFW   23.6                  .
+LITOW    39.8    MACTOW   21.6 .
+LILAW    42.1    MACLAW   22.1 .
+STAB:TRIM                1.9 UP.
+A24.B72.C36                    .
+SEATROW TRIM                   .
+                               .
+UNDERLOAD BEFORE LMC       9551.           LMC TOTAL
+LOADMESSAGE AND CAPTAINS INFORMATION BEFORE LMC
+
+TAXI FUEL  246 TAXI WGT  71088 MAX   89400
+
+-PQC.113/19/0.0.T2883.2/625.3/1461.4/787.5/10
+.PAX/13/5/114.JMP/0.CRW/0.PAD/0/0/0.PER/22
+
+SI SERVICE WEIGHT ADJUSTMENT WEIGHT/INDEX`;
+
+/* Chọn nội dung mẫu theo LOẠI tài liệu suy từ tên file */
+function sampleFor(name){
+  const n = name.toUpperCase();
+  if(n.startsWith('LOADSHEET')) return SAMPLE_LOADSHEET;
+  if(n.startsWith('CFP') || n.startsWith('FLIGHT RELEASE') || n.startsWith('E-CFP')) return SAMPLE_OFP;
+  return `${name}\n\n${'-'.repeat(60)}\nSample preview — mock environment.\nIn production this area renders the actual PDF returned by EFF.\n${'-'.repeat(60)}\n\n` + SAMPLE_OFP;
+}
+
+let vwZoomLevel = 100;
+function zoomDoc(dir){
+  vwZoomLevel = Math.min(200, Math.max(60, vwZoomLevel + dir*10));
+  document.getElementById('vwZoom').textContent = vwZoomLevel + '%';
+  document.getElementById('vwContent').style.fontSize = (11 * vwZoomLevel / 100).toFixed(2) + 'px';
+}
+
 function viewDoc(name){
   document.getElementById('vwName').textContent = name;
-  document.getElementById('vwName2').textContent = name;
+  document.getElementById('vwContent').textContent = sampleFor(name);
+  vwZoomLevel = 100;
+  document.getElementById('vwZoom').textContent = '100%';
+  document.getElementById('vwContent').style.fontSize = '';
+  document.getElementById('vwPage').scrollTop = 0;
   openModal('mdView');
   /* v0.4 (Decision Q11, 05/08/2026) — mở xem cũng đánh dấu đã xem, theo từng người dùng */
   seenDocs.add(name);
@@ -1422,6 +1808,7 @@ tickClock(); setInterval(tickClock, 30000);
 /* Khởi tạo — MẶC ĐỊNH chỉ hiện danh sách chuyến bay, panel chi tiết đóng (rộng 0).
    Người dùng click 1 dòng thì panel mới trượt vào (phản hồi PO 31/07). */
 cur = -1;
+renderBaseSelector();
 renderFlights();
 </script>
 </body>
