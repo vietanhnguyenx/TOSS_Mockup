@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
-  MOCKUP v0.6 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
+  MOCKUP v0.7 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
   Phạm vi: Function list v1.0 dòng 72–79 (WBS TOSS.14.1–14.8, SP3, Tháng 9)
            BA PIC: Nguyễn Lê Việt Anh · v0.6 chốt 08/08/2026 (sửa theo vòng tự review ba-reviewer:
            sân bay dự bị đổi sang chuỗi string từ OFP; bỏ hẳn đã xem/chưa xem tài liệu; PIC+SĐT+REV+
-           chênh lệch fuel hiện từ trạng thái (3) thay vì chỉ (4))
+           chênh lệch fuel hiện từ trạng thái (3) thay vì chỉ (4)) · v0.7 chốt 10/08/2026 (góp ý review
+           của sếp: bỏ nút Export Excel ở màn danh sách chuyến bay — đảo ngược Chỉnh sửa #4; đổi tên
+           nút Export Excel còn lại ở tab Flight Release thành "Export Flight Release")
 
   ĐÂY LÀ MODULE "STATION MANAGER" TRONG BRD — không phải module mồ côi:
     BR-TOSS-034 (BRD-TOSS-001-v0.2 §231) · SH-13 · BR-514 (cây menu) ·
@@ -98,6 +100,7 @@
     #3  Nút Download tab Release      → ĐỔI THÀNH "Export Excel"; DISABLE ở trạng
                                          thái (3), ENABLE ở trạng thái (4).
     #4  Export Excel màn danh sách    → THÊM, cạnh nút Search trong filter-actions.
+                                         [ĐẢO NGƯỢC 10/08/2026 — xem DECISION LOG v0.7]
     #5  Chân tab "Read-only view…"    → BỎ khỏi tab Flight Release (BR-AOPS-02 giữ ở
                                          mục Quy tắc nghiệp vụ chung của SRS, không lặp
                                          lại trên từng màn).
@@ -130,7 +133,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TOSS — Station Manager › Airport Ops (Mockup v0.6)</title>
+<title>TOSS — Station Manager › Airport Ops (Mockup v0.7)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Material+Symbols+Outlined" rel="stylesheet">
 <style>
   :root{
@@ -502,7 +505,7 @@
   /* ===== Chế độ TẠM TÍNH — Flight Release ở trạng thái OFP (3) (v0.4 — Decision Q5, 05/08/2026) =====
      REQUEST FUEL = OFP BLOCK FUEL + PILOT EXTRA FUEL; PILOT EXTRA FUEL do PIC tự thêm khi ký release,
      nên ở trạng thái (3) con số CHƯA CHỐT. Vẫn hiện sớm vì việc của đại diện sân bay bắt đầu ngay sau
-     Dispatch Release (= trạng thái (3)), nhưng phải gắn nhãn rõ + chặn Export Excel. */
+     Dispatch Release (= trạng thái (3)), nhưng phải gắn nhãn rõ + chặn Export Flight Release. */
   .fr-provisional-banner{display:flex;align-items:center;gap:8px;background:var(--warning-bg);border:1px solid oklch(75% 0.15 75 / 0.4);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:11.5px;font-weight:700;color:oklch(85% 0.1 75)}
   .fr-provisional-banner .material-symbols-outlined{font-size:17px;color:var(--warning)}
 
@@ -670,7 +673,7 @@
 <!-- ===== Thanh xem thử thiết bị — nguồn d.71 ===== -->
 <div class="devbar">
   <span class="material-symbols-outlined" style="font-size:16px;">devices</span>
-  <span><b>MOCKUP v0.6</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
+  <span><b>MOCKUP v0.7</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
   <div class="seg">
     <button class="active" id="dvDesktop" onclick="setDevice('desktop',this)"><span class="material-symbols-outlined">desktop_windows</span>Desktop</button>
     <button id="dvIpad" onclick="setDevice('ipad',this)"><span class="material-symbols-outlined">tablet_mac</span>iPad</button>
@@ -792,7 +795,9 @@
             <div class="filter-actions">
               <button class="btn btn-ghost btn-sm" onclick="toast('Filters reset')"><span class="material-symbols-outlined">restart_alt</span>Reset</button>
               <button class="btn btn-primary btn-sm" onclick="toast('Filters applied (simulation)')"><span class="material-symbols-outlined">search</span>Search</button>
-              <button class="btn btn-ghost btn-sm" onclick="toast('Exporting flight list… (simulation)')" title="Export the filtered flight list to Excel" data-src="Chỉnh sửa #4 (v0.4, 05/08/2026) — thêm Export Excel ở màn danh sách"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
+              <!-- v0.7 (10/08/2026): bỏ nút Export Excel ở màn danh sách — đảo ngược Chỉnh sửa #4 (05/08/2026)
+                   theo góp ý review: 2 nút Export Excel cùng lúc gây nhầm lẫn. Chỉ giữ 1 nút, đổi tên
+                   "Export Flight Release", ở tab Flight Release. -->
             </div>
           </div>
         </section>
@@ -1290,7 +1295,7 @@ function renderCtx(f){
 
 /* ---------- Render: Flight release tab ---------- */
 /* v0.4 (Decision Q5, 05/08/2026) — 3 trạng thái hiển thị:
-   (1)(2) màn rỗng · (3) chế độ TẠM TÍNH (Weight & Fuel + EDTO, Export Excel khóa) · (4) đầy đủ */
+   (1)(2) màn rỗng · (3) chế độ TẠM TÍNH (Weight & Fuel + EDTO, Export Flight Release khóa) · (4) đầy đủ */
 function renderReleases(f){
   if(f.ofpState < 3){
     document.getElementById('frDetail').innerHTML = `
@@ -1377,7 +1382,7 @@ function renderReleases(f){
     document.getElementById('frDetail').innerHTML = `
       <div class="dpanel-head">
         <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--warning);">pending</span>Flight Release — Not Yet Active</h3>
-        <button class="btn btn-ghost btn-sm" disabled title="Export Excel is disabled until the flight reaches state (4) — Dispatch + PIC Release"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
+        <button class="btn btn-ghost btn-sm" disabled title="Export is disabled until the flight reaches state (4) — Dispatch + PIC Release"><span class="material-symbols-outlined">file_download</span>Export Flight Release</button>
       </div>
       <div class="fr-provisional-banner"><span class="material-symbols-outlined">info</span>OFP data — pending PIC release. Figures below are provisional and may still change.</div>
       ${picRevBlock}
@@ -1393,7 +1398,7 @@ function renderReleases(f){
   document.getElementById('frDetail').innerHTML = `
     <div class="dpanel-head">
       <h3><span class="material-symbols-outlined" style="font-size:16px;color:var(--primary);">verified</span>Flight Release — Active Version</h3>
-      <button class="btn btn-ghost btn-sm" onclick="toast('Exporting Flight Release… (simulation)')"><span class="material-symbols-outlined">file_download</span>Export Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="toast('Exporting Flight Release… (simulation)')"><span class="material-symbols-outlined">file_download</span>Export Flight Release</button>
     </div>
 
     ${picRevBlock}
