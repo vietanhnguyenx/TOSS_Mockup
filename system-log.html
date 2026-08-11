@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<!--
+  MOCKUP — SYSTEM LOG — phân hệ System Admin — dự án TOSS
+  CLAUDE.md §0: trường/nhãn/nút lấy từ nguồn (SRS-SA-SYSTEM-LOG-v0.1 + ảnh màn hình môi trường đang chạy 11/08/2026) — có data-src.
+  SỐ LIỆU = dữ liệu mẫu. BỐ CỤC/MÀU = bám theo giao diện đang chạy, cần BA/UI duyệt.
+  Trình bày theo PrimeNG 21 (Aura); mỗi vùng có data-pui = component PrimeNG / wrapper dự án (xem Legend cuối trang).
+  Tự chứa hoàn toàn: CSS inline, icon SVG inline, KHÔNG cần internet.
+-->
+<html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup — System Log (System Admin)</title>
+<style>
+  /* ===== PrimeNG Aura tokens — primary lấy theo giao diện đang chạy (teal VNA) ===== */
+  :root{
+    --p-primary:#0f7d95; --p-primary-hover:#0b6579; --p-on-primary:#fff;
+    --p-primary-50:#e8f4f7; --p-primary-100:#c7e4ea;
+    --p-surface-0:#ffffff; --p-surface-50:#f7fafb; --p-surface-100:#eef3f5; --p-surface-200:#e3eaed; --p-surface-300:#cfd8dd;
+    --p-text:#1f2d33; --p-text-muted:#6b7c85; --p-border:#e1e8eb;
+    --p-radius:10px; --p-radius-sm:8px;
+    --p-shadow1:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.05);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--p-surface-100);color:var(--p-text);font-size:13.5px;}
+  svg{vertical-align:middle;}
+
+  /* ===== layout shell ===== */
+  .shell{display:flex;min-height:100vh;}
+
+  /* p-panelMenu (sidebar) — nền ảnh bầu trời trên bản chạy, mockup dùng gradient thay ảnh */
+  [data-pui^="p-panelMenu"]{width:268px;flex-shrink:0;padding:0;position:relative;
+    background:linear-gradient(180deg,#dcecf5 0%,#cfe4f1 45%,#c3dced 100%);border-right:1px solid var(--p-border);
+    display:flex;flex-direction:column;}
+  .side-logo{display:flex;align-items:center;gap:10px;padding:18px 16px 22px;}
+  .side-logo .lotus{width:34px;height:34px;flex-shrink:0;}
+  .side-logo .name{font-weight:700;color:#0d6b80;font-size:15px;line-height:1.15;letter-spacing:.2px;}
+  [data-pui^="p-panelMenu"] a{display:flex;gap:12px;align-items:center;margin:2px 12px;padding:11px 14px;
+    color:#22424d;text-decoration:none;border-radius:var(--p-radius-sm);cursor:pointer;font-weight:500;}
+  [data-pui^="p-panelMenu"] a:hover{background:rgba(255,255,255,.55);}
+  [data-pui^="p-panelMenu"] a.active{background:var(--p-primary);color:#fff;font-weight:600;box-shadow:var(--p-shadow1);}
+  .side-bottom{margin-top:auto;padding-bottom:16px;}
+  .side-user{display:flex;align-items:center;gap:10px;margin:12px 14px 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.7);}
+  .side-user .av{width:34px;height:34px;border-radius:50%;background:var(--p-primary);color:#fff;display:flex;
+    align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+  .side-user .who{line-height:1.3;} .side-user .who b{display:block;font-size:13px;}
+  .side-user .who span{font-size:11.5px;color:#4a6069;}
+
+  /* ===== main ===== */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .breadcrumb{background:var(--p-surface-0);border-bottom:1px solid var(--p-border);padding:13px 22px;font-size:13px;color:var(--p-text-muted);}
+  .breadcrumb b{color:var(--p-primary);font-weight:600;}
+  .content{flex:1;padding:16px 20px 26px;}
+  .banner{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:var(--p-radius-sm);
+    padding:8px 12px;font-size:12px;margin-bottom:12px;}
+
+  /* p-card */
+  [data-pui^="p-card"]{background:var(--p-surface-0);border:1px solid var(--p-border);border-radius:var(--p-radius);
+    padding:16px 18px;box-shadow:var(--p-shadow1);}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .card-head .ttl{font-weight:600;color:var(--p-text);display:flex;align-items:center;gap:8px;}
+  .card-head .spacer{flex:1;}
+
+  /* ubck-filter — lưới bộ lọc */
+  .filter-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;}
+  .filter-actions{display:flex;gap:10px;align-items:flex-end;}
+  [data-pui*="InputText"],[data-pui*="p-select"],[data-pui*="p-datepicker"]{position:relative;}
+  .fld{position:relative;}
+  .fld input,.fld select{width:100%;padding:11px 13px;border:1px solid var(--p-surface-300);border-radius:var(--p-radius-sm);
+    font:inherit;background:var(--p-surface-0);color:var(--p-text);appearance:none;}
+  .fld input::placeholder{color:#9aa9b0;}
+  .fld select{color:#9aa9b0;}
+  .fld .suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#8fa1a9;pointer-events:none;}
+
+  /* p-button */
+  .btn{display:inline-flex;align-items:center;gap:7px;border-radius:var(--p-radius-sm);padding:11px 20px;font:inherit;
+    font-weight:600;cursor:pointer;border:1px solid transparent;font-size:13px;white-space:nowrap;}
+  .btn-primary{background:var(--p-primary);color:var(--p-on-primary);}
+  .btn-text{background:transparent;color:var(--p-text-muted);border:none;}
+  .btn-outlined{background:var(--p-surface-0);color:var(--p-primary);border:1px solid var(--p-primary-100);box-shadow:var(--p-shadow1);}
+
+  /* IamTable (p-table) */
+  .table-wrap{border:1px solid var(--p-border);border-radius:var(--p-radius);overflow:auto;}
+  [data-pui^="IamTable"]{width:100%;border-collapse:collapse;background:var(--p-surface-0);font-size:12.5px;}
+  [data-pui^="IamTable"] th{text-align:left;padding:12px 12px;font-weight:600;color:var(--p-text);
+    border-bottom:1px solid var(--p-border);background:var(--p-surface-50);white-space:nowrap;}
+  [data-pui^="IamTable"] td{padding:11px 12px;border-bottom:1px solid var(--p-border);vertical-align:top;}
+  [data-pui^="IamTable"] tbody tr:hover{background:var(--p-surface-50);}
+  .cell-user b{display:block;font-weight:600;} .cell-user span{color:var(--p-text-muted);font-size:11.5px;}
+  .cell-sys{display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--p-text-muted);font-style:italic;}
+  .det{line-height:1.55;} .det s{color:#a02c3a;} .det .k{color:var(--p-text-muted);}
+  .det .clip{display:block;color:var(--p-text-muted);}
+  .empty-cell{color:#b6c2c7;}
+
+  /* IamBadgeStatus (p-tag) — cột Action */
+  [data-pui^="IamBadgeStatus"]{display:inline-block;padding:3px 11px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+  .tag-add{background:#dcfce7;color:#166534;} .tag-edit{background:#dbeafe;color:#1e40af;}
+  .tag-del{background:#fee2e2;color:#991b1b;} .tag-sys{background:#ede9fe;color:#5b21b6;}
+
+  /* p-paginator */
+  [data-pui^="p-paginator"]{display:flex;align-items:center;gap:14px;padding:14px 4px 2px;color:var(--p-text);font-size:13px;}
+  [data-pui^="p-paginator"] .spacer{flex:1;}
+  .pg{display:flex;gap:5px;align-items:center;}
+  .pg b,.pg i{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;
+    font-style:normal;font-weight:500;cursor:pointer;color:var(--p-text-muted);}
+  .pg b.on{background:var(--p-primary);color:#fff;font-weight:700;}
+  .rows-sel{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--p-surface-300);
+    border-radius:var(--p-radius-sm);padding:7px 12px;background:var(--p-surface-0);}
+
+  @media(max-width:1100px){.filter-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:880px){.shell{flex-direction:column;} [data-pui^="p-panelMenu"]{width:100%;} .filter-grid{grid-template-columns:1fr;}}
+</style></head>
+<body>
+
+<div class="shell">
+
+  <!-- ===== p-panelMenu (sidebar điều hướng phân hệ System Admin) ===== -->
+  <nav data-pui="p-panelMenu" data-src="SRS System Admin — thanh điều hướng phân hệ">
+    <div class="side-logo">
+      <svg class="lotus" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <path d="M20 4c3.4 4.2 5 8.6 5 13.2 0 5-2 9.4-5 12.8-3-3.4-5-7.8-5-12.8C15 12.6 16.6 8.2 20 4z" fill="#0f7d95"/>
+        <path d="M20 30c-4.6-1.2-8.4-3.6-11-7 4-1.4 8-1.2 11 .6 3-1.8 7-2 11-.6-2.6 3.4-6.4 5.8-11 7z" fill="#7cc4d4"/>
+      </svg>
+      <div class="name">Vietnam Airlines</div>
+    </div>
+    <a data-src="SRS System Admin — Danh sách Người dùng">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg>
+      Users</a>
+    <a data-src="SRS System Admin — Danh sách vai trò">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+      Roles</a>
+    <a data-src="SRS System Admin — Danh sách Nhóm Người dùng">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3 19c.8-3.2 3.2-5 6-5s5.2 1.8 6 5"/></svg>
+      User Group</a>
+    <a class="active" data-src="SRS-SA-SYSTEM-LOG-v0.1 — Trigger, Bước 1">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M7.5 10h9M7.5 14h6"/></svg>
+      System Log</a>
+    <div class="side-bottom">
+      <a data-src="SRS System Admin — Thông báo">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 15V10a6 6 0 10-12 0v5l-1.5 2.5h15L18 15z"/><path d="M10 19a2 2 0 004 0"/></svg>
+        Notification</a>
+      <a data-src="SRS System Admin — Cài đặt">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg>
+        Setting</a>
+      <div class="side-user" data-pui="IamUserBox (p-avatar + p-menu)" data-src="SRS System Admin — Xem thông tin user đăng nhập">
+        <div class="av">AF</div>
+        <div class="who"><b>Admin Full</b><span>trunglb@gmail.com</span></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== khu vực nội dung ===== -->
+  <div class="main">
+    <div class="breadcrumb" data-pui="p-breadcrumb" data-src="Thiết kế dùng chung — điều hướng">
+      Home &nbsp;/&nbsp; <b>System Log</b>
+    </div>
+
+    <div class="content">
+      <div class="banner">
+        <b>MOCKUP — bản duyệt bố cục.</b> Dữ liệu trong bảng là dữ liệu mẫu. Bố cục và màu bám theo giao diện đang chạy,
+        cần BA/UI duyệt. Nguồn đặc tả: <b>SRS-SA-SYSTEM-LOG-v0.1</b>.
+      </div>
+
+      <div data-pui="p-card" data-src="SRS-SA-SYSTEM-LOG-v0.1 — Mô tả chi tiết màn hình">
+
+        <!-- ===== header thẻ: tiêu đề Filter + Refresh + Export ===== -->
+        <div class="card-head">
+          <div class="ttl">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0f7d95" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+            Filter
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0f7d95" stroke-width="2.2"><path d="M6 15l6-6 6 6"/></svg>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn btn-text" data-pui="p-button [text]" data-src="SRS-SA-SYSTEM-LOG-v0.1 — Bước 8, trường Refresh">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 11-2.5-5.8"/><path d="M20 4v4h-4"/></svg>
+            Refresh</button>
+          <button class="btn btn-outlined" data-pui="p-button [outlined]" data-src="SRS-SA-SYSTEM-LOG-v0.1 — mục Xuất Excel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+            Export Excel</button>
+        </div>
+
+        <!-- ===== ubck-filter (vùng bộ lọc) ===== -->
+        <div class="filter-grid" data-pui="ubck-filter (p-card + reactive form)" data-src="SRS-SA-SYSTEM-LOG-v0.1 — a. Vùng bộ lọc tìm kiếm">
+          <div class="fld" data-pui="p-select" data-src="Bộ lọc trường 1 — System (4 phân hệ)">
+            <select><option>System</option><option>System Admin</option><option>Data Maintenance</option><option>Data Source Monitoring</option><option>TOSS</option></select>
+            <span class="suffix"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></span>
+          </div>
+          <div class="fld" data-pui="p-datepicker [selectionMode=range]" data-src="Bộ lọc trường 2 — Select date range, quy tắc Between">
+            <input placeholder="Select date range">
+            <span class="suffix"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+          </div>
+          <div class="fld" data-pui="IamSearchInput (pInputText)" data-src="Bộ lọc trường 3 — Search by User name, maxlength 100">
+            <input placeholder="Search by User name">
+          </div>
+          <div class="fld" data-pui="p-select" data-src="Bộ lọc trường 4 — Module, phụ thuộc System đang chọn">
+            <select><option>Module</option><option>User Management</option><option>Role Management</option><option>Taxi Time Catalog</option><option>Airport</option></select>
+            <span class="suffix"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></span>
+          </div>
+        </div>
+
+        <div class="filter-grid" style="grid-template-columns:1fr 2fr;">
+          <div class="fld" data-pui="p-select" data-src="Bộ lọc trường 5 — Select action">
+            <select><option>Select action</option><option>Add</option><option>Edit</option><option>Delete</option><option>System Update</option></select>
+            <span class="suffix"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></span>
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-primary" data-pui="p-button" data-src="Bộ lọc trường 6 — Search">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+              Search</button>
+            <button class="btn btn-text" data-pui="p-button [text]" data-src="Bộ lọc trường 7 — Clear Filter">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 14L4 9l5-5"/><path d="M4 9h9a7 7 0 010 14H8"/></svg>
+              Clear Filter</button>
+          </div>
+        </div>
+
+        <!-- ===== IamTable (p-table) — bảng danh sách nhật ký ===== -->
+        <div class="table-wrap">
+          <table data-pui="IamTable (p-table)" data-src="SRS-SA-SYSTEM-LOG-v0.1 — b. Bảng danh sách nhật ký">
+            <thead><tr>
+              <th style="width:52px;">NO</th>
+              <th style="width:150px;">System</th>
+              <th style="width:135px;">Time</th>
+              <th style="width:130px;">Updated by</th>
+              <th style="width:120px;">Device IP</th>
+              <th style="width:150px;">Module</th>
+              <th style="width:96px;">Action</th>
+              <th>Update details</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Data Maintenance</td>
+                <td>11/08/2026 - 11:46</td>
+                <td class="cell-user"><b>trunglb</b><span>0286</span></td>
+                <td>10.0.3.141</td>
+                <td>Taxi Time Catalog</td>
+                <td><span data-pui="IamBadgeStatus (p-tag)" class="tag-add">Add</span></td>
+                <td class="det"><span class="k">ID:</span> 019fef26-3290-719e<br>
+                  <span class="k">fleetGroup:</span> A350 · <span class="k">effectiveFrom:</span> 2026-09-01
+                  <span class="clip">…</span></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Data Maintenance</td>
+                <td>11/08/2026 - 11:23</td>
+                <td class="cell-user"><b>trunglb</b><span>0286</span></td>
+                <td>10.0.3.141</td>
+                <td>Taxi Time Catalog</td>
+                <td><span data-pui="IamBadgeStatus (p-tag)" class="tag-edit">Edit</span></td>
+                <td class="det"><span class="k">effectiveTo:</span> <s>2026-08-01</s> &gt; 2026-09-30</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Data Maintenance</td>
+                <td>11/08/2026 - 10:45</td>
+                <td class="cell-user"><b>trunglb</b><span>0286</span></td>
+                <td>10.0.3.141</td>
+                <td>Taxi Time Catalog</td>
+                <td><span data-pui="IamBadgeStatus (p-tag)" class="tag-del">Delete</span></td>
+                <td class="det"><span class="k">fleetGroup:</span> <s>A350</s> · <span class="k">effectiveFrom:</span> <s>2026-08-01</s><br>
+                  <span class="k">deleteReason:</span> Deleted by user · <span class="k">status:</span> <s>ACTIVE</s> &gt; DELETED
+                  <span class="clip">…</span></td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>System Admin</td>
+                <td>11/08/2026 - 10:27</td>
+                <td class="cell-user"><b>Nguyễn Văn An</b><span>0117</span></td>
+                <td>10.0.1.8</td>
+                <td>User Management</td>
+                <td><span data-pui="IamBadgeStatus (p-tag)" class="tag-edit">Edit</span></td>
+                <td class="det"><span class="k">status:</span> <s>Ngừng hoạt động</s> &gt; Hoạt động</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>System Admin</td>
+                <td>11/08/2026 - 10:12</td>
+                <td class="cell-user"><b>Nguyễn Văn An</b><span>0117</span></td>
+                <td>10.0.1.8</td>
+                <td>Role Management</td>
+                <td><span data-pui="IamBadgeStatus (p-tag)" class="tag-add">Add</span></td>
+                <td class="det"><span class="k">ID:</span> ROLE_DSP_VIEWER<br>
+                  <span class="k">rolesName:</span> Dispatcher Viewer</td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>TOSS</td>
+                <td>11/08/2026 - 09:58</td>
+                <td class="cell-user"><b>hiep.dv</b><span>0341</span></td>
+                <td>10.0.2.77</td>
+                <td>Airport Ops</td>
+                <td><span data-pui="IamBadgeStatus (p-tag)" class="tag-edit">Edit</span></td>
+                <td class="det"><span class="k">mainBase:</span> <s>VVNB</s> &gt; VVNB, VVTS</td>
+              </tr>
+              <tr>
+                <td>7</td>
+                <td>Data Source Monitoring</td>
+                <td>11/08/2026 - 09:30</td>
+                <td class="cell-user"><b>System</b></td>
+                <td class="empty-cell">—</td>
+                <td>Netline</td>
+                <td><span data-pui="IamBadgeStatus (p-tag)" class="tag-sys">System Update</span></td>
+                <td class="det"><span class="k">Nguồn:</span> Job đồng bộ lịch bay Netline<br>
+                  <span class="k">recordsUpdated:</span> <s>0</s> &gt; 428</td>
+              </tr>
+              <tr>
+                <td>8</td>
+                <td>Data Maintenance</td>
+                <td>11/08/2026 - 09:00</td>
+                <td class="cell-user"><b>System</b></td>
+                <td class="empty-cell">—</td>
+                <td>Aircraft</td>
+                <td><span data-pui="IamBadgeStatus (p-tag)" class="tag-sys">System Update</span></td>
+                <td class="det"><span class="k">Nguồn:</span> Job đồng bộ danh mục tàu bay<br>
+                  <span class="k">status:</span> <s>ACTIVE</s> &gt; MAINTENANCE</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ===== p-paginator ===== -->
+        <div data-pui="p-paginator" data-src="Thiết kế dùng chung — kịch bản phân trang">
+          <span>Total : <b>6.143</b></span>
+          <span class="spacer"></span>
+          <span>Show</span>
+          <span class="rows-sel">10 Records
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+          <span class="pg"><i>«</i><i>‹</i><b class="on">1</b><b>2</b><b>3</b><b>4</b><b>5</b><i>›</i><i>»</i></span>
+        </div>
+
+      </div>
+
+
+    </div>
+  </div>
+</div>
+
+<script>
+  /* Chế độ chụp ảnh chèn tài liệu: mở file kèm #doc để ẩn banner mockup,
+     giữ đúng khung giao diện như sản phẩm thật. Không ảnh hưởng bản duyệt thông thường. */
+  if (location.hash === '#doc') {
+    document.querySelectorAll('.banner').forEach(function (el) { el.style.display = 'none'; });
+    document.querySelector('.content').style.paddingBottom = '18px';
+  }
+</script>
+</body></html>
