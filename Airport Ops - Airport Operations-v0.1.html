@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <!--
-  MOCKUP v0.7 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
+  MOCKUP v0.8 — TOSS / STATION MANAGER › AIRPORT OPS (Airport Operations)
   Phạm vi: Function list v1.0 dòng 72–79 (WBS TOSS.14.1–14.8, SP3, Tháng 9)
            BA PIC: Nguyễn Lê Việt Anh · v0.6 chốt 08/08/2026 (sửa theo vòng tự review ba-reviewer:
            sân bay dự bị đổi sang chuỗi string từ OFP; bỏ hẳn đã xem/chưa xem tài liệu; PIC+SĐT+REV+
            chênh lệch fuel hiện từ trạng thái (3) thay vì chỉ (4)) · v0.7 chốt 10/08/2026 (góp ý review
            của sếp: bỏ nút Export Excel ở màn danh sách chuyến bay — đảo ngược Chỉnh sửa #4; đổi tên
-           nút Export Excel còn lại ở tab Flight Release thành "Export Flight Release")
+           nút Export Excel còn lại ở tab Flight Release thành "Export Flight Release") · v0.8 chốt
+           12/08/2026 (bổ sung ô tìm kiếm trong dropdown chọn sân bay khi số sân > 8 — hiện thực hóa
+           đúng phần đã đặc tả trong SRS nhưng mockup trước đó còn thiếu code)
 
   ĐÂY LÀ MODULE "STATION MANAGER" TRONG BRD — không phải module mồ côi:
     BR-TOSS-034 (BRD-TOSS-001-v0.2 §231) · SH-13 · BR-514 (cây menu) ·
@@ -133,7 +135,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TOSS — Station Manager › Airport Ops (Mockup v0.7)</title>
+<title>TOSS — Station Manager › Airport Ops (Mockup v0.8)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Material+Symbols+Outlined" rel="stylesheet">
 <style>
   :root{
@@ -274,6 +276,12 @@
   .base-menu a .material-symbols-outlined{font-size:16px}
   .base-menu a .bm-name{color:var(--text-muted);font-size:10.5px;margin-left:auto}
   .base-menu .bm-div{height:1px;background:var(--border);margin:4px 0}
+  /* v0.8 — ô tìm kiếm khi số sân bay được cấp quyền > 8 (Phần Dropdown chọn sân bay, dòng 3) */
+  .bm-search-wrap{display:flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;margin:2px 4px 6px}
+  .bm-search-wrap .material-symbols-outlined{font-size:15px;color:var(--text-muted)}
+  .bm-search{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:inherit;font-size:11.5px}
+  .bm-search::placeholder{color:var(--text-muted)}
+  .base-menu .bm-empty{padding:10px;font-size:11.5px;color:var(--text-muted);font-style:italic;text-align:center}
   .device.iphone .base-wrap{order:4;flex-basis:100%}
   .device.iphone .base-menu{min-width:100%}
   .topbar-spacer{margin-left:auto}
@@ -673,7 +681,7 @@
 <!-- ===== Thanh xem thử thiết bị — nguồn d.71 ===== -->
 <div class="devbar">
   <span class="material-symbols-outlined" style="font-size:16px;">devices</span>
-  <span><b>MOCKUP v0.7</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
+  <span><b>MOCKUP v0.8</b> — Station Manager › Airport Ops · Function list d.72–79 (TOSS.14.1–14.8)</span>
   <div class="seg">
     <button class="active" id="dvDesktop" onclick="setDevice('desktop',this)"><span class="material-symbols-outlined">desktop_windows</span>Desktop</button>
     <button id="dvIpad" onclick="setDevice('ipad',this)"><span class="material-symbols-outlined">tablet_mac</span>iPad</button>
@@ -1189,6 +1197,9 @@ function renderBaseSelector(){
     return;
   }
   const label = selectedBase === 'ALL' ? `All airports (${MY_AIRPORTS.length})` : selectedBase;
+  /* v0.8 — Phần Dropdown chọn sân bay, dòng 3: khi số sân bay được cấp quyền > 8,
+     hiện thêm ô tìm kiếm ở đầu danh sách, lọc tương đối theo mã ICAO và tên sân bay. */
+  const showSearch = MY_AIRPORTS.length > 8;
   wrap.innerHTML = `
     <button class="base-select" onclick="toggleBaseMenu(event)" title="Airports assigned to your account">
       <span class="material-symbols-outlined">verified_user</span>Airport: ${label}
@@ -1196,18 +1207,43 @@ function renderBaseSelector(){
     </button>
     <div class="base-menu" id="baseMenu">
       <div class="bm-head">Your airports (${MY_AIRPORTS.length})</div>
-      ${MY_AIRPORTS.map(a=>`<a class="${selectedBase===a.icao?'sel':''}" onclick="pickBase('${a.icao}')">
-          <span class="material-symbols-outlined">${selectedBase===a.icao?'radio_button_checked':'radio_button_unchecked'}</span>
-          ${a.icao}<span class="bm-name">${a.name}</span></a>`).join('')}
+      ${showSearch ? `<div class="bm-search-wrap" onclick="event.stopPropagation()">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" class="bm-search" id="bmSearchInput" placeholder="Search ICAO or airport name…"
+               oninput="filterBaseMenu(this.value)" onclick="event.stopPropagation()">
+      </div>` : ''}
+      <div id="bmList">${renderBaseList('')}</div>
       <div class="bm-div"></div>
       <a class="${selectedBase==='ALL'?'sel':''}" onclick="pickBase('ALL')">
         <span class="material-symbols-outlined">${selectedBase==='ALL'?'radio_button_checked':'radio_button_unchecked'}</span>
         All my airports</a>
     </div>`;
 }
+/* Tách riêng phần render list khỏi renderBaseSelector() để gõ vào ô tìm kiếm chỉ
+   cập nhật #bmList, không dựng lại toàn bộ menu — tránh mất focus con trỏ khi gõ. */
+function renderBaseList(query){
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? MY_AIRPORTS.filter(a => a.icao.toLowerCase().includes(q) || a.name.toLowerCase().includes(q))
+    : MY_AIRPORTS;
+  if(!filtered.length) return `<div class="bm-empty">No airport matches "${query}"</div>`;
+  return filtered.map(a=>`<a class="${selectedBase===a.icao?'sel':''}" onclick="pickBase('${a.icao}')">
+      <span class="material-symbols-outlined">${selectedBase===a.icao?'radio_button_checked':'radio_button_unchecked'}</span>
+      ${a.icao}<span class="bm-name">${a.name}</span></a>`).join('');
+}
+function filterBaseMenu(query){
+  const el = document.getElementById('bmList');
+  if(el) el.innerHTML = renderBaseList(query);
+}
 function toggleBaseMenu(e){
   e.stopPropagation();
-  document.getElementById('baseMenu')?.classList.toggle('open');
+  const menu = document.getElementById('baseMenu');
+  const opening = menu && !menu.classList.contains('open');
+  menu?.classList.toggle('open');
+  if(opening){
+    const input = document.getElementById('bmSearchInput');
+    if(input){ input.value=''; setTimeout(()=>input.focus(), 30); }
+  }
 }
 function pickBase(icao){
   selectedBase = icao;
