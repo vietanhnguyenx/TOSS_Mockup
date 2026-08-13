@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  MOCKUP v0.9 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
+  MOCKUP v1.0 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
   Scope: Function list v1.0, sheet "Function list", rows 185–191 (7 functions, SP3, September)
          plus "Change History" (A-8) and "Import" (A-9) added on top of the source rows.
 
@@ -209,6 +209,46 @@
                                  different records, not multiple fields of one action. Filter bar
                                  (From date / To date / Account / Action) is UNCHANGED — kept as
                                  is, not redrawn to the reference layout's filter bar.
+    A-21 Save-dialog overhaul  → *** REVISED (v1.0) — BA review, 07/08/2026 ***
+                                 Four separate findings on the Create/Import save path, approved
+                                 together:
+                                 (a) FIRST record of a fleet group may be future-dated (status
+                                     Scheduled). Allowed deliberately: the fleet group has no taxi
+                                     time in force either way, so a future first record makes
+                                     nothing worse, and forbidding it would push users to backdate
+                                     instead — which is the harmful option. The confirmation now
+                                     spells out that nothing is in force until that date, since
+                                     the gap is otherwise invisible.
+                                 (b) FIRST record may NOT be backdated. Previously the From field
+                                     was unvalidated whenever the fleet group had no record, so a
+                                     past date silently retro-applied taxi times to flights that
+                                     had already flown — the exact harm A-19 cites when it forbids
+                                     deleting an Expired period. The two rules now agree.
+                                 (c) "Airports without a Standard Taxi Time" is scoped to the
+                                     region rows ADDED to the matrix, superseding A-13's rule of
+                                     counting every airport of every region. A-13 assumed TOSS
+                                     would eventually manage the whole catalogue; in operation the
+                                     catalogue holds 8,000+ airports while VNA flies a few dozen,
+                                     so the warning fired on all of them at every save and taught
+                                     users to click through it — hiding the genuine misses it was
+                                     built to catch. Adding a region row is an explicit "manage
+                                     this region", so an unassigned airport inside one is a real
+                                     oversight; an airport in a region never added is deliberate
+                                     non-scope. The matrix counter uses the same scope (it would
+                                     otherwise print a different figure for the same word), and
+                                     the chip list is capped — it could run to hundreds.
+                                 (d) The confirmation table is drawn along the RECORD axis and
+                                     lists BOTH records. It used to show only the previous
+                                     record's dates under the labels "Current active"/"After
+                                     saving" — a TIME axis — while the body text quoted the NEW
+                                     record's dates, so readers attached the table's dates to the
+                                     new record. Its heading also still said "current active
+                                     period", which A-18 made wrong: the chain tail may display as
+                                     Scheduled. Same fix applied to the inline chain hint.
+                                 Also: the popup now opens whenever ANY warning block has content.
+                                 The old test was (no previous record && no missing airports),
+                                 which silently skipped the dialog for a fleet group's first
+                                 record — dropping (a) and (c) exactly where they matter most.
   ===========================================================================
   STATUS MODEL — *** REVISED (v0.5) — feedback from Đặng Văn Hiệp, 29/07/2026 ***
     >>> SUPERSEDED by A-18 (06/08/2026, see DECISION LOG above) — Scheduled was re-added.
@@ -250,7 +290,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOSS — Airport Master Data › Taxi Time (Mockup v0.9)</title>
+  <title>TOSS — Airport Master Data › Taxi Time (Mockup v1.0)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
   <style>
     :root{
@@ -517,7 +557,10 @@
     .cf-body{padding:12px 13px;font-size:12px;line-height:1.6}
     .cf-body table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:9px}
     .cf-body th{background:#f8fafc;text-align:left;padding:7px 10px;font-size:10.5px;text-transform:uppercase;color:var(--md-text-secondary);border-bottom:1px solid var(--md-outline-variant)}
-    .cf-body td{padding:8px 10px;border-bottom:1px solid var(--md-outline-variant)}
+    .cf-body td{padding:8px 10px;border-bottom:1px solid var(--md-outline-variant);vertical-align:top}
+    /* A-21: sub-label under a record name, so the row says WHICH record without a second column */
+    .cf-sub{font-size:10.5px;font-weight:400;color:var(--md-text-secondary);text-transform:none}
+    .cf-more{font-size:11px;color:var(--md-text-secondary);font-style:italic;align-self:center}
     .val-old{color:#b91c1c;text-decoration:line-through}
     .val-new{color:#047857;font-weight:600}
     .val-nil{color:var(--md-text-muted);font-style:italic}
@@ -819,29 +862,54 @@
     </div>
     <div class="modal-body">
 
-      <!-- Block 1 — A-7 (v0.5): unified chaining, replaces the former separate overlap/gap cases -->
-      <div class="cf-block" id="cfOverlap">
-        <div class="cf-head warn"><span class="material-symbols-outlined">event_repeat</span>Current active period will be closed</div>
+      <!-- Block 1 — A-7 (v0.5): unified chaining, replaces the former separate overlap/gap cases.
+           A-21 (07/08/2026): table redrawn along the RECORD axis and now lists BOTH records.
+           The old layout ("Current active" / "After saving") mixed a TIME axis into a dialog the
+           reader is scanning per RECORD, so the previous record's dates read as the new record's. -->
+      <div class="cf-block" id="cfOverlap" data-src="Decision A-7 (v0.5) + A-21 (07/08/2026) — heading says LAST PERIOD OF THE CHAIN, not 'current active': since A-18 the chain tail may display as Scheduled rather than Active">
+        <div class="cf-head warn"><span class="material-symbols-outlined">event_repeat</span>The last period of this fleet group will be closed</div>
         <div class="cf-body">
-          The new record for fleet group <b id="ovCat">—</b> becomes the <b>active</b> period, effective <b id="ovNew">—</b> (open-ended).
-          To keep the fleet group's timeline continuous — no overlap, no gap — the system will <b>automatically close</b> the period currently active for this fleet group on the day before.
+          For fleet group <b id="ovCat">—</b>. To keep the timeline continuous — no overlap, no gap —
+          the system closes the period that currently ends the chain on the day before the new record starts.
+          That period's <b>Effective From does not change</b>; only its end date is set.
           <table>
-            <tr><th>Affected record</th><th>Effective period</th></tr>
-            <tr><td>Current active</td><td class="val-old" id="ovOld">—</td></tr>
-            <tr><td>After saving</td><td class="val-new" id="ovCut">—</td></tr>
+            <tr><th>Record</th><th>Effective period</th></tr>
+            <tr>
+              <td>Previous period<br><span class="cf-sub">being closed</span></td>
+              <td><div class="val-old" id="ovOld">—</div><div class="val-new" id="ovCut">—</div></td>
+            </tr>
+            <tr>
+              <td>New record<br><span class="cf-sub">being created</span></td>
+              <td><div class="val-new" id="ovNew">—</div></td>
+            </tr>
           </table>
         </div>
       </div>
 
-      <!-- Block 2 — A-4 -->
-      <div class="cf-block" id="cfMissing">
+      <!-- Block 1b — A-21 (07/08/2026): first record of a fleet group may start in the future
+           (status Scheduled). Allowed, but the gap until then is silent, so it must be spelled out. -->
+      <div class="cf-block" id="cfFuture" style="display:none;" data-src="Decision A-21 (07/08/2026) — the FIRST record of a fleet group may be future-dated; warn that nothing is in force until then">
+        <div class="cf-head warn"><span class="material-symbols-outlined">schedule</span>Nothing in force until this period starts</div>
+        <div class="cf-body">
+          This is the <b>first</b> Standard Taxi Time record for <b id="fuCat">—</b>, and it starts on <b id="fuFrom">—</b>.
+          Until that date the fleet group has <b>no taxi time in force</b>: TOSS pushes nothing to Lido and
+          <b>Lido keeps using its own figures</b> for every airport of this fleet group.
+        </div>
+      </div>
+
+      <!-- Block 2 — A-4, scope narrowed by A-21: counts only the regions actually added to the
+           matrix. Counting every region made this warning fire on all 8,000+ catalogue airports
+           at every save, so it carried no signal. -->
+      <div class="cf-block" id="cfMissing" data-src="Decision A-4 + A-21 (07/08/2026) — scoped to the regions added to the matrix: an airport in a region that was never added is out of scope on purpose, not an oversight">
         <div class="cf-head info"><span class="material-symbols-outlined">report</span><span id="cfMissTitle">Airports without a Standard Taxi Time</span></div>
         <div class="cf-body">
           <div class="chips" id="cfMissList" style="margin-bottom:10px;"></div>
-          These airports have <b>no value assigned</b> on this record. TOSS will <b>not push a Standard Taxi Time</b>
-          for them to Lido; <b>Lido will keep using its own figure</b> when building the OFP.
+          These airports sit in a <b>region row you added</b> but have <b>no value assigned</b> on this record.
+          TOSS will <b>not push a Standard Taxi Time</b> for them to Lido; <b>Lido will keep using its own figure</b>
+          when building the OFP.
           <div style="margin-top:9px;color:var(--md-text-secondary);font-size:11.5px;">
             You can still save. To have TOSS manage these airports, go back and assign values first.
+            Airports in regions you did not add are not counted here — they are simply out of scope for this record.
           </div>
         </div>
       </div>
@@ -1156,14 +1224,19 @@ function unassignedOf(regionCode){
   MINUTES.forEach(m => used.push(...(state[regionCode] ? state[regionCode][m] : [])));
   return r.airports.filter(a => !used.includes(a));
 }
-/* A-13 (v0.7): "missing" now covers BOTH airports unassigned within an added region row AND
-   every airport of a region that was never added as a row at all — otherwise the assign-counter
-   and the save-confirmation warning (A-4) would silently understate how much is left to do. */
+/* A-21 (07/08/2026) — SUPERSEDES A-13's counting rule. "Missing" now means ONLY: an airport that
+   sits in a region row the user ADDED but was left without a value.
+   A-13 also counted every airport of every region never added as a row, on the reasoning that the
+   warning would otherwise understate the work left. That reasoning assumed TOSS should eventually
+   manage every airport — which is false in operation: the catalogue holds 8,000+ airports while
+   VNA flies a few dozen, so the warning fired on all of them at every save and carried no signal.
+   Adding a region row is an explicit "I want to manage this region", so an unassigned airport
+   inside one IS an oversight worth flagging; an airport in a region never added is deliberate
+   non-scope. Lido keeps using its own figure for both cases either way (A-4, BR-160). */
 function allMissing(){
   const out = [];
   REGIONS.forEach(r=>{
     if(activeRegions.includes(r.code)) unassignedOf(r.code).forEach(a => out.push(a));
-    else out.push(...r.airports);
   });
   return out;
 }
@@ -1183,12 +1256,17 @@ function applyPrev(){
   });
 }
 
-/* Denominator is always the FULL airport catalogue (all Regions), not just the rows currently
-   added — so "X of Y assigned" cannot overstate completeness by ignoring un-added regions. */
+/* A-21 (07/08/2026): denominator is the airports of the region rows ADDED to the matrix, not the
+   full catalogue. Same reasoning as allMissing() above — against 8,000+ catalogue airports the
+   counter read "43 of 8,214 assigned · 8,171 unassigned" at every save, which says nothing about
+   the record being built. It must also agree with the save-confirmation warning, which counts the
+   same scope; two different figures for "unassigned" on one screen is worse than either. */
 function totals(){
   let assigned = 0;
-  const total = REGIONS.reduce((s,r) => s + r.airports.length, 0);
+  let total = 0;
   activeRegions.forEach(code=>{
+    const r = REGIONS.find(x => x.code === code);
+    if(r) total += r.airports.length;
     MINUTES.forEach(m => assigned += state[code][m].length);
   });
   return { assigned, total, miss: total - assigned };
@@ -1520,7 +1598,7 @@ function renderList(){
       <td>${i+1}</td>
       <td style="font-weight:600;color:var(--vna-navy);">${r.cat}</td>
       <td style="text-align:center;">${r.regions}</td>
-      <td style="text-align:center;font-weight:600;">${r.aps}${r.miss ? `<span class="miss-tag" title="${r.miss} airport(s) without a Standard Taxi Time — Lido keeps using its own figure"><span class="material-symbols-outlined">report</span>${r.miss}</span>` : ''}</td>
+      <td style="text-align:center;font-weight:600;">${r.aps}${r.miss ? `<span class="miss-tag" title="${r.miss} airport(s) in the regions covered by this record have no Standard Taxi Time — Lido keeps using its own figure. Airports of regions this record does not cover are out of scope and not counted (A-21)."><span class="material-symbols-outlined">report</span>${r.miss}</span>` : ''}</td>
       <td>${r.from}</td>
       <td>${r.to === null ? '<span class="ongoing-tag">Ongoing</span>' : r.to}</td>
       <td style="color:var(--md-text-secondary);">${r.upd}</td>
@@ -1647,19 +1725,35 @@ function updateChainHint(){
   }
 
   const active = lastInChainOf(cat);
+  /* A-21: first record of the fleet group — state the two new rules inline, before the user
+     reaches the save dialog. Past dates are rejected (1b), future dates are fine (1a). */
   if(!active){
-    txtEl.innerHTML = 'No existing period for this fleet group yet — this will become its first record.';
+    if(fromVal && dmy(fmt(fromVal)) < dmy(TODAY)){
+      hintEl.classList.add('err');
+      txtEl.innerHTML = 'Effective From cannot be in the past for a fleet group&#39;s first record — '
+        + 'that would apply taxi times to flights that already flew.';
+      return;
+    }
+    txtEl.innerHTML = fromVal && dmy(fmt(fromVal)) > dmy(TODAY)
+      ? 'No existing period for this fleet group yet — this will become its first record, <b>Scheduled</b> '
+        + 'until <b>' + fmt(fromVal) + '</b>. Nothing is in force for this fleet group before that date.'
+      : 'No existing period for this fleet group yet — this will become its first record.';
     return;
   }
+  /* A-21 (3c): say "last period of the chain", not "current active period". Since A-18 the chain
+     tail can display as Scheduled, so calling it "active" is wrong whenever a future-dated period
+     already exists — the same conflation fixed everywhere else in A-17/A-18. */
   if(fromVal && new Date(fromVal) <= new Date(isoFromDmy(active.from))){
     hintEl.classList.add('err');
-    txtEl.innerHTML = 'Effective From must be later than <b>' + active.from + '</b> — the start of the current active period for ' + cat + '.';
+    txtEl.innerHTML = 'Effective From must be later than <b>' + active.from + '</b> — the start of the last period in the chain for ' + cat + '.';
     return;
   }
-  txtEl.innerHTML = 'Current active period for <b>' + cat + '</b> started <b>' + active.from + '</b> (open-ended). Saving this record will automatically close it the day before this new period starts.';
+  txtEl.innerHTML = 'The last period in the chain for <b>' + cat + '</b> started <b>' + active.from + '</b> (open-ended). Saving this record will automatically close it the day before this new period starts.';
 }
 
-/* ---------- Save: A-7 (v0.5, unified chaining) + A-4 (unassigned airports) ---------- */
+/* ---------- Save: A-7 (v0.5, unified chaining) + A-4 (unassigned airports) + A-21 ---------- */
+const MISS_CHIP_CAP = 20;   /* A-21: never render the whole list — it can run to hundreds */
+
 function trySave(){
   const cat  = document.getElementById('frmCat3').value;
   const from = document.getElementById('frmFrom').value;
@@ -1668,6 +1762,7 @@ function trySave(){
   if(!from){ toast('Effective From is required'); return; }
 
   let chainRecord = null;
+  let futureFirst = false;      /* A-21: first record of the fleet group, starting in the future */
   if(!isEditMode){
     const active = lastInChainOf(cat);
     if(active){
@@ -1677,26 +1772,54 @@ function trySave(){
         return;
       }
       chainRecord = active;
+    } else {
+      /* A-21 (07/08/2026) — FIRST record of this fleet group. Two rules, both new:
+         (1b) Effective From in the PAST is blocked. Flights in that stretch have already flown;
+              backdating would retro-apply taxi times to them — the same harm A-19 blocks when it
+              forbids deleting an Expired period. The two rules have to agree.
+         (1a) Effective From in the FUTURE is ALLOWED (the record simply shows as Scheduled). It
+              makes nothing worse: the fleet group has no taxi time in force right now either way.
+              But the gap is invisible on the list, so it is spelled out in the confirmation. */
+      if(dmy(fmt(from)) < dmy(TODAY)){
+        toast('Effective From cannot be in the past for the first record of ' + cat
+              + ' — that would apply taxi times to flights that already flew');
+        updateChainHint();
+        return;
+      }
+      futureFirst = dmy(fmt(from)) > dmy(TODAY);
     }
   }
 
   document.getElementById('cfOverlap').style.display = chainRecord ? '' : 'none';
+  document.getElementById('cfFuture').style.display  = futureFirst ? '' : 'none';
   document.getElementById('cfMissing').style.display = miss.length ? '' : 'none';
 
   if(chainRecord){
     const d = new Date(from); d.setDate(d.getDate() - 1);
     const cut = ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear();
     document.getElementById('ovCat').textContent = cat;
+    /* A-21: the table now carries BOTH records, so each row names the record it describes */
     document.getElementById('ovNew').textContent = fmt(from) + ' → Ongoing';
-    document.getElementById('ovOld').textContent = chainRecord.from + ' → Ongoing';
+    document.getElementById('ovOld').textContent = chainRecord.from + ' → ' + toLabel(chainRecord);
     document.getElementById('ovCut').textContent = chainRecord.from + ' → ' + cut;
+  }
+  if(futureFirst){
+    document.getElementById('fuCat').textContent  = cat;
+    document.getElementById('fuFrom').textContent = fmt(from);
   }
   if(miss.length){
     document.getElementById('cfMissTitle').textContent = miss.length + ' airport(s) without a Standard Taxi Time';
-    document.getElementById('cfMissList').innerHTML = miss.map(a => '<span class="chip miss">' + a + '</span>').join('');
+    const shown = miss.slice(0, MISS_CHIP_CAP);
+    document.getElementById('cfMissList').innerHTML =
+      shown.map(a => '<span class="chip miss">' + a + '</span>').join('')
+      + (miss.length > shown.length
+          ? '<span class="cf-more">and ' + (miss.length - shown.length) + ' more…</span>' : '');
   }
 
-  if(!chainRecord && !miss.length){ confirmSave(); return; }
+  /* A-21: show the dialog when ANY warning block has something to say — no longer a special case
+     for "first record". Previously this read (!chainRecord && !miss.length), which happened to
+     work only because the two blocks were the only ones that existed. */
+  if(!chainRecord && !futureFirst && !miss.length){ confirmSave(); return; }
   openModal('mdConfirm');
 }
 function confirmSave(){
