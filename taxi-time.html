@@ -1,6 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!--
-  MOCKUP v1.0 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
+  MOCKUP v1.1 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
   Scope: Function list v1.0, sheet "Function list", rows 185–191 (7 functions, SP3, September)
          plus "Change History" (A-8) and "Import" (A-9) added on top of the source rows.
 
@@ -249,6 +249,38 @@
                                  The old test was (no previous record && no missing airports),
                                  which silently skipped the dialog for a fleet group's first
                                  record — dropping (a) and (c) exactly where they matter most.
+    A-22 Backdating closed off   → *** REVISED (v1.1) — BA review, 07/08/2026 ***
+                                 A-21(b) blocked a PAST Effective From only on a fleet group's
+                                 FIRST record — the rarest path, used once per fleet group ever.
+                                 The two paths used daily were still wide open, with identical
+                                 harm. Both are now closed:
+                                 (A) CREATE, any record: Effective From must be today or later.
+                                     The pre-existing test ("later than the chain tail's Effective
+                                     From") never compares against today, so once the chain tail
+                                     is a period that started months ago — the normal steady state
+                                     — every date between its start and today passed. Confirmed by
+                                     simulation: with the tail at 01/07 and today 06/08, a new
+                                     record at 15/07 was accepted, retro-closing the running period
+                                     at 14/07 and re-applying taxi times to every flight already
+                                     flown since. The sample data hid this because all three fleet
+                                     groups happened to have future-dated tails. Combined rule is
+                                     now: Effective From > max(chain tail's Effective From,
+                                     yesterday).
+                                 (B) EDIT: Effective From is LOCKED, like Fleet Group and Effective
+                                     To. It had NO validation at all — the whole date check sat
+                                     behind `if(!isEditMode)`, so any record's start could be moved
+                                     anywhere, including years into the past. Chosen over
+                                     range-constraining the field because a record's effective
+                                     period is its position in the chain, not an ordinary
+                                     attribute: Effective To is already a derived, locked value,
+                                     and moving Effective From silently re-cuts the neighbouring
+                                     periods. A wrong date is corrected by deleting and re-creating,
+                                     which A-19's absorption rule already makes safe. This also
+                                     closes the [CẦN XÁC NHẬN] that BR-TAXI-01 raised against
+                                     editing Effective From.
+                                 Fleet Group was already `disabled` on the Edit screen but still
+                                 rendered like an editable field; disabled inputs now carry the
+                                 same grey treatment as the locked ones, as the SRS describes.
   ===========================================================================
   STATUS MODEL — *** REVISED (v0.5) — feedback from Đặng Văn Hiệp, 29/07/2026 ***
     >>> SUPERSEDED by A-18 (06/08/2026, see DECISION LOG above) — Scheduled was re-added.
@@ -290,7 +322,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOSS — Airport Master Data › Taxi Time (Mockup v1.0)</title>
+  <title>TOSS — Airport Master Data › Taxi Time (Mockup v1.1)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
   <style>
     :root{
@@ -366,6 +398,10 @@
     .filter-input{width:100%;height:36px;padding:6px 10px;border:1px solid var(--md-outline);border-radius:var(--md-radius-sm);font-family:inherit;font-size:13px;color:var(--md-text-primary);background:var(--md-surface);outline:none;transition:border-color .2s,box-shadow .2s}
     .filter-input:focus{border-color:var(--vna-navy);box-shadow:0 0 0 3px rgba(0,42,84,.1)}
     .filter-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b' width='18' height='18'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:28px}
+    /* A-22: a disabled field must READ as locked — same grey as .lock-field, per the SRS wording
+       "nền xám để biểu thị trường bị khóa". Fleet Group was already disabled on the Edit screen
+       but still looked editable next to the locked Effective From/To. */
+    .filter-input:disabled{background-color:#f1f5f9;color:var(--md-text-muted);cursor:not-allowed;font-style:italic}
     .filter-actions{display:flex;align-items:center;gap:10px;justify-content:flex-end;height:36px;flex:0 0 auto;margin-left:auto}
 
     .main-nav-bar{background:rgba(255,255,255,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.9);border-radius:12px;padding:5px;box-shadow:0 4px 18px rgba(0,42,84,.09),inset 0 1px 0 rgba(255,255,255,.8);display:flex;gap:3px}
@@ -805,6 +841,10 @@
         <div class="form-cell">
           <label>Effective From <span class="req">*</span></label>
           <input type="date" class="filter-input" id="frmFrom" oninput="updateChainHint()" data-mat="mat-datepicker" data-src="[FL-188] 'select from-to'">
+          <!-- A-22 (07/08/2026): on the Edit screen this field is LOCKED, same treatment as
+               Effective To and Fleet Group — the effective period is the record's position in
+               the chain, not an ordinary attribute. -->
+          <div class="lock-field" id="frmFromLock" style="display:none;" data-src="Decision A-22 (07/08/2026) — Effective From is read-only when editing: moving it silently re-cuts the neighbouring periods and can retro-apply taxi times to flights that already flew"><span class="material-symbols-outlined">lock</span><span id="frmFromLockTxt">—</span></div>
         </div>
         <div class="form-cell">
           <label>Effective To</label>
@@ -1675,6 +1715,20 @@ function setToLock(locked, text){
   }
 }
 
+/* A-22 (B1): same treatment for Effective From — locked on the Edit screen. */
+function setFromLock(locked, text){
+  const dateEl = document.getElementById('frmFrom');
+  const lockEl = document.getElementById('frmFromLock');
+  if(locked){
+    dateEl.style.display = 'none';
+    lockEl.style.display = 'flex';
+    document.getElementById('frmFromLockTxt').textContent = text || '—';
+  } else {
+    dateEl.style.display = '';
+    lockEl.style.display = 'none';
+  }
+}
+
 function openForm(mode, idx){
   const isEdit = mode === 'edit';
   isEditMode = isEdit;
@@ -1693,15 +1747,25 @@ function openForm(mode, idx){
     const r = ROWS[curRow];
     catSel.value = r.cat;
     fromEl.value = isoFromDmy(r.from);
+    /* A-22 (B1): Effective From is READ-ONLY while editing. Moving it would silently re-cut the
+       neighbouring periods and, when moved backwards, retro-apply this record's taxi times to
+       flights that already flew — the harm A-19 blocks for deletion and A-22 blocks on create.
+       Correcting a wrong date is done by deleting the record and creating it again, which the
+       absorption rule (A-19) already makes safe. Fleet Group is locked for the matching reason
+       (moving a record to another fleet group tears a hole in one chain and overlaps another). */
+    setFromLock(true, r.from + ' — locked, see note below');
+    catSel.disabled = true;
     if(r.to === null){
-      setToLock(true, 'Ongoing — this is the current active period');
+      setToLock(true, 'Ongoing — this is the last period in the chain');
     } else {
       setToLock(false);
       document.getElementById('frmTo').value = isoFromDmy(r.to);
     }
   } else {
     catSel.selectedIndex = 0;
+    catSel.disabled = false;
     fromEl.value = '';
+    setFromLock(false);
     setToLock(true, 'Ongoing — set automatically');
   }
   updateChainHint();
@@ -1716,24 +1780,30 @@ function updateChainHint(){
   const txtEl = document.getElementById('chainHintTxt');
   hintEl.classList.remove('err');
 
+  /* A-22 (B1): while editing, the effective period cannot be touched at all — say so plainly
+     instead of describing a chain effect the user can no longer trigger. */
   if(isEditMode){
     const r = ROWS[curRow];
-    txtEl.innerHTML = r.to === null
-      ? 'This is the fleet group&#39;s current active period — its Effective To stays open-ended until a newer period is created.'
-      : 'This is a past period (Effective To: <b>' + r.to + '</b>). Editing it does not change the chain with adjacent periods (out of scope for this mockup).';
+    txtEl.innerHTML = '<b>Fleet group and effective period are locked</b> — only the taxi time values '
+      + 'below can be changed. They fix this record&#39;s place in the fleet group&#39;s timeline: moving '
+      + 'them would re-cut the neighbouring periods and, if moved backwards, change the taxi times '
+      + 'already applied to flights that have flown. To correct the period, delete this record and '
+      + 'create it again.';
+    return;
+  }
+
+  /* A-22: the past-date rule applies to EVERY new record, so it is checked before splitting on
+     whether the fleet group already has a chain. */
+  if(fromVal && dmy(fmt(fromVal)) < dmy(TODAY)){
+    hintEl.classList.add('err');
+    txtEl.innerHTML = 'Effective From cannot be in the past — that would apply taxi times to '
+      + 'flights that already flew. The earliest allowed date is today (<b>' + TODAY + '</b>).';
     return;
   }
 
   const active = lastInChainOf(cat);
-  /* A-21: first record of the fleet group — state the two new rules inline, before the user
-     reaches the save dialog. Past dates are rejected (1b), future dates are fine (1a). */
+  /* A-21: first record of the fleet group — a future date is allowed and shows as Scheduled. */
   if(!active){
-    if(fromVal && dmy(fmt(fromVal)) < dmy(TODAY)){
-      hintEl.classList.add('err');
-      txtEl.innerHTML = 'Effective From cannot be in the past for a fleet group&#39;s first record — '
-        + 'that would apply taxi times to flights that already flew.';
-      return;
-    }
     txtEl.innerHTML = fromVal && dmy(fmt(fromVal)) > dmy(TODAY)
       ? 'No existing period for this fleet group yet — this will become its first record, <b>Scheduled</b> '
         + 'until <b>' + fmt(fromVal) + '</b>. Nothing is in force for this fleet group before that date.'
@@ -1764,6 +1834,18 @@ function trySave(){
   let chainRecord = null;
   let futureFirst = false;      /* A-21: first record of the fleet group, starting in the future */
   if(!isEditMode){
+    /* A-22 (07/08/2026) — ONE past-date rule for EVERY new record, first or not.
+       A-21 applied it only to a fleet group's first record. That left the common path open: the
+       "later than the chain tail" test never compares against today, so once the chain tail is a
+       period that started months ago (the normal steady state), any date between its start and
+       today passed — retro-closing the running period and re-applying taxi times to flights that
+       had already flown. Identical harm to the case A-21 blocked, on the path used every day.
+       Combined rule: Effective From > max(chain tail's Effective From, yesterday). */
+    if(dmy(fmt(from)) < dmy(TODAY)){
+      toast('Effective From cannot be in the past — that would apply taxi times to flights that already flew');
+      updateChainHint();
+      return;
+    }
     const active = lastInChainOf(cat);
     if(active){
       if(new Date(from) <= new Date(isoFromDmy(active.from))){
@@ -1773,19 +1855,9 @@ function trySave(){
       }
       chainRecord = active;
     } else {
-      /* A-21 (07/08/2026) — FIRST record of this fleet group. Two rules, both new:
-         (1b) Effective From in the PAST is blocked. Flights in that stretch have already flown;
-              backdating would retro-apply taxi times to them — the same harm A-19 blocks when it
-              forbids deleting an Expired period. The two rules have to agree.
-         (1a) Effective From in the FUTURE is ALLOWED (the record simply shows as Scheduled). It
-              makes nothing worse: the fleet group has no taxi time in force right now either way.
-              But the gap is invisible on the list, so it is spelled out in the confirmation. */
-      if(dmy(fmt(from)) < dmy(TODAY)){
-        toast('Effective From cannot be in the past for the first record of ' + cat
-              + ' — that would apply taxi times to flights that already flew');
-        updateChainHint();
-        return;
-      }
+      /* A-21: for a fleet group's FIRST record a future date is allowed — the record simply shows
+         as Scheduled. It makes nothing worse (the fleet group has no taxi time in force either
+         way), but the gap is invisible on the list, so it is spelled out in the confirmation. */
       futureFirst = dmy(fmt(from)) > dmy(TODAY);
     }
   }
