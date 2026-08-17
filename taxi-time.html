@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <!--
-  MOCKUP v1.1 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
+  MOCKUP v1.3 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
   Scope: Function list v1.0, sheet "Function list", rows 185–191 (7 functions, SP3, September)
          plus "Change History" (A-8) and "Import" (A-9) added on top of the source rows.
 
@@ -281,6 +281,43 @@
                                  Fleet Group was already `disabled` on the Edit screen but still
                                  rendered like an editable field; disabled inputs now carry the
                                  same grey treatment as the locked ones, as the SRS describes.
+    A-23 Delete table redrawn  → *** REVISED (v1.2) — BA review, 07/08/2026 ***
+                                 The Delete dialog's comparison table still used A-21's discarded
+                                 layout: labels "Before deleting" / "After deleting" — a TIME axis
+                                 — over a table that only ever held the PREVIOUS record's dates,
+                                 while the line above it quotes the period being deleted. The two
+                                 read as one, so the table's dates were taken for the deleted
+                                 record's. Most visible on a middle-of-chain delete, where they are
+                                 different periods outright: deleting 01/07 → 31/08 while the table
+                                 shows 01/02 → 30/06. Redrawn along the RECORD axis, listing both
+                                 records, exactly as A-21(d) did for Confirm Save — the two dialogs
+                                 now present the same shape of change the same way.
+    A-24 Append-only, stated    → *** REVISED (v1.3) — BA review, 07/08/2026 ***
+                                 Question raised: can a period be created BETWEEN two existing ones
+                                 — say between the Active period and an already-declared Scheduled
+                                 one? Answer, confirmed by simulation: no. The chaining test
+                                 compares the new Effective From against the CHAIN TAIL, which is by
+                                 definition the last record, so every date earlier than it is
+                                 refused; creation can only ever append to the end of the chain.
+                                 That was true from A-7 onwards but had never been WRITTEN
+                                 anywhere — "giữa chuỗi" appears in the SRS only under Delete — so
+                                 a reader could reasonably assume insertion was supported. Decided
+                                 (PA-1) to KEEP append-only and state it explicitly, rather than
+                                 build insertion: inserting would mean a new record carrying a
+                                 derived Effective To (the next period's start minus a day) instead
+                                 of the open-ended value the form locks today, plus a three-record
+                                 confirmation — real scope for a need that has not yet been shown
+                                 to be real. Where a period genuinely has to go earlier, the
+                                 documented route is to delete the later period first (safe since
+                                 A-19) and create them in order.
+                                 The error message now states the rule and that route; it used to
+                                 quote only the date, leaving the user to guess why a sensible
+                                 mid-chain date was rejected.
+                                 Also fixed here: the IMPORT screen had drifted behind the New
+                                 Record form — it still lacked the past-date rule (A-22), still said
+                                 "current active period" (superseded by A-18/A-21), and had no
+                                 Scheduled-first-record case. Import creates a record through the
+                                 same chaining mechanism, so it cannot state weaker rules.
   ===========================================================================
   STATUS MODEL — *** REVISED (v0.5) — feedback from Đặng Văn Hiệp, 29/07/2026 ***
     >>> SUPERSEDED by A-18 (06/08/2026, see DECISION LOG above) — Scheduled was re-added.
@@ -322,7 +359,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOSS — Airport Master Data › Taxi Time (Mockup v1.1)</title>
+  <title>TOSS — Airport Master Data › Taxi Time (Mockup v1.3)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
   <style>
     :root{
@@ -596,6 +633,9 @@
     .cf-body td{padding:8px 10px;border-bottom:1px solid var(--md-outline-variant);vertical-align:top}
     /* A-21: sub-label under a record name, so the row says WHICH record without a second column */
     .cf-sub{font-size:10.5px;font-weight:400;color:var(--md-text-secondary);text-transform:none}
+    /* A-23: the record being deleted — struck through, but neutral grey rather than the red of a
+       value being replaced, so it does not compete with the absorbing period's before/after pair */
+    .val-del{color:var(--md-text-secondary);text-decoration:line-through}
     .cf-more{font-size:11px;color:var(--md-text-secondary);font-style:italic;align-self:center}
     .val-old{color:#b91c1c;text-decoration:line-through}
     .val-new{color:#047857;font-weight:600}
@@ -1064,10 +1104,22 @@
           To keep the chain of effective periods continuous (BR-TAXI-01), the period immediately before
           this one <b>takes over its end date</b> — so it covers the stretch being removed and no gap forms.
           Its <b>Effective From stays unchanged</b>; only the end date moves.
+          <!-- A-23 (07/08/2026): table drawn along the RECORD axis and listing BOTH records, the same
+               fix A-21 applied to Confirm Save. The old labels ("Before deleting" / "After deleting")
+               were a TIME axis over a table that only ever held the PREVIOUS record's dates, while the
+               line above quotes the period being deleted — so the table's dates read as the deleted
+               record's. Worst case is a middle-of-chain delete, where the two are entirely different
+               periods (deleting 01/07 → 31/08 while the table shows 01/02 → 30/06). -->
           <table>
             <tr><th>Record</th><th>Effective period</th></tr>
-            <tr><td>Before deleting</td><td class="val-old" id="delPromoteFrom">—</td></tr>
-            <tr><td>After deleting</td><td class="val-new" id="delPromoteTo">—</td></tr>
+            <tr>
+              <td>Previous period<br><span class="cf-sub">absorbing this one</span></td>
+              <td><div class="val-old" id="delPromoteFrom">—</div><div class="val-new" id="delPromoteTo">—</div></td>
+            </tr>
+            <tr>
+              <td>This record<br><span class="cf-sub">being deleted</span></td>
+              <td><div class="val-del" id="delPromoteSelf">—</div></td>
+            </tr>
           </table>
         </div>
       </div>
@@ -1813,9 +1865,17 @@ function updateChainHint(){
   /* A-21 (3c): say "last period of the chain", not "current active period". Since A-18 the chain
      tail can display as Scheduled, so calling it "active" is wrong whenever a future-dated period
      already exists — the same conflation fixed everywhere else in A-17/A-18. */
+  /* A-24 (07/08/2026, PA-1): periods are APPEND-ONLY — a new one always goes at the end of the
+     chain, never between two existing periods. That was already true (the test below compares
+     against the chain tail, which is by definition the last record) but nothing said so, and the
+     old message only quoted the date, leaving the user to guess why a perfectly sensible date in
+     the middle of the chain was refused. Spell out the rule and the way around it. */
   if(fromVal && new Date(fromVal) <= new Date(isoFromDmy(active.from))){
     hintEl.classList.add('err');
-    txtEl.innerHTML = 'Effective From must be later than <b>' + active.from + '</b> — the start of the last period in the chain for ' + cat + '.';
+    txtEl.innerHTML = 'A new period is always added to the <b>end</b> of the chain — it cannot be inserted '
+      + 'between existing periods. Effective From must therefore be later than <b>' + active.from + '</b>, '
+      + 'the start of the last period for ' + cat + '. To place a period earlier than that, delete the '
+      + 'later period first (see Delete), then create them in order.';
     return;
   }
   txtEl.innerHTML = 'The last period in the chain for <b>' + cat + '</b> started <b>' + active.from + '</b> (open-ended). Saving this record will automatically close it the day before this new period starts.';
@@ -1849,7 +1909,9 @@ function trySave(){
     const active = lastInChainOf(cat);
     if(active){
       if(new Date(from) <= new Date(isoFromDmy(active.from))){
-        toast('Effective From must be later than ' + active.from + ' for ' + cat);
+        /* A-24 (PA-1): append-only — say so, not just the date */
+        toast('A new period is added to the end of the chain, not between existing periods — '
+              + 'Effective From must be later than ' + active.from);
         updateChainHint();
         return;
       }
@@ -1936,17 +1998,36 @@ function updateImportHint(){
   const txtEl = document.getElementById('impChainHintTxt');
   hintEl.classList.remove('err');
 
+  /* A-24: Import had drifted behind the New Record form — it was still missing the past-date rule
+     (A-22), still said "current active period" instead of "last period in the chain" (A-21), and
+     had no Scheduled-first-record case (A-21). Import creates a record exactly like New Record, so
+     the two must state identical rules. */
+  if(fromVal && dmy(fmt(fromVal)) < dmy(TODAY)){
+    hintEl.classList.add('err');
+    txtEl.innerHTML = 'Effective From cannot be in the past — that would apply taxi times to '
+      + 'flights that already flew. The earliest allowed date is today (<b>' + TODAY + '</b>).';
+    return;
+  }
+
   const active = lastInChainOf(cat);
   if(!active){
-    txtEl.innerHTML = 'No existing period for this fleet group yet — this import will become its first record.';
+    txtEl.innerHTML = fromVal && dmy(fmt(fromVal)) > dmy(TODAY)
+      ? 'No existing period for this fleet group yet — this import will become its first record, '
+        + '<b>Scheduled</b> until <b>' + fmt(fromVal) + '</b>. Nothing is in force for this fleet '
+        + 'group before that date.'
+      : 'No existing period for this fleet group yet — this import will become its first record.';
     return;
   }
   if(fromVal && new Date(fromVal) <= new Date(isoFromDmy(active.from))){
     hintEl.classList.add('err');
-    txtEl.innerHTML = 'Effective From must be later than <b>' + active.from + '</b> — the start of the current active period for ' + cat + '.';
+    txtEl.innerHTML = 'A new period is always added to the <b>end</b> of the chain — it cannot be inserted '
+      + 'between existing periods. Effective From must therefore be later than <b>' + active.from + '</b>, '
+      + 'the start of the last period for ' + cat + '. To place a period earlier than that, delete the '
+      + 'later period first (see Delete), then create them in order.';
     return;
   }
-  txtEl.innerHTML = 'Current active period for <b>' + cat + '</b> started <b>' + active.from + '</b> (open-ended). Importing will automatically close it the day before this new period starts.';
+  txtEl.innerHTML = 'The last period in the chain for <b>' + cat + '</b> started <b>' + active.from
+    + '</b> (open-ended). Importing will automatically close it the day before this new period starts.';
 }
 
 function handleImportFile(){
@@ -1994,9 +2075,17 @@ function confirmImport(){
   const cat  = document.getElementById('impCat3').value;
   const from = document.getElementById('impFrom').value;
   if(!from){ toast('Effective From is required'); return; }
+  /* A-24: same two rules as New Record (A-22 past-date, A-24 append-only) — Import creates a
+     record through the same chaining mechanism, so it cannot be more permissive. */
+  if(dmy(fmt(from)) < dmy(TODAY)){
+    toast('Effective From cannot be in the past — that would apply taxi times to flights that already flew');
+    updateImportHint();
+    return;
+  }
   const active = lastInChainOf(cat);
   if(active && new Date(from) <= new Date(isoFromDmy(active.from))){
-    toast('Effective From must be later than ' + active.from + ' for ' + cat);
+    toast('A new period is added to the end of the chain, not between existing periods — '
+          + 'Effective From must be later than ' + active.from);
     updateImportHint();
     return;
   }
@@ -2085,6 +2174,8 @@ function openDelete(idx){
        mở lại) và xóa kỳ giữa chuỗi (kỳ trước nới dài ra, kỳ sau giữ nguyên). */
     document.getElementById('delPromoteFrom').textContent = prevEntry.r.from + ' → ' + prevEntry.r.to;
     document.getElementById('delPromoteTo').textContent   = prevEntry.r.from + ' → ' + toLabel(r);
+    /* A-23: the table now names each record, so the period being deleted is stated inside it too */
+    document.getElementById('delPromoteSelf').textContent = r.from + ' → ' + toLabel(r);
   } else {
     /* Không có kỳ trước để hấp thụ: phân biệt "hết sạch bản ghi" với "còn kỳ sau" */
     const others = ROWS.filter((x, i) => x.cat === r.cat && i !== idx);
