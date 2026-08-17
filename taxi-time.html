@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <!--
-  MOCKUP v1.3 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
+  MOCKUP v1.4 — TOSS Data Maintenance / Airport Master Data › TAXI TIME
   Scope: Function list v1.0, sheet "Function list", rows 185–191 (7 functions, SP3, September)
          plus "Change History" (A-8) and "Import" (A-9) added on top of the source rows.
 
@@ -318,6 +318,33 @@
                                  "current active period" (superseded by A-18/A-21), and had no
                                  Scheduled-first-record case. Import creates a record through the
                                  same chaining mechanism, so it cannot state weaker rules.
+    A-25 Edit follows Delete    → *** REVISED (v1.4) — BA review, 07/08/2026 ***
+                                 Question raised: is editing an Expired record blocked? It was not
+                                 — the Edit button was enabled on every row, the form opened, matrix
+                                 values could be changed and saved, with no warning anywhere. Yet
+                                 A-19 blocks DELETING an Expired period precisely because it would
+                                 "rewrite the taxi times already applied to past flights". Editing
+                                 that period's values does exactly that, and more quietly: the chain
+                                 of effective periods is untouched, so nothing looks unusual on the
+                                 list. Left open, A-19's block was decorative — changing a closed
+                                 period's values only needed the Edit button instead of Delete.
+                                 A-22 had locked Effective From on the Edit screen, which secured
+                                 the record's POSITION in the chain but left its CONTENTS editable.
+                                 Edit now carries the same status rules as Delete, for the same
+                                 reasons:
+                                   Scheduled — allowed, nothing to warn about (never in force).
+                                   Active    — allowed, but the confirmation warns that flights
+                                               between Effective From and today already flew under
+                                               these values, mirroring the Delete dialog.
+                                   Expired   — blocked. The Edit button is disabled with a tooltip
+                                               naming the reason, the Edit button inside the Details
+                                               popup is disabled too, and openForm() itself refuses
+                                               the record, since the form is reachable from more than
+                                               one place. The record stays fully readable through
+                                               View details.
+                                 `isLast` renamed to `notExpired` on the way through — a leftover
+                                 name from the chain-tail rule A-19 discarded, now gating both
+                                 buttons.
   ===========================================================================
   STATUS MODEL — *** REVISED (v0.5) — feedback from Đặng Văn Hiệp, 29/07/2026 ***
     >>> SUPERSEDED by A-18 (06/08/2026, see DECISION LOG above) — Scheduled was re-added.
@@ -359,7 +386,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TOSS — Airport Master Data › Taxi Time (Mockup v1.3)</title>
+  <title>TOSS — Airport Master Data › Taxi Time (Mockup v1.4)</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
   <style>
     :root{
@@ -456,6 +483,8 @@
     .btn:focus{outline-color:var(--toss-primary)}
     .btn .material-symbols-outlined{font-size:18px}
     .btn-blue{background:var(--toss-primary);color:#fff}
+    /* A-25: nút Edit của popup chi tiết bị khóa khi bản ghi đã Expired */
+    .btn:disabled{background:#e2e8f0;color:var(--md-text-muted);cursor:not-allowed;box-shadow:none}
     .btn-blue:hover{background:var(--toss-primary-light);box-shadow:0 4px 12px rgba(0,90,156,.2)}
     .btn-clear{background:#fff;color:var(--toss-primary);border:1.5px solid var(--toss-primary)}
     .btn-clear:hover{background:rgba(0,90,156,.05)}
@@ -977,6 +1006,19 @@
         </div>
       </div>
 
+      <!-- Block 1c — A-25 (07/08/2026): editing a period that is ALREADY IN FORCE changes the taxi
+           times of flights that have already flown inside it. Same harm the Delete dialog warns
+           about, so it gets the same warning, worded for editing. Expired periods never reach this
+           dialog — editing them is blocked outright. -->
+      <div class="cf-block" id="cfEditActive" style="display:none;" data-src="Decision A-25 (07/08/2026) — Edit follows the same status rules as Delete: Expired blocked, Active allowed but warned">
+        <div class="cf-head warn"><span class="material-symbols-outlined">warning</span>This period is in force today</div>
+        <div class="cf-body">
+          Flights from <b id="cfEditFrom">—</b> up to today already used this period's taxi times.
+          Saving these changes rewrites the values for that stretch — reports for those flights will
+          change accordingly.
+        </div>
+      </div>
+
       <!-- Block 2 — A-4, scope narrowed by A-21: counts only the regions actually added to the
            matrix. Counting every region made this warning fire on all 8,000+ catalogue airports
            at every save, so it carried no signal. -->
@@ -1035,7 +1077,9 @@
         </button>
       </div>
       <button class="btn btn-ghost" onclick="closeModal('mdDetail')">Close</button>
-      <button class="btn btn-blue" onclick="closeModal('mdDetail'); openForm('edit',curRow)"><span class="material-symbols-outlined">edit</span>Edit</button>
+      <!-- A-25: nút này cũng phải theo quy tắc chặn Expired như nút Edit ở màn danh sách —
+           trạng thái disabled do openDetail() đặt theo Status của bản ghi đang xem. -->
+      <button class="btn btn-blue" id="dtEditBtn" onclick="closeModal('mdDetail'); openForm('edit',curRow)"><span class="material-symbols-outlined">edit</span>Edit</button>
     </div>
   </div>
 </div>
@@ -1684,8 +1728,16 @@ function renderList(){
     const i = (page-1)*size + k;
     const st = statusOf(r);
     /* A-19 (PA2): deletable = Scheduled hoặc Active. Chặn Expired vì xóa kỳ đã đóng sẽ viết
-       lại giá trị taxi time của các chuyến đã bay xong. Chuỗi vẫn liền nhờ quy tắc hấp thụ. */
-    const isLast = st !== 'expired';
+       lại giá trị taxi time của các chuyến đã bay xong. Chuỗi vẫn liền nhờ quy tắc hấp thụ.
+       A-25 (07/08/2026): EDIT chịu đúng ràng buộc đó. Sửa giá trị ma trận của kỳ Expired gây ra
+       CHÍNH hậu quả mà A-19 viện dẫn để chặn xóa — mà còn kín đáo hơn vì chuỗi kỳ hiệu lực không
+       đổi nên nhìn danh sách không thấy gì bất thường. Nếu để hở, rào chặn ở nút Xóa thành hình
+       thức: muốn đổi giá trị kỳ đã đóng thì chỉ cần bấm Edit thay vì Delete.
+       Biến đổi tên từ `isLast` (di sản của quy tắc "kỳ cuối chuỗi" thời A-16/A-17, đã bỏ từ A-19)
+       sang `notExpired` cho đúng nghĩa hiện tại — nay dùng chung cho cả Edit và Delete. */
+    const notExpired = st !== 'expired';
+    const EXPIRED_EDIT_TIP = 'Expired periods cannot be edited — that would rewrite the taxi times already applied to past flights (A-25)';
+    const EXPIRED_DEL_TIP  = 'Expired periods cannot be deleted — that would rewrite the taxi times already applied to past flights (A-19)';
     return `<tr onclick="openDetail(${i})">
       <td>${i+1}</td>
       <td style="font-weight:600;color:var(--vna-navy);">${r.cat}</td>
@@ -1699,9 +1751,9 @@ function renderList(){
       <td>
         <div class="row-actions" onclick="event.stopPropagation()">
           <button class="icon-btn" title="View details" onclick="openDetail(${i})"><span class="material-symbols-outlined">visibility</span></button>
-          <button class="icon-btn" title="Edit" onclick="openForm('edit',${i})"><span class="material-symbols-outlined">edit</span></button>
+          <button class="icon-btn" title="${notExpired ? 'Edit' : EXPIRED_EDIT_TIP}" ${notExpired ? '' : 'disabled'} onclick="openForm('edit',${i})"><span class="material-symbols-outlined">edit</span></button>
           <button class="icon-btn" title="Change history" onclick="openHistory(${i})"><span class="material-symbols-outlined">history</span></button>
-          <button class="icon-btn danger" title="${isLast ? 'Delete' : 'Expired periods cannot be deleted — that would rewrite the taxi times already applied to past flights (A-19)'}" ${isLast ? '' : 'disabled'} onclick="openDelete(${i})"><span class="material-symbols-outlined">delete</span></button>
+          <button class="icon-btn danger" title="${notExpired ? 'Delete' : EXPIRED_DEL_TIP}" ${notExpired ? '' : 'disabled'} onclick="openDelete(${i})"><span class="material-symbols-outlined">delete</span></button>
         </div>
       </td>
     </tr>`;
@@ -1783,6 +1835,12 @@ function setFromLock(locked, text){
 
 function openForm(mode, idx){
   const isEdit = mode === 'edit';
+  /* A-25: chặn ở đây chứ không chỉ disable nút — form còn mở được từ popup chi tiết và
+     (trên hệ thống thật) từ deep-link, nên ràng buộc phải nằm ở chỗ mở form. */
+  if(isEdit && statusOf(ROWS[idx != null ? idx : curRow]) === 'expired'){
+    toast('Expired periods cannot be edited — that would rewrite the taxi times already applied to past flights');
+    return;
+  }
   isEditMode = isEdit;
   if(idx != null) curRow = idx;
   document.getElementById('formTitle').textContent = isEdit ? 'Edit Taxi Time Record' : 'New Taxi Time Record';
@@ -1893,7 +1951,12 @@ function trySave(){
 
   let chainRecord = null;
   let futureFirst = false;      /* A-21: first record of the fleet group, starting in the future */
-  if(!isEditMode){
+  let editInForce = false;      /* A-25: editing a record that is in force today */
+  if(isEditMode){
+    /* A-25: Expired never gets this far (openForm blocks it), so the only case left to flag is a
+       record in force today — its elapsed stretch has flights that already flew. */
+    editInForce = statusOf(ROWS[curRow]) === 'active';
+  } else {
     /* A-22 (07/08/2026) — ONE past-date rule for EVERY new record, first or not.
        A-21 applied it only to a fleet group's first record. That left the common path open: the
        "later than the chain tail" test never compares against today, so once the chain tail is a
@@ -1924,9 +1987,12 @@ function trySave(){
     }
   }
 
-  document.getElementById('cfOverlap').style.display = chainRecord ? '' : 'none';
-  document.getElementById('cfFuture').style.display  = futureFirst ? '' : 'none';
-  document.getElementById('cfMissing').style.display = miss.length ? '' : 'none';
+  document.getElementById('cfOverlap').style.display    = chainRecord ? '' : 'none';
+  document.getElementById('cfFuture').style.display     = futureFirst ? '' : 'none';
+  document.getElementById('cfEditActive').style.display = editInForce ? '' : 'none';
+  document.getElementById('cfMissing').style.display    = miss.length ? '' : 'none';
+
+  if(editInForce) document.getElementById('cfEditFrom').textContent = ROWS[curRow].from;
 
   if(chainRecord){
     const d = new Date(from); d.setDate(d.getDate() - 1);
@@ -1953,7 +2019,7 @@ function trySave(){
   /* A-21: show the dialog when ANY warning block has something to say — no longer a special case
      for "first record". Previously this read (!chainRecord && !miss.length), which happened to
      work only because the two blocks were the only ones that existed. */
-  if(!chainRecord && !futureFirst && !miss.length){ confirmSave(); return; }
+  if(!chainRecord && !futureFirst && !editInForce && !miss.length){ confirmSave(); return; }
   openModal('mdConfirm');
 }
 function confirmSave(){
@@ -2103,6 +2169,13 @@ function openDetail(idx){
   document.getElementById('dtCount').textContent = t.assigned + ' airports';
   document.getElementById('dtMiss').textContent  = t.miss + ' airports';
   buildMatrix(document.getElementById('mxDetail'), true);
+  /* A-25: khóa nút Edit của popup chi tiết khi bản ghi đã Expired */
+  const expired = statusOf(r) === 'expired';
+  const editBtn = document.getElementById('dtEditBtn');
+  editBtn.disabled = expired;
+  editBtn.title = expired
+    ? 'Expired periods cannot be edited — that would rewrite the taxi times already applied to past flights'
+    : '';
   openModal('mdDetail');
 }
 /* Customer feedback 29/07/2026: export the open record in two shapes (A-11).
