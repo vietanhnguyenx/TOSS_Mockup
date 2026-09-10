@@ -85,8 +85,8 @@ body{font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;background:#33
 
 /* =========================== KHUNG ỨNG DỤNG =========================== */
 .stage{padding:14px;background:#333}
-.app{display:flex;min-height:920px;background:var(--page);border-radius:var(--r-xl);overflow:hidden;
-  box-shadow:var(--sh-xl)}
+.app{display:flex;height:calc(100vh - 76px);min-height:620px;background:var(--page);
+  border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh-xl)}
 
 /* ------------------------------ SIDEBAR ------------------------------ */
 .sidebar{width:236px;min-width:236px;background:linear-gradient(180deg,var(--side-2) 0%,var(--side) 100%);
@@ -134,16 +134,24 @@ body{font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;background:#33
 .sidebar.collapsed .side-user{justify-content:center}
 
 /* ------------------------------- MAIN -------------------------------- */
-.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
 .crumb{display:flex;align-items:center;gap:8px;padding:14px 20px 10px;font-size:12.5px;color:var(--tx-3)}
 .crumb .material-symbols-outlined{font-size:15px;color:var(--tx-mute)}
 .crumb .cur{color:var(--teal);font-weight:600}
 .crumb-right{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--tx-3)}
 .crumb-right b{color:var(--tx-2);font-weight:600}
-.content{flex:1;padding:0 20px 20px;overflow:auto}
+.content{flex:1;min-height:0;padding:0 20px 20px;overflow:auto;display:flex;flex-direction:column}
 .panel{background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden}
 .panel + .panel{margin-top:16px}
-.screen{display:none} .screen.active{display:block}
+/* Màn danh sách: KPI giữ chiều cao tự nhiên, panel chứa bảng co giãn cho đầy
+   phần còn lại; bảng cuộn bên trong, thanh phân trang ghim ở đáy panel.
+   Bố cục này lấy theo ảnh Figma "Quản lý ULD" — footer luôn nhìn thấy. */
+.screen{display:none}
+.screen.active{display:flex;flex-direction:column;flex:1;min-height:0}
+.screen.active > .panel:has(.tw){flex:1;min-height:220px;display:flex;flex-direction:column}
+.screen.active > .panel:has(.tw) > .tw{flex:1;min-height:0}
+.screen.active > .kpis,
+.screen.active > .note{flex:0 0 auto}
 
 /* --------------------------- THANH CÔNG CỤ --------------------------- */
 .toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;flex-wrap:wrap}
@@ -192,10 +200,12 @@ textarea.inp{height:auto;min-height:92px;padding:11px 13px;resize:vertical;line-
 .hint{font-size:11.5px;color:var(--tx-3);margin-top:5px;line-height:1.45}
 
 /* ------------------------------ BẢNG --------------------------------- */
-.tw{overflow-x:auto;border-top:1px solid var(--line)}
+/* Bảng cuộn trong khung riêng: cuộn dọc + ngang ở đây, thanh phân trang nằm
+   NGOÀI vùng cuộn nên luôn nhìn thấy. Header dính khi cuộn dọc. */
+.tw{overflow:auto;border-top:1px solid var(--line)}
 table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
 thead th{background:var(--surface);color:#344054;font-weight:600;text-align:left;padding:11px 13px;
-  border-bottom:1px solid var(--line);border-right:1px solid var(--line);position:sticky;top:0;z-index:2}
+  border-bottom:1px solid var(--line);border-right:1px solid var(--line);position:sticky;top:0;z-index:3;box-shadow:0 1px 0 var(--line)}
 thead th:last-child{border-right:0}
 tbody td{padding:11px 13px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);
   color:var(--tx-2);vertical-align:middle}
@@ -264,8 +274,9 @@ td .sub{display:block;font-size:11px;color:var(--tx-mute);font-weight:400;margin
 .kpi.err .v{color:var(--err-tx)} .kpi.teal .v{color:var(--teal)}
 
 /* ---------------------------- PHÂN TRANG ----------------------------- */
-.pgbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.pgbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap;flex:0 0 auto;background:var(--panel)}
 .pgbar .total{font-size:12.5px;color:var(--tx-2);font-weight:600}
+.pgbar .range{font-size:12px;color:var(--tx-mute)}
 .pg-right{margin-left:auto;display:flex;align-items:center;gap:8px}
 .pg-right .lb{font-size:12.5px;color:var(--tx-2)}
 .pg-btn{min-width:32px;height:32px;padding:0 8px;border-radius:var(--r);border:1px solid transparent;
@@ -566,17 +577,7 @@ body.ann .legend{display:block}
             <tbody id="sysBody"></tbody></table>
         </div>
 
-        <div class="pgbar">
-          <span class="total">Tổng: <b id="sysTotal">32</b> hệ thống</span>
-          <div class="pg-right"><span class="lb">Hiển thị</span>
-            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option><option>50 bản ghi</option></select>
-            <button class="pg-btn" disabled><span class="material-symbols-outlined">keyboard_double_arrow_left</span></button>
-            <button class="pg-btn" disabled><span class="material-symbols-outlined">chevron_left</span></button>
-            <button class="pg-btn on">1</button><button class="pg-btn">2</button>
-            <button class="pg-btn"><span class="material-symbols-outlined">chevron_right</span></button>
-            <button class="pg-btn"><span class="material-symbols-outlined">keyboard_double_arrow_right</span></button>
-          </div>
-        </div>
+        <div class="pgbar" data-pg="sysBody"></div>
       </div>
 
       <div class="note" style="margin-top:14px" data-src="[§6.3] quyết định 09/09/2026">
@@ -617,10 +618,7 @@ body.ann .legend{display:block}
             <th>Điện thoại</th><th>Hệ thống phụ trách</th><th class="mid">Nhận cảnh báo</th><th style="width:86px">Thao tác</th></tr></thead>
             <tbody id="contactBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>8</b> đầu mối</span>
-          <div class="pg-right"><span class="lb">Hiển thị</span>
-            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
-            <button class="pg-btn on">1</button></div></div>
+        <div class="pgbar" data-pg="contactBody"></div>
       </div>
     </section>
 
@@ -658,10 +656,7 @@ body.ann .legend{display:block}
             <th class="mid">Bật</th><th style="width:110px">Thao tác</th></tr></thead>
             <tbody id="connBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>16</b> kết nối</span>
-          <div class="pg-right"><span class="lb">Hiển thị</span>
-            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
-            <button class="pg-btn on">1</button></div></div>
+        <div class="pgbar" data-pg="connBody"></div>
       </div>
       <div class="note" style="margin-top:14px">
         <span class="material-symbols-outlined">info</span>
@@ -700,10 +695,7 @@ body.ann .legend{display:block}
             <th>Giá trị</th><th>Hết hạn</th><th>Cập nhật lần cuối</th><th style="width:86px">Thao tác</th></tr></thead>
             <tbody id="credBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>11</b> thông tin xác thực</span>
-          <div class="pg-right"><span class="lb">Hiển thị</span>
-            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
-            <button class="pg-btn on">1</button></div></div>
+        <div class="pgbar" data-pg="credBody"></div>
       </div>
       <div class="note warn" style="margin-top:14px">
         <span class="material-symbols-outlined">lock</span>
@@ -763,10 +755,7 @@ body.ann .legend{display:block}
             <th>Kết quả</th><th class="mid">Bật</th><th style="width:110px">Thao tác</th></tr></thead>
             <tbody id="flowBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>14</b> luồng</span>
-          <div class="pg-right"><span class="lb">Hiển thị</span>
-            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
-            <button class="pg-btn on">1</button></div></div>
+        <div class="pgbar" data-pg="flowBody"></div>
       </div>
 
       <div class="note warn" style="margin-top:14px">
@@ -897,11 +886,7 @@ body.ann .legend{display:block}
             <th class="num">Lỗi</th><th>Kết quả</th><th>Ghi chú</th><th style="width:86px">Thao tác</th></tr></thead>
             <tbody id="runBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>168</b> lần chạy trong khoảng đã chọn</span>
-          <div class="pg-right"><span class="lb">Hiển thị</span>
-            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
-            <button class="pg-btn on">1</button><button class="pg-btn">2</button><button class="pg-btn">3</button>
-            <button class="pg-btn"><span class="material-symbols-outlined">chevron_right</span></button></div></div>
+        <div class="pgbar" data-pg="runBody"></div>
       </div>
     </section>
 
@@ -1002,10 +987,7 @@ body.ann .legend{display:block}
             <th style="width:190px">Độ phủ</th><th>Trạng thái</th><th style="width:86px">Thao tác</th></tr></thead>
             <tbody id="acarsBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>28</b> tàu bay</span>
-          <div class="pg-right"><span class="lb">Hiển thị</span>
-            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
-            <button class="pg-btn on">1</button><button class="pg-btn">2</button></div></div>
+        <div class="pgbar" data-pg="acarsBody"></div>
       </div>
     </section>
 
@@ -1044,10 +1026,7 @@ body.ann .legend{display:block}
             <th style="width:190px">Độ phủ</th><th>Trạng thái</th><th style="width:86px">Thao tác</th></tr></thead>
             <tbody id="qarBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>28</b> tàu bay</span>
-          <div class="pg-right"><span class="lb">Hiển thị</span>
-            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
-            <button class="pg-btn on">1</button><button class="pg-btn">2</button></div></div>
+        <div class="pgbar" data-pg="qarBody"></div>
       </div>
     </section>
 
@@ -1104,8 +1083,7 @@ body.ann .legend{display:block}
             <th class="num">QAR</th><th class="num">Tổ bay</th><th class="num">Load sheet</th></tr></thead>
             <tbody id="repBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>28</b> tàu bay</span>
-          <div class="pg-right"><button class="pg-btn on">1</button><button class="pg-btn">2</button></div></div>
+        <div class="pgbar" data-pg="repBody"></div>
       </div>
     </section>
 
@@ -1152,13 +1130,7 @@ body.ann .legend{display:block}
             <th>Kết quả</th><th style="width:64px">Thao tác</th></tr></thead>
             <tbody id="logBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>42.907</b> bản ghi</span>
-          <div class="pg-right"><span class="lb">Hiển thị</span>
-            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
-            <button class="pg-btn" disabled><span class="material-symbols-outlined">keyboard_double_arrow_left</span></button>
-            <button class="pg-btn on">1</button><button class="pg-btn">2</button><button class="pg-btn">3</button>
-            <button class="pg-btn">4</button><button class="pg-btn">5</button>
-            <button class="pg-btn"><span class="material-symbols-outlined">chevron_right</span></button></div></div>
+        <div class="pgbar" data-pg="logBody"></div>
       </div>
       <div class="note" style="margin-top:14px">
         <span class="material-symbols-outlined">bolt</span>
@@ -1190,8 +1162,7 @@ body.ann .legend{display:block}
             <th class="mid">Bật cảnh báo</th></tr></thead>
             <tbody id="thrBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>14</b> luồng</span>
-          <div class="pg-right"><button class="pg-btn on">1</button></div></div>
+        <div class="pgbar" data-pg="thrBody"></div>
       </div>
       <div class="note" style="margin-top:14px">
         <span class="material-symbols-outlined">info</span>
@@ -1218,8 +1189,7 @@ body.ann .legend{display:block}
             <th>Người nhận</th><th class="mid">Kênh</th><th class="mid">Bật</th><th style="width:86px">Thao tác</th></tr></thead>
             <tbody id="mailBody"></tbody></table>
         </div>
-        <div class="pgbar"><span class="total">Tổng: <b>6</b> loại thông báo</span>
-          <div class="pg-right"><button class="pg-btn on">1</button></div></div>
+        <div class="pgbar" data-pg="mailBody"></div>
       </div>
       <div class="note warn" style="margin-top:14px">
         <span class="material-symbols-outlined">help</span>
@@ -1898,6 +1868,66 @@ function toast(msg,kind){
   $('#toasts').appendChild(el);setTimeout(()=>el.remove(),3800);
 }
 
+
+/* ===========================================================================
+   PHÂN TRANG DÙNG CHUNG
+   Mỗi bảng danh sách có một bản ghi trạng thái {trang hiện tại, số bản ghi/trang}.
+   pg() cắt đúng lát dữ liệu của trang, đồng thời dựng lại thanh chân bảng.
+   Thanh chân nằm NGOÀI vùng cuộn của bảng nên không bị đẩy khuất khi cuộn.
+   =========================================================================== */
+const PG = {};
+let _ofs = 0;                       /* độ lệch số thứ tự của trang hiện tại */
+
+function pg(key, rows, label){
+  const st = PG[key] || (PG[key] = {page:1, size:25, label:label});
+  st.label = label;
+  st.total = rows.length;
+  st.pages = Math.max(1, Math.ceil(rows.length / st.size));
+  if(st.page > st.pages) st.page = st.pages;
+  if(st.page < 1) st.page = 1;
+  st.from = (st.page - 1) * st.size;
+  _ofs = st.from;
+  drawPager(key);
+  return rows.slice(st.from, st.from + st.size);
+}
+
+function pgGo(key, p){ const st=PG[key]; if(!st) return;
+  st.page = Math.min(Math.max(1,p), st.pages); redraw(); }
+function pgSize(key, n){ const st=PG[key]; if(!st) return;
+  st.size = +n; st.page = 1; redraw(); }
+
+function drawPager(key){
+  const bar = document.querySelector(`.pgbar[data-pg="${key}"]`);
+  if(!bar) return;
+  const st = PG[key], P = st.pages, cur = st.page;
+  /* cửa sổ tối đa 5 số trang quanh trang hiện tại */
+  let a = Math.max(1, cur-2), b = Math.min(P, a+4); a = Math.max(1, b-4);
+  const nums = [];
+  for(let i=a;i<=b;i++)
+    nums.push(`<button class="pg-btn ${i===cur?'on':''}" onclick="pgGo('${key}',${i})">${i}</button>`);
+  const showFrom = st.total ? st.from+1 : 0;
+  const showTo = Math.min(st.from+st.size, st.total);
+  bar.innerHTML = `
+    <span class="total">Tổng: <b>${st.total.toLocaleString('vi')}</b> ${st.label}</span>
+    <span class="range">Đang xem ${showFrom}–${showTo}</span>
+    <div class="pg-right">
+      <span class="lb">Hiển thị</span>
+      <select class="inp inp-sm" style="width:112px" onchange="pgSize('${key}',this.value)">
+        ${[10,25,50,100].map(n=>`<option value="${n}" ${n===st.size?'selected':''}>${n} bản ghi</option>`).join('')}
+      </select>
+      <button class="pg-btn" ${cur===1?'disabled':''} onclick="pgGo('${key}',1)" title="Trang đầu">
+        <span class="material-symbols-outlined">keyboard_double_arrow_left</span></button>
+      <button class="pg-btn" ${cur===1?'disabled':''} onclick="pgGo('${key}',${cur-1})" title="Trang trước">
+        <span class="material-symbols-outlined">chevron_left</span></button>
+      ${nums.join('')}
+      <button class="pg-btn" ${cur===P?'disabled':''} onclick="pgGo('${key}',${cur+1})" title="Trang sau">
+        <span class="material-symbols-outlined">chevron_right</span></button>
+      <button class="pg-btn" ${cur===P?'disabled':''} onclick="pgGo('${key}',${P})" title="Trang cuối">
+        <span class="material-symbols-outlined">keyboard_double_arrow_right</span></button>
+    </div>`;
+}
+function redraw(){ renderSys(); renderAll(); }
+
 /* ============================ MÀN 1 — HỆ THỐNG ============================ */
 function renderSys(){
   const q=($('#q1').value||'').toLowerCase().trim();
@@ -1905,12 +1935,12 @@ function renderSys(){
   const rows=SYS.filter(x=>
     (!q||x.code.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)) &&
     (!k||x.kind===k) && (!st||x.st===st) && (!p||x.prio===p));
-  $('#sysTotal').textContent=rows.length;
-  $('#sysBody').innerHTML=rows.length?rows.map((x,i)=>{
+  /* tổng số nay do thanh phân trang tự hiển thị */
+  $('#sysBody').innerHTML=rows.length?pg('sysBody',rows,'hệ thống').map((x,i)=>{
     const M=methodOf(x), pr=M.proto;
     const nf=FLOWS.filter(f=>f[1]===x.name).length;
     return `<tr>
-      <td class="mid">${i+1}</td>
+      <td class="mid">${_ofs+i+1}</td>
       <td><span class="mono" style="font-size:10.5px;color:var(--tx-mute);display:block">${esc(x.code)}</span>
         <span class="strong">${esc(x.name)}</span>${x.data&&x.data!=='—'?`<span class="sub">${esc(x.data)}</span>`:''}</td>
       <td>${esc(x.kind)}<span class="sub">${esc(x.dir)}</span></td>
@@ -1939,7 +1969,7 @@ function pickKpi(el){
 function showFlows(sysName){
   $('#mFlowsTitle').textContent='Luồng dữ liệu — '+sysName;
   const rows=FLOWS.filter(f=>f[1]===sysName);
-  $('#sysFlowBody').innerHTML=rows.map((f,i)=>`<tr><td class="mid">${i+1}</td>
+  $('#sysFlowBody').innerHTML=rows.map((f,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td><span class="strong">${esc(f[0])}</span></td><td>Nhận</td>
     <td><span class="bdg nodot ${PROTO[protoOf(f[4])]||'bdg-mute'}">${esc(f[4])}</span></td>
     <td>${esc(f[5])}</td>
@@ -1966,7 +1996,7 @@ function saveSys(){closeModal('mSys');toast('Đã lưu hệ thống tích hợp'
 
 /* ======================== CÁC BẢNG CÒN LẠI ======================== */
 function renderAll(){
-  $('#contactBody').innerHTML=CONTACTS.map((c,i)=>`<tr><td class="mid">${i+1}</td>
+  $('#contactBody').innerHTML=pg('contactBody',CONTACTS,'đầu mối').map((c,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td><span class="strong">${esc(c[0])}</span></td><td>${esc(c[1])}</td>
     <td>${esc(c[2])}</td><td>${esc(c[3])}</td><td class="wrap">${esc(c[4])}</td>
     <td class="mid"><span class="bdg ${c[5]?'bdg-ok':'bdg-mute'}">${c[5]?'Có':'Không'}</span></td>
@@ -1976,7 +2006,7 @@ function renderAll(){
     </div></td></tr>`).join('');
 
   const cst={ok:['Thành công','bdg-ok'],err:['Thất bại','bdg-err'],warn:['Chậm','bdg-warn'],wait:['Chưa kiểm tra','bdg-mute']};
-  $('#connBody').innerHTML=CONNS.map((c,i)=>`<tr><td class="mid">${i+1}</td>
+  $('#connBody').innerHTML=pg('connBody',CONNS,'kết nối').map((c,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td><span class="strong">${esc(c[0])}</span><span class="sub">${esc(c[1])}</span></td>
     <td><span class="bdg nodot ${PROTO[c[2]]||'bdg-mute'}">${esc(c[2])}</span></td>
     <td class="mono">${esc(c[3])}</td><td>${esc(c[4])}</td>
@@ -1988,7 +2018,7 @@ function renderAll(){
       <button class="ico-btn del" title="Xóa" onclick="toast('Xóa kết nối — cần xác nhận','err')"><span class="material-symbols-outlined">delete</span></button>
     </div></td></tr>`).join('');
 
-  $('#credBody').innerHTML=CREDS.map((c,i)=>`<tr><td class="mid">${i+1}</td>
+  $('#credBody').innerHTML=pg('credBody',CREDS,'thông tin xác thực').map((c,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td><span class="strong">${esc(c[0])}</span></td><td>${esc(c[1])}</td><td>${esc(c[2])}</td>
     <td><span class="mono" style="letter-spacing:2px;color:var(--tx-mute)">••••••••</span>
       <span class="bdg nodot bdg-mute" style="margin-left:7px">không đọc lại</span></td>
@@ -1999,7 +2029,7 @@ function renderAll(){
     </div></td></tr>`).join('');
 
   const fst={ok:['Thành công','bdg-ok'],err:['Thất bại','bdg-err'],warn:['Trễ lịch','bdg-warn']};
-  $('#flowBody').innerHTML=FLOWS.map((f,i)=>`<tr><td class="mid">${i+1}</td>
+  $('#flowBody').innerHTML=pg('flowBody',FLOWS,'luồng').map((f,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td><span class="strong">${esc(f[0])}</span>
       <span class="sub">${esc(f[1])} → ${esc(f[2])}${f[3]>1?` · ${f[3]} đích`:''}</span></td>
     <td><span class="bdg nodot ${PROTO[protoOf(f[4])]||'bdg-mute'}">${esc(f[4])}</span></td>
@@ -2013,7 +2043,7 @@ function renderAll(){
     </div></td></tr>`).join('');
 
   const rst={ok:['Thành công','bdg-ok'],err:['Thất bại','bdg-err'],warn:['Có cảnh báo','bdg-warn']};
-  $('#runBody').innerHTML=RUNS.map((r,i)=>`<tr><td class="mid">${i+1}</td>
+  $('#runBody').innerHTML=pg('runBody',RUNS,'lần chạy').map((r,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td>${esc(r[0])}</td><td>${esc(r[1])}</td><td class="num">${esc(r[2])}</td>
     <td class="num">${r[3].toLocaleString('vi')}</td><td class="num">${r[4].toLocaleString('vi')}</td>
     <td class="num">${r[5]?`<a href="#" onclick="openModal('mErr');return false" style="color:var(--err);font-weight:700">${r[5]}</a>`:'0'}</td>
@@ -2021,27 +2051,27 @@ function renderAll(){
     <td class="wrap">${esc(r[7])}</td>
     <td><button class="ico-btn" onclick="openLog(8)"><span class="material-symbols-outlined">visibility</span></button></td></tr>`).join('');
 
-  $('#logBody').innerHTML=LOGS.map((l,i)=>`<tr><td class="mid">${i+1}</td>
+  $('#logBody').innerHTML=pg('logBody',LOGS,'bản ghi').map((l,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td>${esc(l[0])}</td><td class="mono">${esc(l[1])}</td>
     <td class="wrap" style="max-width:250px">${esc(l[2])}</td><td>${esc(l[3])}</td>
     <td class="num">${l[4].toLocaleString('vi')}</td><td class="num">${esc(l[5])}</td>
     <td><span class="bdg ${LOGST[l[6]][1]}">${LOGST[l[6]][0]}</span></td>
     <td><button class="ico-btn" title="Xem chi tiết" onclick="openLog(${i})"><span class="material-symbols-outlined">visibility</span></button></td></tr>`).join('');
 
-  $('#errBody').innerHTML=ERRS.map((e,i)=>`<tr><td class="mid">${i+1}</td><td>${esc(e[0])}</td>
+  $('#errBody').innerHTML=ERRS.map((e,i)=>`<tr><td class="mid">${_ofs+i+1}</td><td>${esc(e[0])}</td>
     <td class="mono">${esc(e[1])}</td><td><span class="bdg nodot bdg-err">${esc(e[2])}</span></td>
     <td class="wrap">${esc(e[3])}</td></tr>`).join('');
 
   const cov=(a,b)=>Math.round(b/a*1000)/10;
-  $('#acarsBody').innerHTML=AC.map((a,i)=>{const p=cov(a[2],a[3]);
-    return `<tr><td class="mid">${i+1}</td><td><span class="strong">${a[0]}</span></td><td>${a[1]}</td>
+  $('#acarsBody').innerHTML=pg('acarsBody',AC,'tàu bay').map((a,i)=>{const p=cov(a[2],a[3]);
+    return `<tr><td class="mid">${_ofs+i+1}</td><td><span class="strong">${a[0]}</span></td><td>${a[1]}</td>
       <td class="num">${a[2]}</td><td class="num">${a[3]}</td><td class="num">${a[2]-a[3]}</td>
       <td><div class="cov"><span class="mini"><i class="${p<80?'e':p<90?'w':''}" style="width:${p}%"></i></span><b>${p.toFixed(1).replace('.',',')}%</b></div></td>
       <td><span class="bdg ${p<80?'bdg-err':p<90?'bdg-warn':'bdg-ok'}">${p<80?'Dưới ngưỡng':p<90?'Cần theo dõi':'Đạt'}</span></td>
       <td><button class="ico-btn" onclick="toast('Danh sách chuyến thiếu dữ liệu — dữ liệu mẫu')"><span class="material-symbols-outlined">visibility</span></button></td></tr>`;}).join('');
 
-  $('#qarBody').innerHTML=AC.map((a,i)=>{const q=Math.max(30,a[3]-Math.round(a[2]*0.18));const p=cov(a[2],q);
-    return `<tr><td class="mid">${i+1}</td><td><span class="strong">${a[0]}</span></td><td>${a[1]}</td>
+  $('#qarBody').innerHTML=pg('qarBody',AC,'tàu bay').map((a,i)=>{const q=Math.max(30,a[3]-Math.round(a[2]*0.18));const p=cov(a[2],q);
+    return `<tr><td class="mid">${_ofs+i+1}</td><td><span class="strong">${a[0]}</span></td><td>${a[1]}</td>
       <td class="num">${a[2]}</td><td class="num">${q}</td><td class="num">${a[2]-q}</td>
       <td><div class="cov"><span class="mini"><i class="${p<80?'e':p<90?'w':''}" style="width:${p}%"></i></span><b>${p.toFixed(1).replace('.',',')}%</b></div></td>
       <td><span class="bdg ${p<80?'bdg-err':p<90?'bdg-warn':'bdg-ok'}">${p<80?'Dưới ngưỡng':p<90?'Cần theo dõi':'Đạt'}</span></td>
@@ -2050,7 +2080,7 @@ function renderAll(){
   /* giá trị cố định theo mã tàu — trước đây dùng Math.random() nên mỗi lần tải lại
      bảng ra số khác, người review sẽ tưởng dữ liệu không ổn định */
   const seed=str=>{let h=0;for(const c of str)h=(h*31+c.charCodeAt(0))>>>0;return h;};
-  $('#repBody').innerHTML=AC.map(a=>{let h=seed(a[0]);
+  $('#repBody').innerHTML=pg('repBody',AC,'tàu bay').map(a=>{let h=seed(a[0]);
     return `<tr><td><span class="strong">${a[0]}</span></td><td class="num">${a[2]}</td>
       ${[...Array(9)].map((_,k)=>{h=(h*1103515245+12345)>>>0;const v=85+(h>>16)%16;
         return `<td class="num" style="color:${v<90?'var(--warn-tx)':'var(--tx-2)'}">${v}%</td>`;}).join('')}</tr>`;}).join('');
@@ -2070,7 +2100,7 @@ function renderAll(){
       <td class="num">${(1200+i*730).toLocaleString('vi')}</td>
       <td>${err?`<a href="#" onclick="openModal('mErr');return false"><span class="bdg bdg-err">${err} lỗi</span></a>`:'<span class="bdg bdg-ok">Bình thường</span>'}</td></tr>`;}).join('');
 
-  $('#thrBody').innerHTML=FLOWS.map((f,i)=>`<tr><td class="mid">${i+1}</td>
+  $('#thrBody').innerHTML=pg('thrBody',FLOWS,'luồng').map((f,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td><span class="strong">${esc(f[0])}</span></td>
     <td class="mid"><input class="inp inp-sm" style="width:66px;text-align:center" value="${[3,3,5,3,3,2,3,3,2,3,3,4,4,3][i]}"></td>
     <td class="mid"><input class="inp inp-sm" style="width:96px;text-align:center" value="${['60 phút','60 phút','30 phút','30 phút','60 phút','30 phút','30 phút','30 phút','26 giờ','26 giờ','60 phút','8 giờ','—','30 phút'][i]}"></td>
@@ -2078,7 +2108,7 @@ function renderAll(){
     <td class="wrap" style="max-width:280px">${i<3?'Nhóm cảnh báo luồng lỗi (3 người)':'Đầu mối kỹ thuật của hệ thống nguồn'}</td>
     <td class="mid"><label class="sw"><input type="checkbox" ${i===12?'':'checked'}><span></span></label></td></tr>`).join('');
 
-  $('#mailBody').innerHTML=MAILS.map((m,i)=>`<tr><td class="mid">${i+1}</td>
+  $('#mailBody').innerHTML=pg('mailBody',MAILS,'loại thông báo').map((m,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td><span class="strong">${esc(m[0])}</span></td>
     <td class="wrap"><div style="display:flex;gap:6px;flex-wrap:wrap">
       ${m[1].map(e=>`<span class="chip">${esc(e)}<span class="x">×</span></span>`).join('')}
