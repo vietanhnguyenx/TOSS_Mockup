@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<!--
+  MOCKUP v0.1 — TOSS / INTEGRATION HUB (Trục tích hợp dữ liệu)
+  ============================================================================
+  BA PIC: (điền tên) · Ngày dựng: 09/09/2026
+
+  TUÂN THỦ CLAUDE.md §0 — chỉ dựng element có trong nguồn, không suy diễn:
+    · Phạm vi 22 màn / 7 module  → DANH-GIA-KE-HOACH-TRUC-TICH-HOP-TOSS-v0.1-2026-09-09.md §4.2
+    · Nguyên tắc động/tĩnh       → tài liệu trên §3
+    · Trạng thái tích hợp 3 giá trị + placeholder ở TẦNG HỆ THỐNG → §6.3 (chốt 09/09/2026)
+    · Giới hạn 3 đích / 5 lần thử lại → §6.2 mục 3 (lấy theo trục UBCKNN)
+    · 32 hệ thống + phương thức + ưu tiên → [VNA.TOSS]-YCKT.xlsx, sheet "Tích hợp" dòng 4–35
+    · Yêu cầu kỹ thuật            → sheet "YCKT V3" phần B (TOSS-058…TOSS-121, TOSS-168)
+
+  NGÔN NGỮ THIẾT KẾ — giao diện SÁNG, lấy từ ảnh Figma sản phẩm thật "Quản lý ULD.png"
+  (nguồn có thẩm quyền cao hơn TOSS-design-system.md — xem memory feedback-mockup-design-source):
+    · accent teal   #0090B3 (nút chính, pill sidebar active, ô trang hiện tại)
+    · nút phụ trợ   #F39C0D (Kết xuất Excel)
+    · nền trang     #E5E9EC · sidebar #E1E9EC · panel trắng bo 14px
+    · bảng          header #F2F4F7, kẻ lưới ngang + dọc #E4E7EC
+    · badge         nền nhạt + chấm tròn (không phải viền rỗng như bản tối)
+    · modal         nền #F2F4F7 chứa các card trắng · drawer chi tiết trượt từ phải
+    · input h44 bo 10px, nút h40 bo 8px, nhãn trên ô, dấu * đỏ cho trường bắt buộc
+
+  LƯU Ý VỀ DỮ LIỆU:
+    · 32 hệ thống ở màn "Hệ thống tích hợp" là DỮ LIỆU THẬT từ sheet Tích hợp.
+    · Cột "Trạng thái tích hợp" là TẠM GÁN theo quy tắc §6.3 (ô Phương thức trống hoặc
+      còn ghi chú chờ → "Chờ mô tả bản tin"; sheet ghi hoãn/thay thế → "Hoãn tích hợp").
+      Giá trị thật chốt sau khi rà mô tả bản tin — §7 mục 1.
+    · Mọi số liệu ở các màn Kết nối / Xác thực / Luồng / Giám sát / Nhật ký là DỮ LIỆU MẪU.
+    · Bố cục & màu là ĐỀ XUẤT, cần BA + UI duyệt.
+
+  BẢN CÔNG KHAI: mọi địa chỉ hạ tầng nội bộ thật (IP, cổng, hostname lấy từ sheet Tích hợp)
+  đã được thay bằng ký hiệu dạng <ten-host>. Bản đầy đủ nằm trong repo TOSS:
+  ba/process/mockup/integration-hub-mockup.html
+
+  Mỗi vùng UI gắn data-pui (component PrimeNG / wrapper ESB-FE) và data-src (nguồn).
+  Bảng tra component đầy đủ ở cuối trang.
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOSS — Integration Hub (Mockup v0.1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<style>
+/* ===========================================================================
+   TOKENS — trích trực tiếp từ ảnh Figma "Quản lý ULD.png" (lấy mẫu pixel)
+   =========================================================================== */
+:root{
+  --teal:#0090B3; --teal-dark:#0082A2; --teal-hover:#00789A; --teal-soft:#E6F5F9;
+  --amber:#F39C0D; --amber-hover:#DB8B08;
+  --page:#E5E9EC; --side:#E1E9EC; --side-2:#EAF0F2;
+  --panel:#FFFFFF; --surface:#F2F4F7; --surface-2:#F9FAFB;
+  --line:#E4E7EC; --line-strong:#D0D5DD;
+  --tx:#101828; --tx-2:#475467; --tx-3:#667085; --tx-mute:#98A2B3;
+  --ok:#16B364; --ok-bg:#EDFCF2; --ok-tx:#087443;
+  --warn:#F79009; --warn-bg:#FFFAEB; --warn-tx:#B54708;
+  --err:#F04438; --err-bg:#FEF3F2; --err-tx:#B42318;
+  --info:#0090B3; --info-bg:#E6F5F9; --info-tx:#00647C;
+  --neutral-bg:#F2F4F7; --neutral-tx:#475467;
+  --r-sm:6px; --r:8px; --r-md:10px; --r-lg:14px; --r-xl:16px; --r-full:999px;
+  --sh-sm:0 1px 2px rgba(16,24,40,.05);
+  --sh:0 1px 3px rgba(16,24,40,.10),0 1px 2px rgba(16,24,40,.06);
+  --sh-lg:0 12px 32px rgba(16,24,40,.12),0 4px 8px rgba(16,24,40,.04);
+  --sh-xl:0 24px 48px -12px rgba(16,24,40,.25);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;background:#333;color:var(--tx);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+  user-select:none;vertical-align:middle}
+
+/* --- thanh nhận diện bản nháp (không thuộc sản phẩm) --- */
+.devbar{display:flex;align-items:center;gap:10px;padding:9px 18px;background:#0B1220;color:#94A3B8;
+  font-size:11.5px;letter-spacing:.01em;flex-wrap:wrap}
+.devbar b{color:#fff}
+.devbar .tag{margin-left:auto;background:rgba(243,156,13,.16);color:#F3B34D;border:1px solid rgba(243,156,13,.35);
+  padding:3px 9px;border-radius:var(--r-full);font-weight:600;font-size:10.5px}
+.devbar .tag.d{background:rgba(0,144,179,.16);color:#5BC8E0;border-color:rgba(0,144,179,.4);margin-left:0}
+
+/* =========================== KHUNG ỨNG DỤNG =========================== */
+.stage{padding:14px;background:#333}
+.app{display:flex;min-height:920px;background:var(--page);border-radius:var(--r-xl);overflow:hidden;
+  box-shadow:var(--sh-xl)}
+
+/* ------------------------------ SIDEBAR ------------------------------ */
+.sidebar{width:236px;min-width:236px;background:linear-gradient(180deg,var(--side-2) 0%,var(--side) 100%);
+  display:flex;flex-direction:column;position:relative;transition:width .18s ease,min-width .18s ease}
+.sidebar.collapsed{width:66px;min-width:66px}
+.side-logo{padding:18px 16px 14px;display:flex;align-items:center;gap:9px}
+.side-logo svg{flex-shrink:0}
+.side-logo .lt{font-size:14.5px;font-weight:700;color:#0F2A44;letter-spacing:-.01em;line-height:1.1;white-space:nowrap}
+.side-logo .ls{display:block;font-size:9.5px;font-weight:600;color:var(--teal);letter-spacing:.06em;
+  text-transform:uppercase;margin-top:2px}
+.side-collapse{position:absolute;top:26px;right:-11px;width:22px;height:22px;border-radius:50%;
+  background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:5;box-shadow:var(--sh-sm);color:var(--tx-3)}
+.side-collapse .material-symbols-outlined{font-size:15px}
+.side-menu{flex:1;overflow-y:auto;padding:4px 12px 10px}
+.side-cap{font-size:9.5px;font-weight:700;color:var(--tx-mute);letter-spacing:.07em;text-transform:uppercase;
+  padding:14px 10px 6px}
+.side-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--r-md);cursor:pointer;
+  color:var(--tx-2);font-size:13px;font-weight:500;margin-bottom:2px;white-space:nowrap;transition:all .12s}
+.side-item .material-symbols-outlined{font-size:19px;flex-shrink:0;color:var(--tx-3)}
+.side-item:hover{background:rgba(255,255,255,.75);color:var(--tx)}
+.side-item.active{background:var(--teal);color:#fff;font-weight:600;box-shadow:0 2px 6px rgba(0,144,179,.32)}
+.side-item.active .material-symbols-outlined{color:#fff}
+.side-item .pip{margin-left:auto;font-size:10px;font-weight:700;background:rgba(255,255,255,.85);
+  color:var(--tx-3);border-radius:var(--r-full);padding:1px 7px}
+.side-item.active .pip{background:rgba(255,255,255,.24);color:#fff}
+.side-foot{border-top:1px solid rgba(255,255,255,.7);padding:12px}
+.side-user{display:flex;align-items:center;gap:10px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--teal);color:#fff;display:flex;
+  align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+.side-user .um{min-width:0;flex:1}
+.side-user .un{font-size:12.5px;font-weight:600;color:var(--tx);line-height:1.2;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-user .ue{font-size:10.5px;color:var(--tx-3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.theme-seg{display:flex;background:#fff;border-radius:var(--r-full);padding:2px;flex-shrink:0;border:1px solid var(--line)}
+.theme-seg button{border:0;background:transparent;width:24px;height:22px;border-radius:var(--r-full);cursor:pointer;
+  color:var(--tx-mute);display:flex;align-items:center;justify-content:center}
+.theme-seg button.on{background:var(--teal-soft);color:var(--teal)}
+.theme-seg .material-symbols-outlined{font-size:14px}
+.sidebar.collapsed .lt,.sidebar.collapsed .ls,.sidebar.collapsed .si-label,.sidebar.collapsed .side-cap,
+.sidebar.collapsed .pip,.sidebar.collapsed .um,.sidebar.collapsed .theme-seg{display:none}
+.sidebar.collapsed .side-item{justify-content:center;padding:10px 0;gap:0}
+.sidebar.collapsed .side-logo{justify-content:center;padding:18px 0 14px}
+.sidebar.collapsed .side-user{justify-content:center}
+
+/* ------------------------------- MAIN -------------------------------- */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.crumb{display:flex;align-items:center;gap:8px;padding:14px 20px 10px;font-size:12.5px;color:var(--tx-3)}
+.crumb .material-symbols-outlined{font-size:15px;color:var(--tx-mute)}
+.crumb .cur{color:var(--teal);font-weight:600}
+.crumb-right{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--tx-3)}
+.crumb-right b{color:var(--tx-2);font-weight:600}
+.content{flex:1;padding:0 20px 20px;overflow:auto}
+.panel{background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden}
+.panel + .panel{margin-top:16px}
+.screen{display:none} .screen.active{display:block}
+
+/* --------------------------- THANH CÔNG CỤ --------------------------- */
+.toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;flex-wrap:wrap}
+.filter-toggle{display:inline-flex;align-items:center;gap:8px;background:none;border:0;cursor:pointer;
+  font-family:inherit;font-size:13.5px;font-weight:600;color:var(--tx);padding:6px 4px}
+.filter-toggle .material-symbols-outlined{font-size:19px;color:var(--tx-2)}
+.filter-toggle .caret{font-size:20px;color:var(--tx-3);transition:transform .18s}
+.filter-toggle.closed .caret{transform:rotate(180deg)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 15px;
+  border-radius:var(--r);border:1px solid transparent;font-family:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:all .13s}
+.btn .material-symbols-outlined{font-size:18px}
+.btn-primary{background:var(--teal);color:#fff}
+.btn-primary:hover{background:var(--teal-hover)}
+.btn-amber{background:var(--amber);color:#fff}
+.btn-amber:hover{background:var(--amber-hover)}
+.btn-ghost{background:#fff;color:var(--tx-2);border-color:var(--line-strong)}
+.btn-ghost:hover{background:var(--surface-2);color:var(--tx)}
+.btn-plain{background:transparent;color:var(--tx-2);border-color:transparent}
+.btn-plain:hover{background:var(--surface)}
+.btn-danger{background:var(--err);color:#fff}
+.btn-danger:hover{background:#D92D20}
+.btn-sm{height:34px;padding:0 12px;font-size:12.5px}
+.btn-sm .material-symbols-outlined{font-size:16px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ----------------------------- BỘ LỌC -------------------------------- */
+.filters{display:flex;gap:10px;padding:0 16px 14px;flex-wrap:wrap;align-items:flex-end}
+.filters.hidden{display:none}
+.fld{display:flex;flex-direction:column;gap:6px;flex:1 1 190px;min-width:0}
+.fld.narrow{flex:0 1 150px}
+.fld label{font-size:12px;font-weight:600;color:var(--tx-2)}
+.fld label .req{color:var(--err);margin-left:2px}
+.inp{height:44px;width:100%;padding:0 13px;border:1px solid var(--line-strong);border-radius:var(--r-md);
+  background:#fff;font-family:inherit;font-size:13px;color:var(--tx);outline:none;transition:border-color .13s,box-shadow .13s}
+.inp::placeholder{color:var(--tx-mute)}
+.inp:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,144,179,.13)}
+select.inp{appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;background-position:right 11px center;padding-right:36px}
+textarea.inp{height:auto;min-height:92px;padding:11px 13px;resize:vertical;line-height:1.5}
+.inp-sm{height:36px;font-size:12.5px;padding:0 10px}
+.f-actions{display:flex;gap:9px;flex-shrink:0}
+.hint{font-size:11.5px;color:var(--tx-3);margin-top:5px;line-height:1.45}
+
+/* ------------------------------ BẢNG --------------------------------- */
+.tw{overflow-x:auto;border-top:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+thead th{background:var(--surface);color:#344054;font-weight:600;text-align:left;padding:11px 13px;
+  border-bottom:1px solid var(--line);border-right:1px solid var(--line);position:sticky;top:0;z-index:2}
+thead th:last-child{border-right:0}
+tbody td{padding:11px 13px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);
+  color:var(--tx-2);vertical-align:middle}
+tbody td:last-child{border-right:0}
+tbody tr:hover td{background:#FBFCFD}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.mid,th.mid{text-align:center}
+td .strong{color:var(--tx);font-weight:600}
+td .sub{display:block;font-size:11px;color:var(--tx-mute);font-weight:400;margin-top:2px;
+  white-space:normal;max-width:340px;line-height:1.4}
+.wrap{white-space:normal}
+.mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:11.5px}
+.ico-btn{border:0;background:transparent;cursor:pointer;color:var(--tx-3);padding:4px;border-radius:var(--r-sm);
+  display:inline-flex;transition:all .12s}
+.ico-btn:hover{background:var(--surface);color:var(--teal)}
+.ico-btn.del:hover{background:var(--err-bg);color:var(--err)}
+.ico-btn .material-symbols-outlined{font-size:18px}
+.acts{display:flex;gap:2px;align-items:center}
+
+/* ------------------------------ BADGE -------------------------------- */
+.bdg{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:var(--r-sm);
+  font-size:11.5px;font-weight:600;white-space:nowrap}
+.bdg::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.bdg.nodot::before{display:none}
+.bdg-ok{background:var(--ok-bg);color:var(--ok-tx)}
+.bdg-warn{background:var(--warn-bg);color:var(--warn-tx)}
+.bdg-err{background:var(--err-bg);color:var(--err-tx)}
+.bdg-info{background:var(--info-bg);color:var(--info-tx)}
+.bdg-mute{background:var(--neutral-bg);color:var(--neutral-tx)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--line);font-size:11.5px;color:var(--tx-2);font-weight:500}
+.chip .material-symbols-outlined{font-size:13px}
+.chip .x{cursor:pointer;color:var(--tx-mute);font-size:14px}
+.chip.teal{background:var(--teal-soft);border-color:#B6E3EE;color:var(--info-tx)}
+
+/* ------------------------- CÔNG TẮC BẬT/TẮT --------------------------- */
+.sw{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;background:#D0D5DD;border-radius:var(--r-full);cursor:pointer;transition:.18s}
+.sw span::before{content:"";position:absolute;width:18px;height:18px;left:2px;top:2px;background:#fff;
+  border-radius:50%;transition:.18s;box-shadow:var(--sh-sm)}
+.sw input:checked + span{background:var(--ok)}
+.sw input:checked + span::before{transform:translateX(16px)}
+.sw-row{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--tx-2);font-weight:500}
+
+/* ----------------------------- KPI CARD ------------------------------ */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:13px;margin-bottom:16px}
+.kpi{background:var(--panel);border-radius:var(--r-lg);padding:15px 17px;box-shadow:var(--sh);
+  border-left:3px solid var(--line);cursor:pointer;transition:all .14s}
+.kpi:hover{box-shadow:var(--sh-lg);transform:translateY(-1px)}
+.kpi.on{border-left-color:var(--teal);background:linear-gradient(180deg,#F7FCFD,#fff)}
+.kpi{position:relative}
+.kpi .k{font-size:11.5px;color:var(--tx-3);font-weight:600;display:flex;align-items:center;gap:6px;
+  padding-right:44px}
+.kpi .k .material-symbols-outlined{position:absolute;top:14px;right:14px;font-size:19px;
+  width:34px;height:34px;border-radius:var(--r);background:var(--surface);color:var(--tx-3);
+  display:flex;align-items:center;justify-content:center}
+.kpi.on .k .material-symbols-outlined{background:var(--teal-soft);color:var(--teal)}
+.kpi.ok .k .material-symbols-outlined{background:var(--ok-bg);color:var(--ok-tx)}
+.kpi.warn .k .material-symbols-outlined{background:var(--warn-bg);color:var(--warn-tx)}
+.kpi.err .k .material-symbols-outlined{background:var(--err-bg);color:var(--err-tx)}
+.kpi.teal .k .material-symbols-outlined{background:var(--teal-soft);color:var(--teal)}
+.kpi .v{font-size:27px;font-weight:700;color:var(--tx);line-height:1.15;margin-top:7px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:11px;color:var(--tx-mute);margin-top:3px}
+.kpi.ok .v{color:var(--ok-tx)} .kpi.warn .v{color:var(--warn-tx)}
+.kpi.err .v{color:var(--err-tx)} .kpi.teal .v{color:var(--teal)}
+
+/* ---------------------------- PHÂN TRANG ----------------------------- */
+.pgbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.pgbar .total{font-size:12.5px;color:var(--tx-2);font-weight:600}
+.pg-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.pg-right .lb{font-size:12.5px;color:var(--tx-2)}
+.pg-btn{min-width:32px;height:32px;padding:0 8px;border-radius:var(--r);border:1px solid transparent;
+  background:transparent;color:var(--tx-2);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;transition:all .12s}
+.pg-btn:hover:not(:disabled):not(.on){background:var(--surface)}
+.pg-btn.on{background:var(--teal);color:#fff}
+.pg-btn:disabled{opacity:.3;cursor:default}
+.pg-btn .material-symbols-outlined{font-size:17px}
+
+/* ------------------------- KHỐI / TIÊU ĐỀ ---------------------------- */
+.sec{padding:16px}
+.sec-h{display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.sec-h .material-symbols-outlined{font-size:19px;color:var(--teal)}
+.sec-h h3{margin:0;font-size:14px;font-weight:600;color:var(--tx)}
+.sec-h .sub{font-size:11.5px;color:var(--tx-3);font-weight:400;margin-left:2px}
+.sec-h .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.note{background:var(--info-bg);border:1px solid #B6E3EE;border-radius:var(--r-md);padding:11px 13px;
+  font-size:12px;color:var(--info-tx);line-height:1.55;display:flex;gap:9px;align-items:flex-start}
+.note .material-symbols-outlined{font-size:17px;flex-shrink:0;margin-top:1px}
+.note.warn{background:var(--warn-bg);border-color:#FEDF89;color:var(--warn-tx)}
+.note.err{background:var(--err-bg);border-color:#FECDCA;color:var(--err-tx)}
+.note b{font-weight:700}
+
+/* ------------------------------ MODAL -------------------------------- */
+.ovl{position:fixed;inset:0;background:rgba(16,24,40,.55);display:none;align-items:flex-start;
+  justify-content:center;z-index:60;padding:34px 16px;overflow:auto;backdrop-filter:blur(1.5px)}
+.ovl.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--r-xl);width:100%;max-width:860px;box-shadow:var(--sh-xl);
+  overflow:hidden;animation:mIn .16s ease}
+.modal.sm{max-width:520px} .modal.lg{max-width:1020px}
+@keyframes mIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.modal-h{display:flex;align-items:center;gap:10px;padding:20px 24px 6px}
+.modal-h h2{margin:0;font-size:19px;font-weight:700;color:var(--tx)}
+.modal-h .x{margin-left:auto;border:0;background:transparent;cursor:pointer;color:var(--tx-3);padding:5px;
+  border-radius:var(--r-sm);display:flex}
+.modal-h .x:hover{background:rgba(0,0,0,.05);color:var(--tx)}
+.modal-b{padding:14px 24px 20px;display:flex;flex-direction:column;gap:16px}
+.modal-f{display:flex;gap:10px;justify-content:flex-end;padding:16px 24px 22px}
+.mcard{background:#fff;border-radius:var(--r-lg);padding:18px 20px}
+.mcard h4{margin:0 0 15px;font-size:15px;font-weight:700;color:var(--tx)}
+.frow{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.frow.c2{grid-template-columns:repeat(2,1fr)}
+.frow.c1{grid-template-columns:1fr}
+.frow .span2{grid-column:span 2}
+
+/* ------------------------------ DRAWER ------------------------------- */
+.drw-ovl{position:fixed;inset:0;background:rgba(16,24,40,.45);display:none;z-index:70}
+.drw-ovl.open{display:block}
+.drw{position:fixed;top:0;right:0;bottom:0;width:472px;max-width:94vw;background:#fff;z-index:71;
+  transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:var(--sh-xl)}
+.drw.open{transform:none}
+.drw-h{padding:22px 24px 16px;background:linear-gradient(135deg,#F6FBFC 0%,#FFF9F2 100%);
+  border-bottom:1px solid var(--line)}
+.drw-h .t{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.drw-h h2{margin:0;font-size:19px;font-weight:700;color:var(--tx)}
+.drw-h .st{font-size:12.5px;color:var(--tx-3);margin-top:4px}
+.drw-h .x{margin-left:auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
+  background:#fff;cursor:pointer;color:var(--tx-3);display:flex;align-items:center;justify-content:center}
+.drw-h .acts{margin-top:14px;gap:9px}
+.drw-b{flex:1;overflow-y:auto;padding:6px 24px 24px}
+.dl{display:block}
+.dl .row{padding:12px 0;border-bottom:1px solid var(--line)}
+.dl .row:last-child{border-bottom:0}
+.dl dt{font-size:12px;color:var(--tx-3);margin-bottom:4px}
+.dl dd{margin:0;font-size:13.5px;font-weight:600;color:var(--tx);word-break:break-word}
+.dl dd.norm{font-weight:400;color:var(--tx-2);font-size:13px;line-height:1.55}
+
+/* ------------------------------ TIMELINE ----------------------------- */
+.tl{position:relative;padding-left:26px}
+.tl::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl-i{position:relative;padding:0 0 17px}
+.tl-i::before{content:"";position:absolute;left:-22px;top:4px;width:10px;height:10px;border-radius:50%;
+  background:#fff;border:2px solid var(--line-strong)}
+.tl-i.ok::before{border-color:var(--ok);background:var(--ok)}
+.tl-i.err::before{border-color:var(--err);background:var(--err)}
+.tl-i .tt{font-size:13px;font-weight:600;color:var(--tx)}
+.tl-i .td{font-size:11.5px;color:var(--tx-3);margin-top:2px}
+.code-box{background:#0B1220;color:#CBD5E1;border-radius:var(--r-md);padding:13px 15px;
+  font-family:ui-monospace,Consolas,monospace;font-size:11.5px;line-height:1.65;overflow-x:auto;white-space:pre}
+.code-box .k{color:#7DD3FC} .code-box .s{color:#BEF264} .code-box .m{color:#F59E0B}
+
+/* -------------------------- BIỂU ĐỒ ĐƠN GIẢN ------------------------- */
+.bars{display:flex;align-items:flex-end;gap:5px;height:132px;padding:10px 2px 0}
+.bars .b{flex:1;background:var(--teal);border-radius:3px 3px 0 0;min-height:3px;position:relative;opacity:.88}
+.bars .b.e{background:var(--err)}
+.bars .b:hover{opacity:1}
+.axis{display:flex;gap:5px;padding:6px 2px 0;font-size:9.5px;color:var(--tx-mute)}
+.axis span{flex:1;text-align:center}
+.mini{height:7px;border-radius:var(--r-full);background:var(--surface);overflow:hidden;min-width:74px}
+.mini i{display:block;height:100%;border-radius:var(--r-full);background:var(--ok)}
+.mini i.w{background:var(--warn)} .mini i.e{background:var(--err)}
+.cov{display:flex;align-items:center;gap:9px}
+.cov b{font-size:12.5px;font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
+
+/* ------------------------------- TOAST ------------------------------- */
+.toast-wrap{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:9px;z-index:99}
+.toast{background:#fff;border-radius:var(--r-md);box-shadow:var(--sh-lg);padding:12px 15px;font-size:12.5px;
+  color:var(--tx-2);display:flex;gap:9px;align-items:flex-start;max-width:360px;
+  border-left:3px solid var(--teal);animation:tIn .18s ease}
+.toast.ok{border-left-color:var(--ok)} .toast.err{border-left-color:var(--err)}
+.toast .material-symbols-outlined{font-size:18px;color:var(--teal);flex-shrink:0}
+.toast.ok .material-symbols-outlined{color:var(--ok)} .toast.err .material-symbols-outlined{color:var(--err)}
+.toast b{display:block;color:var(--tx);font-size:13px;margin-bottom:2px}
+@keyframes tIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+
+/* ------------------------- CHÚ THÍCH COMPONENT ----------------------- */
+/* Chú thích component cho DEV — MẶC ĐỊNH TẮT.
+   Bật bằng nút trên thanh đen. Khi bật: mỗi vùng có một chấm số nhỏ ở góc phải trên
+   (không đè lên nội dung); rê chuột vào chấm mới bung ra tên component đầy đủ. */
+body.ann [data-pui]{outline:1px dashed rgba(0,144,179,.35);outline-offset:2px;border-radius:2px}
+body.ann [data-pui]>.annt{display:flex}
+.annt{display:none;position:absolute;top:-9px;right:-9px;z-index:45;align-items:center;
+  height:18px;min-width:18px;padding:0;border-radius:var(--r-full);background:var(--teal);color:#fff;
+  font:600 10px/1 Inter,sans-serif;justify-content:center;cursor:help;overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,.28);transition:min-width .13s,padding .13s}
+.annt .n{padding:0 5px;flex-shrink:0}
+.annt .full{max-width:0;opacity:0;white-space:nowrap;transition:max-width .16s,opacity .13s;font-weight:500}
+.annt:hover{padding-right:8px;z-index:60}
+.annt:hover .full{max-width:360px;opacity:1;padding-left:2px}
+.legend{display:none;margin:0 20px 20px;background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden}
+body.ann .legend{display:block}
+.legend table{white-space:normal}
+.legend td{font-size:12px}
+.legend td:first-child{font-family:ui-monospace,Consolas,monospace;color:var(--teal);font-weight:600;width:270px}
+
+@media (max-width:1180px){
+  .sidebar{width:66px;min-width:66px}
+  .sidebar .lt,.sidebar .ls,.sidebar .si-label,.sidebar .side-cap,.sidebar .pip,
+  .sidebar .um,.sidebar .theme-seg{display:none}
+  .sidebar .side-item{justify-content:center;padding:10px 0;gap:0}
+  .frow,.frow.c2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="devbar">
+  <span class="material-symbols-outlined" style="font-size:16px">draft</span>
+  <span><b>MOCKUP v0.1</b> — TOSS › Integration Hub (Trục tích hợp dữ liệu) · 22 màn / 7 module</span>
+  <span class="tag d">32 hệ thống = DỮ LIỆU THẬT (sheet Tích hợp d.4–35)</span>
+  <span class="tag">Các màn khác = dữ liệu mẫu</span>
+  <span class="tag" style="margin-left:0">Địa chỉ hạ tầng đã che cho bản công khai</span>
+  <button class="btn btn-sm btn-ghost" style="height:26px;font-size:11px" id="annBtn" onclick="toggleAnn()">
+    <span class="material-symbols-outlined" style="font-size:14px">label</span><span id="annLbl">Hiện chú thích component cho DEV</span></button>
+</div>
+
+<div class="stage">
+<div class="app">
+
+  <!-- ============================== SIDEBAR ==============================
+       §4.1 — Trục là WEB QUẢN TRỊ RIÊNG, cây menu ĐỘC LẬP, không chèn vào
+       sheet MENU của TOSS. Vì vậy sidebar ở đây liệt kê 7 module của trục,
+       KHÔNG phải Live Operations / Flight Dispatch… của TOSS.
+       Bố cục sidebar (logo trên, nhóm mục, chân có avatar + chuyển sáng/tối)
+       lấy từ ảnh Figma "Quản lý ULD.png". -->
+  <nav class="sidebar" id="sidebar" data-pui="IamSidebar (p-panelMenu)" data-src="[Đánh giá §4.1] cây menu độc lập của trục">
+    <div class="side-logo">
+      <svg viewBox="0 0 200 150" width="24" height="18" fill="#D4B26F" aria-hidden="true">
+        <path d="M100,10 C101.5,45 118,70 148,82 C125,81 107,70 100,50 C93,70 75,81 52,82 C82,70 98.5,45 100,10 Z"/>
+        <path d="M100,60 C110,95 152,110 190,102 C150,107 118,92 100,74 C82,92 50,107 10,102 C48,110 90,95 100,60 Z"/>
+      </svg>
+      <div><span class="lt">Vietnam Airlines</span><span class="ls">Integration Hub</span></div>
+    </div>
+    <button class="side-collapse" onclick="toggleSide()" title="Thu gọn menu">
+      <span class="material-symbols-outlined" id="sideIco">chevron_left</span></button>
+
+    <div class="side-menu">
+      <div class="side-cap">Hệ thống</div>
+      <div class="side-item active" data-go="s1"><span class="material-symbols-outlined">lan</span>
+        <span class="si-label">Hệ thống tích hợp</span><span class="pip">32</span></div>
+      <div class="side-item" data-go="s3"><span class="material-symbols-outlined">contact_phone</span>
+        <span class="si-label">Đầu mối kỹ thuật</span><span class="pip">8</span></div>
+
+      <div class="side-cap">Kết nối</div>
+      <div class="side-item" data-go="s5"><span class="material-symbols-outlined">cable</span>
+        <span class="si-label">Kết nối</span><span class="pip">16</span></div>
+      <div class="side-item" data-go="s8"><span class="material-symbols-outlined">key</span>
+        <span class="si-label">Thông tin xác thực</span><span class="pip">11</span></div>
+
+      <div class="side-cap">Luồng dữ liệu</div>
+      <div class="side-item" data-go="s10"><span class="material-symbols-outlined">swap_horiz</span>
+        <span class="si-label">Luồng dữ liệu</span><span class="pip">14</span></div>
+      <div class="side-item" data-go="s12"><span class="material-symbols-outlined">history</span>
+        <span class="si-label">Lịch sử chạy</span></div>
+
+      <div class="side-cap">Giám sát</div>
+      <div class="side-item" data-go="s14"><span class="material-symbols-outlined">monitoring</span>
+        <span class="si-label">Tổng quan tích hợp</span></div>
+      <div class="side-item" data-go="s15"><span class="material-symbols-outlined">satellite_alt</span>
+        <span class="si-label">Độ phủ ACARS</span></div>
+      <div class="side-item" data-go="s16"><span class="material-symbols-outlined">flight_takeoff</span>
+        <span class="si-label">Độ phủ QAR</span></div>
+      <div class="side-item" data-go="s17"><span class="material-symbols-outlined">lab_profile</span>
+        <span class="si-label">Báo cáo tỷ lệ dữ liệu</span></div>
+
+      <div class="side-cap">Nhật ký</div>
+      <div class="side-item" data-go="s18"><span class="material-symbols-outlined">receipt_long</span>
+        <span class="si-label">Nhật ký tích hợp</span></div>
+
+      <div class="side-cap">Cảnh báo</div>
+      <div class="side-item" data-go="s20"><span class="material-symbols-outlined">notifications_active</span>
+        <span class="si-label">Ngưỡng cảnh báo</span></div>
+      <div class="side-item" data-go="s21"><span class="material-symbols-outlined">forward_to_inbox</span>
+        <span class="si-label">Email nhận thông báo</span></div>
+      <div class="side-item" data-go="s22"><span class="material-symbols-outlined">mail</span>
+        <span class="si-label">Mẫu nội dung email</span></div>
+    </div>
+
+    <div class="side-foot">
+      <div class="side-user">
+        <span class="avatar">QT</span>
+        <div class="um"><div class="un">Quản trị trục</div><div class="ue">admin@vietnamairlines.com</div></div>
+        <div class="theme-seg">
+          <button class="on" title="Giao diện sáng"><span class="material-symbols-outlined">light_mode</span></button>
+          <button onclick="toast('Giao diện tối — ngoài phạm vi bản mockup này')" title="Giao diện tối">
+            <span class="material-symbols-outlined">dark_mode</span></button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- =============================== MAIN =============================== -->
+  <div class="main">
+    <div class="crumb" data-pui="p-breadcrumb" data-src="Bố cục Figma — Home &gt; &lt;màn hiện tại&gt;">
+      <span class="material-symbols-outlined">home</span><span>Integration Hub</span>
+      <span class="material-symbols-outlined">chevron_right</span>
+      <span class="cur" id="crumbCur">Hệ thống tích hợp</span>
+      <span class="crumb-right"><span class="material-symbols-outlined" style="font-size:15px">schedule</span>
+        Thời điểm vận hành: <b id="opDate">09/09/2026</b> <b id="clock">--:--:--</b></span>
+    </div>
+
+    <div class="content">
+
+    <!-- ================================================================
+         MÀN 1 — DANH SÁCH HỆ THỐNG TÍCH HỢP   (M1 · task #34)
+         Nguồn: Đánh giá §4.2 M1 · YCKT TOSS-064, TOSS-107
+                §6.3 — placeholder đặt ở TẦNG HỆ THỐNG: nạp đủ 32 hệ thống,
+                thêm trường "Trạng thái tích hợp" 3 giá trị + bộ lọc tương ứng.
+         ================================================================ -->
+    <section class="screen active" id="s1">
+      <div class="kpis" data-pui="p-card (nhóm thẻ thống kê)" data-src="[Figma] dải thẻ thống kê · [§6.3] 3 trạng thái tích hợp">
+        <div class="kpi on" data-st="" onclick="pickKpi(this)">
+          <div class="k"><span class="material-symbols-outlined">lan</span>Tổng hệ thống</div>
+          <div class="v">32</div><div class="s">Sheet Tích hợp dòng 4–35</div></div>
+        <div class="kpi ok" data-st="Đang khai thác" onclick="pickKpi(this)">
+          <div class="k"><span class="material-symbols-outlined">check_circle</span>Đang khai thác</div>
+          <div class="v">15</div><div class="s">Đã rõ phương thức kết nối</div></div>
+        <div class="kpi warn" data-st="Chờ mô tả bản tin" onclick="pickKpi(this)">
+          <div class="k"><span class="material-symbols-outlined">pending</span>Chờ mô tả bản tin</div>
+          <div class="v">14</div><div class="s">Chưa đủ dữ kiện viết bộ đọc</div></div>
+        <div class="kpi err" data-st="Hoãn tích hợp" onclick="pickKpi(this)">
+          <div class="k"><span class="material-symbols-outlined">pause_circle</span>Hoãn tích hợp</div>
+          <div class="v">3</div><div class="s">eTechlog · ANCM · FOEM</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f1')" data-pui="p-button (text)" data-src="[Figma] nút Filter thu/mở">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-plain" onclick="renderSys()"><span class="material-symbols-outlined">refresh</span>Tải lại</button>
+            <button class="btn btn-primary" onclick="openSysModal()" data-pui="p-button" data-src="[§4.2] màn 2 — Thêm/Sửa hệ thống">
+              <span class="material-symbols-outlined">add</span>Thêm mới</button>
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')" data-pui="p-button (severity=warn)" data-src="[Figma] nút Export Excel">
+              <span class="material-symbols-outlined">download</span>Kết xuất Excel</button>
+          </div>
+        </div>
+
+        <div class="filters" id="f1" data-pui="cmm-dynamic-form (p-inputtext, p-select)" data-src="[§4.2 M1] lọc theo loại, trạng thái tích hợp, ưu tiên">
+          <div class="fld"><label>Tìm theo mã / tên hệ thống</label>
+            <input class="inp" id="q1" placeholder="Nhập mã hoặc tên hệ thống" oninput="renderSys()"></div>
+          <div class="fld narrow"><label>Loại hệ thống</label>
+            <select class="inp" id="k1" onchange="renderSys()"><option value="">Tất cả</option>
+              <option>Nội bộ VNA</option><option>Đối tác ngoài</option></select></div>
+          <div class="fld narrow"><label>Trạng thái tích hợp</label>
+            <select class="inp" id="st1" onchange="renderSys()"><option value="">Tất cả</option>
+              <option>Đang khai thác</option><option>Chờ mô tả bản tin</option><option>Hoãn tích hợp</option></select></div>
+          <div class="fld narrow"><label>Mức ưu tiên</label>
+            <select class="inp" id="p1" onchange="renderSys()"><option value="">Tất cả</option>
+              <option value="1.0">1.0 — cao</option><option value="2.0">2.0</option>
+              <option value="10.0">10.0 — thấp</option><option value="—">Chưa gán</option></select></div>
+          <div class="f-actions">
+            <button class="btn btn-primary" onclick="renderSys()"><span class="material-symbols-outlined">search</span>Tra cứu</button>
+            <button class="btn btn-ghost" onclick="resetSys()"><span class="material-symbols-outlined">restart_alt</span>Đặt lại</button>
+          </div>
+        </div>
+
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[Sheet Tích hợp d.4–35] 32 hệ thống — dữ liệu thật">
+          <table><thead><tr>
+            <th style="width:44px">STT</th><th>Hệ thống</th><th>Loại · Chiều</th>
+            <th>Phương thức kết nối</th><th class="mid">Ưu tiên</th>
+            <th>Trạng thái tích hợp</th><th class="num">Luồng</th><th>Đầu mối</th>
+            <th style="width:86px">Thao tác</th></tr></thead>
+            <tbody id="sysBody"></tbody></table>
+        </div>
+
+        <div class="pgbar">
+          <span class="total">Tổng: <b id="sysTotal">32</b> hệ thống</span>
+          <div class="pg-right"><span class="lb">Hiển thị</span>
+            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option><option>50 bản ghi</option></select>
+            <button class="pg-btn" disabled><span class="material-symbols-outlined">keyboard_double_arrow_left</span></button>
+            <button class="pg-btn" disabled><span class="material-symbols-outlined">chevron_left</span></button>
+            <button class="pg-btn on">1</button><button class="pg-btn">2</button>
+            <button class="pg-btn"><span class="material-symbols-outlined">chevron_right</span></button>
+            <button class="pg-btn"><span class="material-symbols-outlined">keyboard_double_arrow_right</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:14px" data-src="[§6.3] quyết định 09/09/2026">
+        <span class="material-symbols-outlined">info</span>
+        <div><b>Vì sao placeholder nằm ở màn này chứ không ở màn Luồng dữ liệu:</b> một luồng hiện ở màn
+        Luồng dữ liệu mà bật lên không chạy được sẽ bị người kiểm thử ghi thành <b>LỖI</b>, không ghi là
+        "chưa làm". Hệ thống ở trạng thái <i>Chờ mô tả bản tin</i> là tuyên bố trung thực về tiến độ — vẫn
+        cho khách thấy đủ 32 hệ thống mà không hứa cái chưa có. Giá trị cột này hiện là <b>tạm gán</b>,
+        chốt sau khi rà mô tả bản tin.</div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 3 — DANH SÁCH ĐẦU MỐI KỸ THUẬT   (M1 · task #36)
+         ================================================================ -->
+    <section class="screen" id="s3">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f3')">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-primary" onclick="openModal('mContact')"><span class="material-symbols-outlined">add</span>Thêm mới</button>
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')"><span class="material-symbols-outlined">download</span>Kết xuất Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f3">
+          <div class="fld"><label>Tìm theo họ tên / email</label><input class="inp" placeholder="Nhập họ tên hoặc email"></div>
+          <div class="fld narrow"><label>Hệ thống phụ trách</label>
+            <select class="inp"><option>Tất cả</option><option>Netline Flight Ops++</option><option>MO Plus</option><option>ACARS</option></select></div>
+          <div class="fld narrow"><label>Đơn vị</label>
+            <select class="inp"><option>Tất cả</option><option>VNA — Ban CNTT</option><option>Viettel Solutions</option><option>VIAGS</option></select></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Tra cứu</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Đặt lại</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2 M1] màn 3 — đầu mối kỹ thuật · dữ liệu mẫu">
+          <table><thead><tr><th style="width:44px">STT</th><th>Họ tên</th><th>Đơn vị</th><th>Email</th>
+            <th>Điện thoại</th><th>Hệ thống phụ trách</th><th class="mid">Nhận cảnh báo</th><th style="width:86px">Thao tác</th></tr></thead>
+            <tbody id="contactBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>8</b> đầu mối</span>
+          <div class="pg-right"><span class="lb">Hiển thị</span>
+            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
+            <button class="pg-btn on">1</button></div></div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 5 — DANH SÁCH KẾT NỐI   (M2 · task #38)
+         §3 — 6 loại giao thức là danh sách TĨNH: SFTP · Database · REST ·
+         SOAP · Email · Web. Không có IBM MQ / MinIO / UDP như trục UBCKNN
+         vì sheet Tích hợp không có hệ thống nào dùng.
+         ================================================================ -->
+    <section class="screen" id="s5">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f5')">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-ghost" onclick="openModal('mPing')"><span class="material-symbols-outlined">network_check</span>Kiểm tra kết nối</button>
+            <button class="btn btn-primary" onclick="openConnModal()"><span class="material-symbols-outlined">add</span>Thêm mới</button>
+          </div>
+        </div>
+        <div class="filters" id="f5">
+          <div class="fld"><label>Tìm theo tên kết nối</label><input class="inp" placeholder="Nhập tên kết nối"></div>
+          <div class="fld narrow"><label>Hệ thống</label><select class="inp"><option>Tất cả</option></select></div>
+          <div class="fld narrow"><label>Loại giao thức</label>
+            <select class="inp"><option>Tất cả</option><option>SFTP</option><option>Database</option>
+              <option>REST</option><option>SOAP</option><option>Email</option><option>Web</option></select></div>
+          <div class="fld narrow"><label>Trạng thái</label>
+            <select class="inp"><option>Tất cả</option><option>Đang bật</option><option>Đã tắt</option></select></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Tra cứu</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Đặt lại</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2 M2] màn 5 · điểm cuối lấy từ sheet Tích hợp">
+          <table><thead><tr><th style="width:44px">STT</th><th>Tên kết nối / Hệ thống</th>
+            <th>Giao thức</th><th>Điểm cuối</th><th>Xác thực</th><th>Kiểm tra gần nhất</th>
+            <th class="mid">Bật</th><th style="width:110px">Thao tác</th></tr></thead>
+            <tbody id="connBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>16</b> kết nối</span>
+          <div class="pg-right"><span class="lb">Hiển thị</span>
+            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
+            <button class="pg-btn on">1</button></div></div>
+      </div>
+      <div class="note" style="margin-top:14px">
+        <span class="material-symbols-outlined">info</span>
+        <div><b>Một popup đa hình thay cho 6 màn riêng.</b> Trục UBCKNN tách 6 màn danh sách kết nối cho 6
+        giao thức (36 chức năng). Ở đây dùng chung một danh sách và một popup đổi bộ trường theo giao thức —
+        xem màn <a href="#" onclick="go('s5');openConnModal();return false">Thêm/Sửa kết nối</a>.</div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 8 — DANH SÁCH THÔNG TIN XÁC THỰC   (M3 · task #41)
+         §3 — credential GHI ĐƯỢC nhưng KHÔNG ĐỌC LẠI: cột giá trị luôn che.
+         4 loại (giảm từ 8 loại của trục UBCKNN).
+         ================================================================ -->
+    <section class="screen" id="s8">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f8')">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-primary" onclick="openCredModal()"><span class="material-symbols-outlined">add</span>Thêm mới</button>
+          </div>
+        </div>
+        <div class="filters" id="f8">
+          <div class="fld"><label>Tìm theo tên</label><input class="inp" placeholder="Nhập tên thông tin xác thực"></div>
+          <div class="fld narrow"><label>Loại xác thực</label>
+            <select class="inp"><option>Tất cả</option><option>Tài khoản / Mật khẩu</option>
+              <option>API Key / Token</option><option>OAuth2</option><option>Khóa SSH</option></select></div>
+          <div class="fld narrow"><label>Hệ thống</label><select class="inp"><option>Tất cả</option></select></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Tra cứu</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Đặt lại</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2 M3] màn 8 · dữ liệu mẫu">
+          <table><thead><tr><th style="width:44px">STT</th><th>Tên</th><th>Loại xác thực</th><th>Hệ thống</th>
+            <th>Giá trị</th><th>Hết hạn</th><th>Cập nhật lần cuối</th><th style="width:86px">Thao tác</th></tr></thead>
+            <tbody id="credBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>11</b> thông tin xác thực</span>
+          <div class="pg-right"><span class="lb">Hiển thị</span>
+            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
+            <button class="pg-btn on">1</button></div></div>
+      </div>
+      <div class="note warn" style="margin-top:14px">
+        <span class="material-symbols-outlined">lock</span>
+        <div><b>Ghi được, không đọc lại.</b> Sau khi lưu, giá trị bí mật không hiển thị lại trên giao diện
+        dưới bất kỳ vai trò nào — chỉ có thể ghi đè. Đây là ràng buộc §3 của tài liệu phạm vi, không phải
+        tùy chọn cấu hình.</div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 10 — DANH SÁCH LUỒNG DỮ LIỆU   (M4 · task #43)
+         §3 — BÁN ĐỘNG: người dùng bật/tắt và cấu hình vận hành, KHÔNG tự
+         tạo luồng mới. Danh mục luồng do đội phát triển nạp sẵn, mỗi luồng
+         gắn một bộ đọc viết bằng mã nguồn.
+         §6.3 — chỉ liệt kê luồng ĐÃ CÓ BỘ ĐỌC. Hệ thống chưa đủ dữ kiện
+         nằm ở màn Hệ thống tích hợp với trạng thái "Chờ mô tả bản tin".
+         ================================================================ -->
+    <section class="screen" id="s10">
+      <div class="kpis">
+        <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">swap_horiz</span>Luồng đã nạp</div>
+          <div class="v">14</div><div class="s">Đã có bộ đọc</div></div>
+        <div class="kpi ok"><div class="k"><span class="material-symbols-outlined">play_circle</span>Đang bật</div>
+          <div class="v">11</div><div class="s">Chạy theo lịch</div></div>
+        <div class="kpi warn"><div class="k"><span class="material-symbols-outlined">schedule</span>Trễ lịch</div>
+          <div class="v">2</div><div class="s">Quá chu kỳ chưa chạy</div></div>
+        <div class="kpi err"><div class="k"><span class="material-symbols-outlined">error</span>Đang lỗi</div>
+          <div class="v">1</div><div class="s">Lỗi liên tiếp ≥ ngưỡng</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f10')">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-plain"><span class="material-symbols-outlined">refresh</span>Tải lại</button>
+            <button class="btn btn-ghost" onclick="toast('Người dùng KHÔNG tự tạo luồng — §3 bán động. Luồng mới do đội phát triển nạp kèm bộ đọc.','err')"
+              data-src="[§3] chốt: không có nút Thêm mới ở màn này">
+              <span class="material-symbols-outlined">add</span>Thêm mới</button>
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')"><span class="material-symbols-outlined">download</span>Kết xuất Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f10">
+          <div class="fld"><label>Tìm theo tên luồng</label><input class="inp" placeholder="Nhập tên luồng"></div>
+          <div class="fld narrow"><label>Hệ thống nguồn</label><select class="inp"><option>Tất cả</option></select></div>
+          <div class="fld narrow"><label>Phương thức</label>
+            <select class="inp"><option>Tất cả</option><option>SFTP</option><option>Database</option>
+              <option>REST</option><option>SOAP</option><option>Email</option><option>Web</option></select></div>
+          <div class="fld narrow"><label>Kết quả chạy gần nhất</label>
+            <select class="inp"><option>Tất cả</option><option>Thành công</option><option>Thất bại</option><option>Trễ lịch</option></select></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Tra cứu</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Đặt lại</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2 M4] màn 10 · luồng dựng theo hệ thống Đang khai thác">
+          <table><thead><tr><th style="width:44px">STT</th><th>Tên luồng / Nguồn → Đích</th>
+            <th>Phương thức</th><th>Lịch chạy</th><th>Chạy gần nhất</th>
+            <th>Kết quả</th><th class="mid">Bật</th><th style="width:110px">Thao tác</th></tr></thead>
+            <tbody id="flowBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>14</b> luồng</span>
+          <div class="pg-right"><span class="lb">Hiển thị</span>
+            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
+            <button class="pg-btn on">1</button></div></div>
+      </div>
+
+      <div class="note warn" style="margin-top:14px">
+        <span class="material-symbols-outlined">lock</span>
+        <div><b>Không có chức năng tạo luồng mới.</b> Nút "Thêm mới" ở trên chỉ để minh họa quyết định §3 —
+        bấm vào sẽ báo lỗi. Luồng mới đi kèm bộ đọc do đội phát triển nạp; người dùng chỉ bật/tắt và chỉnh
+        cấu hình vận hành. Đây là khác biệt lớn nhất so với trục UBCKNN.</div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 11 — CHI TIẾT LUỒNG & CẤU HÌNH VẬN HÀNH   (M4 · task #44)
+         §6.2 mục 3 — TỐI ĐA 3 ĐÍCH, TỐI ĐA 5 LẦN THỬ LẠI (theo UBCKNN).
+         ================================================================ -->
+    <section class="screen" id="s11">
+      <div class="panel">
+        <div class="sec-h">
+          <span class="material-symbols-outlined">tune</span>
+          <h3>ACARS → TOSS · gom điện Performance</h3>
+          <span class="bdg bdg-ok">Đang bật</span>
+          <span class="sub">Mã luồng FLW-ACARS-PF · bộ đọc <span class="mono">AcarsPerfMessageReader</span></span>
+          <div class="right">
+            <button class="btn btn-sm btn-ghost" onclick="go('s12')"><span class="material-symbols-outlined">history</span>Lịch sử chạy</button>
+            <button class="btn btn-sm btn-ghost" onclick="openModal('mRerun')"><span class="material-symbols-outlined">replay</span>Chạy lại</button>
+            <button class="btn btn-sm btn-primary" onclick="toast('Đã lưu cấu hình vận hành','ok')"><span class="material-symbols-outlined">save</span>Lưu</button>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="note" style="margin-bottom:16px">
+            <span class="material-symbols-outlined">edit_off</span>
+            <div>Phần <b>Định nghĩa luồng</b> bên dưới là <b>chỉ đọc</b> — do bộ đọc quy định (§3 nhóm tĩnh).
+            Chỉ phần <b>Cấu hình vận hành</b> mới sửa được.</div>
+          </div>
+
+          <div class="mcard" style="background:var(--surface-2);border:1px solid var(--line);margin-bottom:16px"
+               data-pui="p-fieldset (readonly)" data-src="[§3] mapping bản tin là mã nguồn, không cấu hình">
+            <h4 style="font-size:13.5px">Định nghĩa luồng <span style="font-weight:400;color:var(--tx-3);font-size:12px">— chỉ đọc</span></h4>
+            <div class="frow">
+              <div class="fld"><label>Hệ thống nguồn</label><input class="inp" value="ACARS" disabled></div>
+              <div class="fld"><label>Phương thức</label><input class="inp" value="SFTP + Email" disabled></div>
+              <div class="fld"><label>Định dạng bản tin</label><input class="inp" value="ACARS Performance Message" disabled></div>
+            </div>
+            <div class="frow" style="margin-top:15px">
+              <div class="fld span2"><label>Bộ đọc áp dụng</label>
+                <input class="inp mono" value="AcarsPerfMessageReader v2.1" disabled></div>
+              <div class="fld"><label>Chiều dữ liệu</label><input class="inp" value="Nhận" disabled></div>
+            </div>
+          </div>
+
+          <div class="mcard" style="border:1px solid var(--line);margin-bottom:16px"
+               data-pui="cmm-dynamic-form" data-src="[§4.2 M4] màn 11 — cấu hình vận hành (nhóm động §3)">
+            <h4>Cấu hình vận hành</h4>
+            <div class="frow">
+              <div class="fld"><label>Kết nối sử dụng <span class="req">*</span></label>
+                <select class="inp"><option>SFTP — ACARS pickup (<netline-host>)</option><option>Email — hộp thư ACARS</option></select></div>
+              <div class="fld"><label>Thông tin xác thực <span class="req">*</span></label>
+                <select class="inp"><option>SFTP ACARS — khóa SSH</option></select></div>
+              <div class="fld"><label>Chu kỳ chạy <span class="req">*</span></label>
+                <select class="inp"><option>Mỗi 5 phút</option><option>Mỗi 15 phút</option><option>Mỗi 30 phút</option>
+                  <option>Mỗi giờ</option><option>1 lần/ngày</option><option>Biểu thức cron…</option></select></div>
+            </div>
+
+            <div style="margin-top:20px">
+              <label style="font-size:12px;font-weight:600;color:var(--tx-2);display:block;margin-bottom:9px">
+                Hệ thống nhận <span class="req">*</span>
+                <span style="font-weight:400;color:var(--tx-3);margin-left:6px">— đã chọn <b id="tgtCount">2</b>/3</span></label>
+              <div id="tgtList" style="display:flex;flex-direction:column;gap:9px"></div>
+              <button class="btn btn-sm btn-ghost" style="margin-top:10px" id="btnAddTgt" onclick="addTarget()"
+                data-src="[§6.2 mục 3] giới hạn 3 đích — lấy theo trục UBCKNN">
+                <span class="material-symbols-outlined">add</span>Thêm hệ thống nhận</button>
+              <div class="hint" id="tgtHint">Tối đa <b>3</b> hệ thống nhận cho một luồng.</div>
+            </div>
+
+            <div class="frow" style="margin-top:20px">
+              <div class="fld"><label>Số lần thử lại</label>
+                <input class="inp" type="number" min="0" max="5" value="3" id="retryN" oninput="clampRetry()">
+                <div class="hint">Nhận giá trị từ <b>0</b> đến <b>5</b>.</div></div>
+              <div class="fld"><label>Khoảng cách giữa các lần thử</label>
+                <input class="inp" type="number" min="1" value="30"></div>
+              <div class="fld"><label>Đơn vị thời gian</label>
+                <select class="inp"><option>Giây</option><option>Phút</option></select></div>
+            </div>
+
+            <div class="frow c2" style="margin-top:15px">
+              <div class="fld"><label>Cảnh báo khi số lần lỗi liên tiếp đạt</label>
+                <input class="inp" type="number" value="3"></div>
+              <div class="fld"><label>Cảnh báo khi không nhận dữ liệu quá</label>
+                <input class="inp" value="60 phút"></div>
+            </div>
+
+            <div style="margin-top:18px;display:flex;gap:26px;flex-wrap:wrap">
+              <label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Bật luồng</label>
+              <label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Gửi email khi lỗi</label>
+              <label class="sw-row"><span class="sw"><input type="checkbox"><span></span></span>Ghi nhật ký nội dung bản tin</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 12 — LỊCH SỬ CHẠY CỦA LUỒNG   (M4 · task #45)
+         ================================================================ -->
+    <section class="screen" id="s12">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f12')">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-ghost" onclick="openModal('mRerun')"><span class="material-symbols-outlined">replay</span>Chạy lại thủ công</button>
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')"><span class="material-symbols-outlined">download</span>Kết xuất Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f12">
+          <div class="fld narrow"><label>Luồng</label><select class="inp"><option>ACARS → TOSS · gom điện Performance</option><option>Tất cả</option></select></div>
+          <div class="fld narrow"><label>Từ ngày</label><input class="inp" type="date" value="2026-09-02"></div>
+          <div class="fld narrow"><label>Đến ngày</label><input class="inp" type="date" value="2026-09-09"></div>
+          <div class="fld narrow"><label>Kết quả</label>
+            <select class="inp"><option>Tất cả</option><option>Thành công</option><option>Thất bại</option></select></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Tra cứu</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Đặt lại</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2 M4] màn 12 · dữ liệu mẫu">
+          <table><thead><tr><th style="width:44px">STT</th><th>Bắt đầu</th><th>Kết thúc</th>
+            <th class="num">Thời lượng</th><th class="num">Bản ghi nhận</th><th class="num">Ghi thành công</th>
+            <th class="num">Lỗi</th><th>Kết quả</th><th>Ghi chú</th><th style="width:86px">Thao tác</th></tr></thead>
+            <tbody id="runBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>168</b> lần chạy trong khoảng đã chọn</span>
+          <div class="pg-right"><span class="lb">Hiển thị</span>
+            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
+            <button class="pg-btn on">1</button><button class="pg-btn">2</button><button class="pg-btn">3</button>
+            <button class="pg-btn"><span class="material-symbols-outlined">chevron_right</span></button></div></div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 14 — TỔNG QUAN TÍCH HỢP   (M5 · task #47)  YCKT TOSS-060
+         ================================================================ -->
+    <section class="screen" id="s14">
+      <div class="kpis">
+        <div class="kpi ok"><div class="k"><span class="material-symbols-outlined">check_circle</span>Lần chạy thành công 24h</div>
+          <div class="v">1.284</div><div class="s">97,3% tổng số lần chạy</div></div>
+        <div class="kpi err"><div class="k"><span class="material-symbols-outlined">error</span>Lần chạy lỗi 24h</div>
+          <div class="v">36</div><div class="s">Tập trung ở 1 luồng</div></div>
+        <div class="kpi warn"><div class="k"><span class="material-symbols-outlined">timer</span>Thời gian xử lý TB</div>
+          <div class="v">1,8<span style="font-size:15px">s</span></div><div class="s">Ngưỡng cảnh báo 5s</div></div>
+        <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">database</span>Bản ghi nhận 24h</div>
+          <div class="v">42.907</div><div class="s">Từ 11 luồng đang bật</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <div class="sec-h"><span class="material-symbols-outlined">bar_chart</span>
+            <h3>Số lần chạy theo giờ</h3><span class="sub">24 giờ gần nhất — dữ liệu mẫu</span></div>
+          <div class="sec">
+            <div class="bars" id="barsRun"></div>
+            <div class="axis" id="axisRun"></div>
+            <div style="display:flex;gap:18px;margin-top:12px;font-size:11.5px;color:var(--tx-3)">
+              <span style="display:flex;align-items:center;gap:6px"><i style="width:10px;height:10px;border-radius:2px;background:var(--teal);display:block"></i>Thành công</span>
+              <span style="display:flex;align-items:center;gap:6px"><i style="width:10px;height:10px;border-radius:2px;background:var(--err);display:block"></i>Có lỗi</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="sec-h"><span class="material-symbols-outlined">warning</span>
+            <h3>Luồng đang cần xử lý</h3>
+            <div class="right"><button class="btn btn-sm btn-ghost" onclick="go('s10')">Xem tất cả</button></div></div>
+          <div class="tw" style="border-top:0">
+            <table><thead><tr><th>Luồng</th><th>Vấn đề</th><th>Lần cuối</th><th>Đầu mối</th></tr></thead>
+              <tbody>
+                <tr><td><span class="strong">Cargo Spot → TOSS</span><span class="sub">Chưa rõ phương thức — sheet ghi "Hỏi An"</span></td>
+                  <td><span class="bdg bdg-err">Chưa nạp được</span></td><td>—</td><td>Nguyễn Văn An</td></tr>
+                <tr><td><span class="strong">AVES → TOSS · lịch tổ bay</span><span class="sub">SOAP trả lỗi 500 liên tiếp</span></td>
+                  <td><span class="bdg bdg-err">Lỗi 4 lần liên tiếp</span></td><td>09/09 06:12</td><td>Trần Quốc Thắng</td></tr>
+                <tr><td><span class="strong">Weather data → TOSS · METAR</span><span class="sub">Website nguồn phản hồi chậm</span></td>
+                  <td><span class="bdg bdg-warn">Trễ lịch 40 phút</span></td><td>09/09 05:30</td><td>Lê Minh Đức</td></tr>
+                <tr><td><span class="strong">Flight Scheduling → TOSS · SSIM</span><span class="sub">Chưa rõ tần suất ra file</span></td>
+                  <td><span class="bdg bdg-warn">Chờ mô tả bản tin</span></td><td>—</td><td>Nguyễn Văn An</td></tr>
+              </tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:16px">
+        <div class="sec-h"><span class="material-symbols-outlined">hub</span>
+          <h3>Tình trạng theo hệ thống</h3><span class="sub">15 hệ thống Đang khai thác</span></div>
+        <div class="tw" style="border-top:0">
+          <table><thead><tr><th>Hệ thống</th><th>Luồng</th><th>Chạy gần nhất</th><th>Tỷ lệ thành công 7 ngày</th>
+            <th class="num">Bản ghi 24h</th><th>Trạng thái</th></tr></thead>
+            <tbody id="ovBody"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 15 — ĐỘ PHỦ DỮ LIỆU ACARS   (M5 · task #48)  YCKT TOSS-110…115
+         ================================================================ -->
+    <section class="screen" id="s15">
+      <div class="kpis">
+        <div class="kpi ok"><div class="k"><span class="material-symbols-outlined">percent</span>Độ phủ trung bình</div>
+          <div class="v">94,2%</div><div class="s">7 ngày gần nhất</div></div>
+        <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">flight</span>Chuyến bay có điện</div>
+          <div class="v">1.612</div><div class="s">/ 1.711 chuyến khai thác</div></div>
+        <div class="kpi err"><div class="k"><span class="material-symbols-outlined">flight_class</span>Chuyến thiếu dữ liệu</div>
+          <div class="v">99</div><div class="s">Cần rà lại</div></div>
+        <div class="kpi warn"><div class="k"><span class="material-symbols-outlined">airplanemode_active</span>Tàu bay dưới ngưỡng</div>
+          <div class="v">4</div><div class="s">Độ phủ &lt; 80%</div></div>
+      </div>
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f15')">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')"><span class="material-symbols-outlined">download</span>Kết xuất Excel</button></div>
+        </div>
+        <div class="filters" id="f15">
+          <div class="fld narrow"><label>Từ ngày</label><input class="inp" type="date" value="2026-09-02"></div>
+          <div class="fld narrow"><label>Đến ngày</label><input class="inp" type="date" value="2026-09-09"></div>
+          <div class="fld narrow"><label>Loại tàu bay</label>
+            <select class="inp"><option>Tất cả</option><option>A321</option><option>A350</option><option>B787</option></select></div>
+          <div class="fld narrow"><label>Ngưỡng cảnh báo</label><input class="inp" value="80%"></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Tra cứu</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Đặt lại</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2 M5] màn 15 · dữ liệu mẫu">
+          <table><thead><tr><th style="width:44px">STT</th><th>Số hiệu tàu bay</th><th>Loại tàu</th>
+            <th class="num">Chuyến khai thác</th><th class="num">Chuyến có điện</th><th class="num">Chuyến thiếu</th>
+            <th style="width:190px">Độ phủ</th><th>Trạng thái</th><th style="width:86px">Thao tác</th></tr></thead>
+            <tbody id="acarsBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>28</b> tàu bay</span>
+          <div class="pg-right"><span class="lb">Hiển thị</span>
+            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
+            <button class="pg-btn on">1</button><button class="pg-btn">2</button></div></div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 16 — ĐỘ PHỦ DỮ LIỆU QAR   (M5 · task #49)
+         ================================================================ -->
+    <section class="screen" id="s16">
+      <div class="kpis">
+        <div class="kpi warn"><div class="k"><span class="material-symbols-outlined">percent</span>Độ phủ trung bình</div>
+          <div class="v">81,6%</div><div class="s">7 ngày gần nhất</div></div>
+        <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">flight</span>Chuyến có QAR</div>
+          <div class="v">1.396</div><div class="s">/ 1.711 chuyến khai thác</div></div>
+        <div class="kpi err"><div class="k"><span class="material-symbols-outlined">flight_class</span>Chuyến thiếu dữ liệu</div>
+          <div class="v">315</div><div class="s">Nguồn: Cassiopee Alpha</div></div>
+        <div class="kpi warn"><div class="k"><span class="material-symbols-outlined">airplanemode_active</span>Tàu bay dưới ngưỡng</div>
+          <div class="v">9</div><div class="s">Độ phủ &lt; 80%</div></div>
+      </div>
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f16')">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')"><span class="material-symbols-outlined">download</span>Kết xuất Excel</button></div>
+        </div>
+        <div class="filters" id="f16">
+          <div class="fld narrow"><label>Từ ngày</label><input class="inp" type="date" value="2026-09-02"></div>
+          <div class="fld narrow"><label>Đến ngày</label><input class="inp" type="date" value="2026-09-09"></div>
+          <div class="fld narrow"><label>Loại tàu bay</label><select class="inp"><option>Tất cả</option></select></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Tra cứu</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Đặt lại</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2 M5] màn 16 · dữ liệu mẫu">
+          <table><thead><tr><th style="width:44px">STT</th><th>Số hiệu tàu bay</th><th>Loại tàu</th>
+            <th class="num">Chuyến khai thác</th><th class="num">Chuyến có QAR</th><th class="num">Chuyến thiếu</th>
+            <th style="width:190px">Độ phủ</th><th>Trạng thái</th><th style="width:86px">Thao tác</th></tr></thead>
+            <tbody id="qarBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>28</b> tàu bay</span>
+          <div class="pg-right"><span class="lb">Hiển thị</span>
+            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
+            <button class="pg-btn on">1</button><button class="pg-btn">2</button></div></div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 17 — BÁO CÁO TỶ LỆ DỮ LIỆU   (M5 · task #50)
+         Dùng lại danh sách email của màn 21 (YCKT TOSS-168).
+         ================================================================ -->
+    <section class="screen" id="s17">
+      <div class="panel">
+        <div class="sec-h"><span class="material-symbols-outlined">lab_profile</span>
+          <h3>Báo cáo tỷ lệ dữ liệu</h3><span class="sub">Kết xuất tệp và gửi email theo lịch</span></div>
+        <div class="sec">
+          <div class="frow">
+            <div class="fld"><label>Kỳ báo cáo <span class="req">*</span></label>
+              <select class="inp"><option>Tuần (Thứ hai hằng tuần)</option><option>Ngày</option><option>Tháng</option><option>Khoảng tùy chọn</option></select></div>
+            <div class="fld"><label>Từ ngày</label><input class="inp" type="date" value="2026-09-02"></div>
+            <div class="fld"><label>Đến ngày</label><input class="inp" type="date" value="2026-09-08"></div>
+          </div>
+          <div class="frow" style="margin-top:15px">
+            <div class="fld span2"><label>Nguồn dữ liệu đưa vào báo cáo <span class="req">*</span></label>
+              <div style="display:flex;gap:7px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:#fff;min-height:44px;align-items:center">
+                <span class="chip teal">ACARS <span class="x">×</span></span>
+                <span class="chip teal">QAR <span class="x">×</span></span>
+                <span class="chip teal">OFP <span class="x">×</span></span>
+                <span class="chip teal">Tổ bay <span class="x">×</span></span>
+                <span class="chip teal">Load sheet <span class="x">×</span></span>
+                <span style="color:var(--tx-mute);font-size:12px">+ chọn thêm…</span>
+              </div></div>
+            <div class="fld"><label>Định dạng tệp</label>
+              <select class="inp"><option>Excel (.xlsx)</option><option>PDF</option></select></div>
+          </div>
+          <div class="frow c2" style="margin-top:15px">
+            <div class="fld"><label>Danh sách người nhận</label>
+              <select class="inp"><option>Danh sách "Báo cáo tỷ lệ dữ liệu" (12 email)</option></select>
+              <div class="hint">Quản lý tại màn <a href="#" onclick="go('s21');return false">Email nhận thông báo</a> — YCKT TOSS-168.</div></div>
+            <div class="fld"><label>Lịch gửi tự động</label>
+              <select class="inp"><option>08:00 thứ hai hằng tuần</option><option>Không gửi tự động</option></select></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:20px">
+            <button class="btn btn-primary" onclick="toast('Đang tạo báo cáo — dữ liệu mẫu')"><span class="material-symbols-outlined">play_arrow</span>Tạo báo cáo</button>
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')"><span class="material-symbols-outlined">download</span>Kết xuất Excel</button>
+            <button class="btn btn-ghost" onclick="toast('Đã gửi thử tới 12 người nhận','ok')"><span class="material-symbols-outlined">send</span>Gửi thử</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="sec-h"><span class="material-symbols-outlined">preview</span>
+          <h3>Xem trước nội dung báo cáo</h3><span class="sub">Kỳ 02/09 – 08/09/2026 · dữ liệu mẫu</span></div>
+        <div class="tw" style="border-top:0">
+          <table><thead><tr><th>Số hiệu tàu bay</th><th class="num">Chuyến khai thác</th>
+            <th class="num">Điện Performance</th><th class="num">ACARS OUT</th><th class="num">ACARS OFF</th>
+            <th class="num">ACARS ON</th><th class="num">ACARS IN</th><th class="num">OFP</th>
+            <th class="num">QAR</th><th class="num">Tổ bay</th><th class="num">Load sheet</th></tr></thead>
+            <tbody id="repBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>28</b> tàu bay</span>
+          <div class="pg-right"><button class="pg-btn on">1</button><button class="pg-btn">2</button></div></div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 18 — NHẬT KÝ TÍCH HỢP   (M6 · task #51)  YCKT TOSS-060
+         Học từ trục UBCKNN: cột "Số lượng lỗi" hiển thị màu đỏ và bấm được
+         để mở popup chi tiết lỗi (ảnh SRS "Xem chi tiết lỗi").
+         ================================================================ -->
+    <section class="screen" id="s18">
+      <div class="kpis">
+        <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">receipt_long</span>Giao dịch 24h</div>
+          <div class="v">42.907</div><div class="s">Toàn bộ luồng</div></div>
+        <div class="kpi ok"><div class="k"><span class="material-symbols-outlined">check_circle</span>Thành công</div>
+          <div class="v">42.612</div><div class="s">99,3%</div></div>
+        <div class="kpi err"><div class="k"><span class="material-symbols-outlined">error</span>Thất bại</div>
+          <div class="v">295</div><div class="s">Xem chi tiết lỗi</div></div>
+        <div class="kpi warn"><div class="k"><span class="material-symbols-outlined">timer</span>Chậm hơn ngưỡng</div>
+          <div class="v">61</div><div class="s">&gt; 5 giây</div></div>
+      </div>
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f18')">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-plain"><span class="material-symbols-outlined">refresh</span>Tải lại</button>
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')"><span class="material-symbols-outlined">download</span>Kết xuất Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f18">
+          <div class="fld"><label>Mã truy vết</label><input class="inp" placeholder="Nhập correlation ID"></div>
+          <div class="fld narrow"><label>Luồng</label><select class="inp"><option>Tất cả</option></select></div>
+          <div class="fld narrow"><label>Từ thời điểm</label><input class="inp" type="datetime-local" value="2026-09-09T00:00"></div>
+          <div class="fld narrow"><label>Đến thời điểm</label><input class="inp" type="datetime-local" value="2026-09-09T16:00"></div>
+          <div class="fld narrow"><label>Trạng thái</label>
+            <select class="inp"><option>Tất cả</option><option>Thành công</option><option>Lỗi xác thực</option>
+              <option>Lỗi kiểm tra dữ liệu</option><option>Lỗi hệ thống đích</option><option>Quá thời gian chờ</option></select></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Tra cứu</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Đặt lại</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2 M6] màn 18 · phân loại lỗi học từ SRS UBCKNN §4.10">
+          <table><thead><tr><th style="width:44px">STT</th><th>Thời điểm</th><th>Mã truy vết</th>
+            <th>Luồng</th><th>Nguồn → Đích</th><th class="num">Bản ghi</th><th class="num">Thời lượng</th>
+            <th>Kết quả</th><th style="width:64px">Thao tác</th></tr></thead>
+            <tbody id="logBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>42.907</b> bản ghi</span>
+          <div class="pg-right"><span class="lb">Hiển thị</span>
+            <select class="inp inp-sm" style="width:112px"><option>25 bản ghi</option></select>
+            <button class="pg-btn" disabled><span class="material-symbols-outlined">keyboard_double_arrow_left</span></button>
+            <button class="pg-btn on">1</button><button class="pg-btn">2</button><button class="pg-btn">3</button>
+            <button class="pg-btn">4</button><button class="pg-btn">5</button>
+            <button class="pg-btn"><span class="material-symbols-outlined">chevron_right</span></button></div></div>
+      </div>
+      <div class="note" style="margin-top:14px">
+        <span class="material-symbols-outlined">bolt</span>
+        <div>Nhật ký được ghi <b>bất đồng bộ</b> nên không làm chậm luồng nghiệp vụ; một giao dịch gửi tới
+        nhiều đích sinh nhiều bản ghi dùng chung <b>mã truy vết</b>. Cơ chế này học từ trục UBCKNN
+        (bảng <span class="mono">integration_log</span>). Chuẩn trình bày dùng lại
+        <span class="mono">SRS-SA-SYSTEM-LOG-v0.1</span> đã có của TOSS.</div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 20 — CẤU HÌNH NGƯỠNG CẢNH BÁO   (M7 · task #53)  YCKT TOSS-168
+         §3 nhóm động — người dùng tự chỉnh.
+         ================================================================ -->
+    <section class="screen" id="s20">
+      <div class="panel">
+        <div class="sec-h"><span class="material-symbols-outlined">notifications_active</span>
+          <h3>Ngưỡng cảnh báo theo luồng</h3>
+          <span class="sub">Chỉnh trực tiếp trên bảng — thuộc nhóm động §3</span>
+          <div class="right">
+            <button class="btn btn-sm btn-ghost" onclick="toast('Đã áp dụng ngưỡng mặc định cho các luồng chưa cấu hình','ok')">
+              <span class="material-symbols-outlined">restart_alt</span>Áp ngưỡng mặc định</button>
+            <button class="btn btn-sm btn-primary" onclick="toast('Đã lưu ngưỡng cảnh báo','ok')">
+              <span class="material-symbols-outlined">save</span>Lưu</button></div></div>
+        <div class="tw" data-pui="IamTable (p-table, editable cell)" data-src="[§4.2 M7] màn 20">
+          <table><thead><tr><th style="width:44px">STT</th><th>Luồng</th>
+            <th class="mid">Số lần lỗi liên tiếp</th><th class="mid">Không nhận dữ liệu quá</th>
+            <th class="mid">Thời gian xử lý quá</th><th>Người nhận cảnh báo</th>
+            <th class="mid">Bật cảnh báo</th></tr></thead>
+            <tbody id="thrBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>14</b> luồng</span>
+          <div class="pg-right"><button class="pg-btn on">1</button></div></div>
+      </div>
+      <div class="note" style="margin-top:14px">
+        <span class="material-symbols-outlined">info</span>
+        <div>Trục UBCKNN tách 3 loại tiêu chí cảnh báo thành 3 nhóm màn riêng (15 chức năng). Ở đây gộp
+        thành <b>một bảng chỉnh tại chỗ</b>: mỗi luồng một dòng, ba ngưỡng là ba cột.</div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 21 — DANH SÁCH EMAIL NHẬN THEO LOẠI THÔNG BÁO (M7 · task #54)
+         YCKT TOSS-168 — "cho phép linh hoạt thêm, bớt email cần nhận".
+         Hai danh sách cụ thể ở YCKT d.231, d.232 chưa đánh dấu Đáp ứng.
+         ================================================================ -->
+    <section class="screen" id="s21">
+      <div class="panel">
+        <div class="toolbar">
+          <div style="font-size:14px;font-weight:600;padding:6px 4px">Danh sách người nhận theo loại thông báo</div>
+          <div class="tb-right">
+            <button class="btn btn-primary" onclick="toast('Thêm loại thông báo — dữ liệu mẫu')">
+              <span class="material-symbols-outlined">add</span>Thêm loại thông báo</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table) + p-chips" data-src="[YCKT TOSS-168] d.230; d.231–232 chưa đánh dấu Đáp ứng">
+          <table><thead><tr><th style="width:44px">STT</th><th style="width:260px">Loại thông báo</th>
+            <th>Người nhận</th><th class="mid">Kênh</th><th class="mid">Bật</th><th style="width:86px">Thao tác</th></tr></thead>
+            <tbody id="mailBody"></tbody></table>
+        </div>
+        <div class="pgbar"><span class="total">Tổng: <b>6</b> loại thông báo</span>
+          <div class="pg-right"><button class="pg-btn on">1</button></div></div>
+      </div>
+      <div class="note warn" style="margin-top:14px">
+        <span class="material-symbols-outlined">help</span>
+        <div>Hai danh sách <b>"Email list for Data Coverage Report"</b> (YCKT d.231) và
+        <b>"Email list for Daily Operations Report"</b> (d.232) có mô tả trong file nguồn nhưng
+        <b>không đánh dấu cột Đáp ứng</b> — đã dựng sẵn ở bảng trên nhưng cần xác nhận có làm trong đợt
+        nghiệm thu không.</div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         MÀN 22 — MẪU NỘI DUNG EMAIL   (M7 · task #55)
+         ================================================================ -->
+    <section class="screen" id="s22">
+      <div style="display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start">
+        <div class="panel">
+          <div class="sec-h"><span class="material-symbols-outlined">mail</span><h3>Mẫu email</h3>
+            <div class="right"><button class="ico-btn" onclick="toast('Thêm mẫu — dữ liệu mẫu')">
+              <span class="material-symbols-outlined">add</span></button></div></div>
+          <div id="tplList" style="padding:8px"></div>
+        </div>
+
+        <div class="panel">
+          <div class="sec-h"><span class="material-symbols-outlined">edit_note</span>
+            <h3>Cảnh báo luồng lỗi liên tiếp</h3>
+            <span class="sub">Mã mẫu TPL-FLOW-ERR</span>
+            <div class="right">
+              <button class="btn btn-sm btn-ghost" onclick="toast('Đã gửi email thử','ok')">
+                <span class="material-symbols-outlined">send</span>Gửi thử</button>
+              <button class="btn btn-sm btn-primary" onclick="toast('Đã lưu mẫu email','ok')">
+                <span class="material-symbols-outlined">save</span>Lưu</button></div></div>
+          <div class="sec">
+            <div class="frow c2">
+              <div class="fld span2"><label>Tiêu đề <span class="req">*</span></label>
+                <input class="inp" value="[TOSS] Luồng {{ten_luong}} lỗi {{so_lan}} lần liên tiếp"></div>
+            </div>
+            <div class="fld" style="margin-top:15px"><label>Nội dung <span class="req">*</span></label>
+              <textarea class="inp" style="min-height:190px">Kính gửi {{ten_nguoi_nhan}},
+
+Luồng {{ten_luong}} ({{he_thong_nguon}} → {{he_thong_dich}}) đã lỗi {{so_lan}} lần liên tiếp,
+lần gần nhất lúc {{thoi_diem}}.
+
+Nội dung lỗi: {{noi_dung_loi}}
+Mã truy vết: {{ma_truy_vet}}
+
+Đầu mối kỹ thuật phụ trách: {{dau_moi}} — {{dien_thoai}}
+
+Trân trọng,
+Trục tích hợp dữ liệu TOSS</textarea></div>
+            <div style="margin-top:15px">
+              <label style="font-size:12px;font-weight:600;color:var(--tx-2);display:block;margin-bottom:8px">Biến thay thế được</label>
+              <div style="display:flex;gap:7px;flex-wrap:wrap">
+                <span class="chip">{{ten_luong}}</span><span class="chip">{{he_thong_nguon}}</span>
+                <span class="chip">{{he_thong_dich}}</span><span class="chip">{{so_lan}}</span>
+                <span class="chip">{{thoi_diem}}</span><span class="chip">{{noi_dung_loi}}</span>
+                <span class="chip">{{ma_truy_vet}}</span><span class="chip">{{dau_moi}}</span>
+                <span class="chip">{{dien_thoai}}</span><span class="chip">{{ten_nguoi_nhan}}</span>
+              </div></div>
+            <div style="margin-top:18px;display:flex;gap:26px;flex-wrap:wrap">
+              <label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Kích hoạt mẫu</label>
+              <label class="sw-row"><span class="sw"><input type="checkbox"><span></span></span>Đính kèm nhật ký giao dịch</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+</div><!-- /stage -->
+
+<!-- =====================================================================
+     MÀN 2 — THÊM / SỬA HỆ THỐNG TÍCH HỢP   (M1 · task #35)
+     §6.3 — bổ sung trường "Trạng thái tích hợp" 3 giá trị.
+     Bố cục modal (nền xám nhạt, các card trắng, nhãn trên ô, * đỏ, nút
+     Đóng/Lưu góc phải dưới) lấy từ Figma "Quản lý ULD.png" — màn Add New.
+     ===================================================================== -->
+<div class="ovl" id="mSys"><div class="modal">
+  <div class="modal-h"><h2 id="mSysTitle">Thêm mới hệ thống tích hợp</h2>
+    <button class="x" onclick="closeModal('mSys')"><span class="material-symbols-outlined">close</span></button></div>
+  <div class="modal-b">
+    <div class="mcard" data-pui="cmm-dynamic-form" data-src="[§4.2 M1] màn 2">
+      <h4>Thông tin định danh</h4>
+      <div class="frow">
+        <div class="fld"><label>Mã hệ thống <span class="req">*</span></label>
+          <input class="inp" id="fSysCode" placeholder="VD: ACARS" maxlength="20">
+          <div class="hint">Tối đa 20 ký tự, chỉ chữ, số và gạch dưới. Không trùng.</div></div>
+        <div class="fld"><label>Tên hệ thống <span class="req">*</span></label>
+          <input class="inp" id="fSysName" placeholder="Nhập tên hệ thống" maxlength="255"></div>
+        <div class="fld"><label>Loại hệ thống <span class="req">*</span></label>
+          <select class="inp" id="fSysKind"><option value="">-- Chọn --</option>
+            <option>Nội bộ VNA</option><option>Đối tác ngoài</option></select></div>
+      </div>
+      <div class="frow" style="margin-top:15px">
+        <div class="fld"><label>Đơn vị chủ quản <span class="req">*</span></label>
+          <input class="inp" id="fSysOwner" placeholder="VD: Vietnam Airlines — Ban CNTT"></div>
+        <div class="fld"><label>Chiều dữ liệu <span class="req">*</span></label>
+          <select class="inp"><option>Nhận</option><option>Gửi</option><option>Hai chiều</option></select></div>
+        <div class="fld"><label>Mức ưu tiên</label>
+          <select class="inp" id="fSysPrio"><option value="">Chưa gán</option>
+            <option>1.0 — cao</option><option>2.0</option><option>10.0 — thấp</option></select>
+          <div class="hint">Theo cột Ưu tiên của sheet Tích hợp.</div></div>
+      </div>
+    </div>
+
+    <div class="mcard" data-src="[§6.3] trường bổ sung sau quyết định 09/09/2026">
+      <h4>Trạng thái tích hợp</h4>
+      <div class="frow c2">
+        <div class="fld"><label>Trạng thái tích hợp <span class="req">*</span></label>
+          <select class="inp" id="fSysSt" onchange="sysStHint()">
+            <option>Đang khai thác</option><option selected>Chờ mô tả bản tin</option><option>Hoãn tích hợp</option></select>
+          <div class="hint" id="sysStHint">Chưa đủ dữ kiện để viết bộ đọc — hệ thống hiện ở đây nhưng
+            <b>không xuất hiện ở màn Luồng dữ liệu</b>.</div></div>
+        <div class="fld"><label>Phương thức kết nối dự kiến</label>
+          <input class="inp" placeholder="VD: SFTP · REST · Database…">
+          <div class="hint">Ghi lại nguyên văn từ sheet Tích hợp nếu có.</div></div>
+      </div>
+      <div class="fld" style="margin-top:15px"><label>Ghi chú</label>
+        <textarea class="inp" placeholder="VD: Hỏi An về phương thức · Chờ CĐS xác nhận đầu ra…"></textarea></div>
+    </div>
+
+    <div class="mcard">
+      <h4>Đầu mối kỹ thuật</h4>
+      <div class="fld"><label>Người phụ trách</label>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:#fff;min-height:44px;align-items:center">
+          <span class="chip teal">Nguyễn Văn An <span class="x">×</span></span>
+          <span class="chip teal">Lê Minh Đức <span class="x">×</span></span>
+          <span style="color:var(--tx-mute);font-size:12px">+ chọn thêm…</span>
+        </div>
+        <div class="hint">Người được chọn sẽ nhận email cảnh báo của các luồng thuộc hệ thống này.</div></div>
+      <div style="margin-top:16px"><label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Đang hoạt động</label></div>
+    </div>
+  </div>
+  <div class="modal-f">
+    <button class="btn btn-ghost" onclick="closeModal('mSys')">Đóng</button>
+    <button class="btn btn-primary" onclick="saveSys()">Lưu</button></div>
+</div></div>
+
+<!-- ===================== MÀN 4 — THÊM / SỬA ĐẦU MỐI (M1 · task #37) ===================== -->
+<div class="ovl" id="mContact"><div class="modal sm">
+  <div class="modal-h"><h2>Thêm mới đầu mối kỹ thuật</h2>
+    <button class="x" onclick="closeModal('mContact')"><span class="material-symbols-outlined">close</span></button></div>
+  <div class="modal-b"><div class="mcard">
+    <div class="frow c1">
+      <div class="fld"><label>Họ tên <span class="req">*</span></label><input class="inp" placeholder="Nhập họ tên"></div></div>
+    <div class="frow c2" style="margin-top:15px">
+      <div class="fld"><label>Đơn vị <span class="req">*</span></label>
+        <select class="inp"><option>-- Chọn --</option><option>VNA — Ban CNTT</option>
+          <option>VNA — Ban Khai thác bay</option><option>Viettel Solutions</option><option>VIAGS</option></select></div>
+      <div class="fld"><label>Điện thoại <span class="req">*</span></label><input class="inp" placeholder="VD: 0912 345 678"></div></div>
+    <div class="frow c1" style="margin-top:15px">
+      <div class="fld"><label>Email <span class="req">*</span></label><input class="inp" type="email" placeholder="ten@vietnamairlines.com"></div></div>
+    <div class="fld" style="margin-top:15px"><label>Hệ thống phụ trách <span class="req">*</span></label>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:#fff;min-height:44px;align-items:center">
+        <span class="chip teal">ACARS <span class="x">×</span></span>
+        <span class="chip teal">SITA TEXT <span class="x">×</span></span>
+        <span style="color:var(--tx-mute);font-size:12px">+ chọn thêm…</span></div></div>
+    <div style="margin-top:16px"><label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Nhận email cảnh báo</label></div>
+  </div></div>
+  <div class="modal-f"><button class="btn btn-ghost" onclick="closeModal('mContact')">Đóng</button>
+    <button class="btn btn-primary" onclick="closeModal('mContact');toast('Đã lưu đầu mối kỹ thuật','ok')">Lưu</button></div>
+</div></div>
+
+<!-- =====================================================================
+     MÀN 6 — THÊM / SỬA KẾT NỐI (POPUP ĐA HÌNH)   (M2 · task #39)
+     §4.2 — MỘT popup đổi bộ trường theo 6 giao thức, thay cho 6 màn riêng
+     của trục UBCKNN (36 chức năng).
+     Học từ UBCKNN: ô phụ thuộc để nền xám cho tới khi chọn ô cha; nút "+"
+     cạnh dropdown để tạo nhanh bản ghi liên quan.
+     ===================================================================== -->
+<div class="ovl" id="mConn"><div class="modal">
+  <div class="modal-h"><h2>Thêm mới kết nối</h2>
+    <button class="x" onclick="closeModal('mConn')"><span class="material-symbols-outlined">close</span></button></div>
+  <div class="modal-b">
+    <div class="mcard">
+      <h4>Thông tin chung</h4>
+      <div class="frow">
+        <div class="fld"><label>Tên kết nối <span class="req">*</span></label>
+          <input class="inp" placeholder="VD: SFTP — ACARS pickup" maxlength="255"></div>
+        <div class="fld"><label>Hệ thống <span class="req">*</span></label>
+          <select class="inp" id="connSys"><option value="">-- Chọn --</option></select></div>
+        <div class="fld"><label>Loại giao thức <span class="req">*</span></label>
+          <select class="inp" id="connType" onchange="switchConn()">
+            <option value="sftp">SFTP</option><option value="db">Database</option>
+            <option value="rest">REST</option><option value="soap">SOAP</option>
+            <option value="mail">Email</option><option value="web">Web</option></select>
+          <div class="hint">6 loại là danh sách <b>tĩnh</b> (§3). Thêm giao thức mới là phát triển, không phải cấu hình.</div></div>
+      </div>
+    </div>
+
+    <div class="mcard" data-pui="cmm-dynamic-form (đổi bộ trường theo loại)" data-src="[§4.2 M2] popup đa hình — 1 màn thay 6">
+      <h4>Thông số kết nối <span style="font-weight:400;color:var(--tx-3);font-size:12.5px" id="connTypeLbl">— SFTP</span></h4>
+
+      <div class="cfields" id="cf-sftp">
+        <div class="frow"><div class="fld"><label>Máy chủ <span class="req">*</span></label><input class="inp" placeholder="VD: <netline-host>"></div>
+          <div class="fld"><label>Cổng <span class="req">*</span></label><input class="inp" value="22"></div>
+          <div class="fld"><label>Thư mục nhận <span class="req">*</span></label><input class="inp" placeholder="VD: /IN"></div></div>
+        <div class="frow" style="margin-top:15px"><div class="fld"><label>Thư mục lưu trữ sau xử lý</label><input class="inp" placeholder="VD: /Archive"></div>
+          <div class="fld"><label>Mẫu tên tệp</label><input class="inp" placeholder="VD: ACARS_*.txt"></div>
+          <div class="fld"><label>Thời gian chờ (giây)</label><input class="inp" value="30"></div></div>
+      </div>
+
+      <div class="cfields" id="cf-db" hidden>
+        <div class="frow c2"><div class="fld span2"><label>Chuỗi kết nối JDBC <span class="req">*</span></label>
+            <input class="inp mono" placeholder="jdbc:oracle:thin:@<amos-db>:1521/AMOS"></div>
+          <div class="fld"><label>Schema <span class="req">*</span></label><input class="inp" placeholder="VD: AMOSPROD"></div></div>
+        <div class="frow" style="margin-top:15px"><div class="fld"><label>Số kết nối tối đa</label><input class="inp" value="10"></div>
+          <div class="fld"><label>Thời gian chờ truy vấn (giây)</label><input class="inp" value="60"></div>
+          <div class="fld"><label>Chế độ</label><select class="inp"><option>Chỉ đọc</option><option>Đọc và ghi</option></select></div></div>
+      </div>
+
+      <div class="cfields" id="cf-rest" hidden>
+        <div class="frow c2"><div class="fld span2"><label>Đường dẫn gốc <span class="req">*</span></label>
+            <input class="inp" placeholder="VD: https://<cassiopee-host>"></div>
+          <div class="fld"><label>Thời gian chờ (giây)</label><input class="inp" value="30"></div></div>
+        <div class="frow" style="margin-top:15px"><div class="fld"><label>Số yêu cầu tối đa/giây</label>
+            <select class="inp"><option>10</option><option>30</option><option selected>60</option><option>100</option><option>300</option></select></div>
+          <div class="fld"><label>Xác minh chứng thư TLS</label><select class="inp"><option>Có</option><option>Không</option></select></div>
+          <div class="fld"><label>Phiên bản API</label><input class="inp" placeholder="VD: v1"></div></div>
+      </div>
+
+      <div class="cfields" id="cf-soap" hidden>
+        <div class="frow c2"><div class="fld span2"><label>Địa chỉ WSDL <span class="req">*</span></label>
+            <input class="inp" placeholder="VD: http://<aves-host>:8080/ws?wsdl"></div>
+          <div class="fld"><label>Phiên bản SOAP</label><select class="inp"><option>1.1</option><option>1.2</option></select></div></div>
+        <div class="frow" style="margin-top:15px"><div class="fld"><label>SOAP Action</label><input class="inp" placeholder="VD: getCrewRoster"></div>
+          <div class="fld"><label>Thời gian chờ (giây)</label><input class="inp" value="60"></div>
+          <div class="fld"><label>Không gian tên</label><input class="inp" placeholder="namespace"></div></div>
+      </div>
+
+      <div class="cfields" id="cf-mail" hidden>
+        <div class="frow"><div class="fld"><label>Máy chủ thư <span class="req">*</span></label><input class="inp" placeholder="VD: <smtp-vna>"></div>
+          <div class="fld"><label>Cổng <span class="req">*</span></label><input class="inp" value="587"></div>
+          <div class="fld"><label>Giao thức <span class="req">*</span></label><select class="inp"><option>IMAP (nhận)</option><option>POP3 (nhận)</option><option>SMTP (gửi)</option></select></div></div>
+        <div class="frow" style="margin-top:15px"><div class="fld"><label>Hộp thư theo dõi</label><input class="inp" placeholder="VD: INBOX/ACARS"></div>
+          <div class="fld"><label>Lọc theo người gửi</label><input class="inp" placeholder="VD: acars@…"></div>
+          <div class="fld"><label>Mã hóa</label><select class="inp"><option>STARTTLS</option><option>SSL/TLS</option><option>Không</option></select></div></div>
+      </div>
+
+      <div class="cfields" id="cf-web" hidden>
+        <div class="frow c2"><div class="fld span2"><label>Đường dẫn trang <span class="req">*</span></label>
+            <input class="inp" placeholder="VD: https://mwomet.vatm.vn"></div>
+          <div class="fld"><label>Chu kỳ lấy</label><select class="inp"><option>30 phút</option><option>1 giờ</option><option>6 giờ</option></select></div></div>
+        <div class="frow" style="margin-top:15px"><div class="fld"><label>Thời gian chờ (giây)</label><input class="inp" value="45"></div>
+          <div class="fld span2"><label>Ghi chú</label><input class="inp" placeholder="VD: nguồn METAR/TAF sân nội địa"></div></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <h4>Xác thực</h4>
+      <div class="frow c2">
+        <div class="fld"><label>Thông tin xác thực <span class="req">*</span></label>
+          <div style="display:flex;gap:8px">
+            <select class="inp" style="flex:1"><option>-- Chọn --</option>
+              <option>SFTP ACARS — khóa SSH</option><option>AVES — tài khoản/mật khẩu</option></select>
+            <button class="btn btn-ghost" style="width:44px;padding:0" title="Tạo nhanh thông tin xác thực"
+              onclick="closeModal('mConn');openCredModal()"
+              data-src="[UBCKNN] học pattern nút + cạnh dropdown để tạo nhanh bản ghi liên quan">
+              <span class="material-symbols-outlined">add</span></button></div></div>
+        <div class="fld"><label>Mô tả</label><input class="inp" placeholder="Mục đích của kết nối" maxlength="500"></div>
+      </div>
+      <div style="margin-top:16px"><label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Bật kết nối</label></div>
+    </div>
+  </div>
+  <div class="modal-f">
+    <button class="btn btn-ghost" onclick="closeModal('mConn')">Đóng</button>
+    <button class="btn btn-ghost" onclick="openModal('mPing')"><span class="material-symbols-outlined">network_check</span>Kiểm tra kết nối</button>
+    <button class="btn btn-primary" onclick="closeModal('mConn');toast('Đã lưu kết nối','ok')">Lưu</button></div>
+</div></div>
+
+<!-- ===================== MÀN 7 — KIỂM TRA KẾT NỐI (M2 · task #40) ===================== -->
+<div class="ovl" id="mPing"><div class="modal sm">
+  <div class="modal-h"><h2>Kiểm tra kết nối</h2>
+    <button class="x" onclick="closeModal('mPing')"><span class="material-symbols-outlined">close</span></button></div>
+  <div class="modal-b"><div class="mcard">
+    <div class="frow c1"><div class="fld"><label>Kết nối</label>
+      <select class="inp"><option>SFTP — ACARS pickup (<netline-sftp>:22)</option>
+        <option>Database — AMOS (<amos-db>:1521)</option><option>SOAP — AVES</option></select></div></div>
+    <button class="btn btn-primary" style="margin-top:15px;width:100%" onclick="runPing()">
+      <span class="material-symbols-outlined">network_check</span>Bắt đầu kiểm tra</button>
+    <div id="pingOut" style="margin-top:16px"></div>
+  </div></div>
+  <div class="modal-f"><button class="btn btn-ghost" onclick="closeModal('mPing')">Đóng</button></div>
+</div></div>
+
+<!-- ===================== MÀN 9 — THÊM / SỬA XÁC THỰC (M3 · task #42) ===================== -->
+<div class="ovl" id="mCred"><div class="modal sm">
+  <div class="modal-h"><h2>Thêm mới thông tin xác thực</h2>
+    <button class="x" onclick="closeModal('mCred')"><span class="material-symbols-outlined">close</span></button></div>
+  <div class="modal-b"><div class="mcard">
+    <div class="frow c2">
+      <div class="fld"><label>Tên <span class="req">*</span></label><input class="inp" placeholder="VD: SFTP ACARS — khóa SSH"></div>
+      <div class="fld"><label>Hệ thống <span class="req">*</span></label><select class="inp" id="credSys"><option value="">-- Chọn --</option></select></div></div>
+    <div class="fld" style="margin-top:15px"><label>Loại xác thực <span class="req">*</span></label>
+      <select class="inp" id="credType" onchange="switchCred()">
+        <option value="up">Tài khoản / Mật khẩu</option><option value="key">API Key / Token</option>
+        <option value="oauth">OAuth2</option><option value="ssh">Khóa SSH</option></select>
+      <div class="hint">4 loại — giảm từ 8 loại của trục UBCKNN (§4.3).</div></div>
+
+    <div class="cfields" id="cr-up" style="margin-top:15px">
+      <div class="frow c2"><div class="fld"><label>Tài khoản <span class="req">*</span></label><input class="inp"></div>
+        <div class="fld"><label>Mật khẩu <span class="req">*</span></label><input class="inp" type="password" value="········"></div></div></div>
+    <div class="cfields" id="cr-key" hidden style="margin-top:15px">
+      <div class="frow c2"><div class="fld"><label>Tên tham số <span class="req">*</span></label><input class="inp" placeholder="VD: X-API-Key"></div>
+        <div class="fld"><label>Vị trí</label><select class="inp"><option>Header</option><option>Query</option></select></div></div>
+      <div class="fld" style="margin-top:15px"><label>Giá trị <span class="req">*</span></label><input class="inp" type="password" value="········"></div></div>
+    <div class="cfields" id="cr-oauth" hidden style="margin-top:15px">
+      <div class="fld"><label>Địa chỉ cấp token <span class="req">*</span></label><input class="inp" placeholder="https://…/oauth2/token"></div>
+      <div class="frow c2" style="margin-top:15px"><div class="fld"><label>Client ID <span class="req">*</span></label><input class="inp"></div>
+        <div class="fld"><label>Client Secret <span class="req">*</span></label><input class="inp" type="password" value="········"></div></div>
+      <div class="fld" style="margin-top:15px"><label>Scope</label><input class="inp" placeholder="VD: read:flight"></div></div>
+    <div class="cfields" id="cr-ssh" hidden style="margin-top:15px">
+      <div class="fld"><label>Khóa riêng <span class="req">*</span></label>
+        <textarea class="inp mono" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></div>
+      <div class="fld" style="margin-top:15px"><label>Cụm mật khẩu</label><input class="inp" type="password"></div></div>
+
+    <div class="fld" style="margin-top:15px"><label>Ngày hết hạn</label><input class="inp" type="date"></div>
+    <div class="note warn" style="margin-top:16px">
+      <span class="material-symbols-outlined">lock</span>
+      <div><b>Ghi được, không đọc lại.</b> Sau khi lưu, giá trị bí mật không hiển thị lại — chỉ có thể ghi đè (§3).</div></div>
+  </div></div>
+  <div class="modal-f"><button class="btn btn-ghost" onclick="closeModal('mCred')">Đóng</button>
+    <button class="btn btn-primary" onclick="closeModal('mCred');toast('Đã lưu thông tin xác thực','ok')">Lưu</button></div>
+</div></div>
+
+<!-- ===================== MÀN 13 — CHẠY LẠI THỦ CÔNG (M4 · task #46) ===================== -->
+<div class="ovl" id="mRerun"><div class="modal sm">
+  <div class="modal-h"><h2>Chạy lại luồng thủ công</h2>
+    <button class="x" onclick="closeModal('mRerun')"><span class="material-symbols-outlined">close</span></button></div>
+  <div class="modal-b"><div class="mcard">
+    <div class="fld"><label>Luồng <span class="req">*</span></label>
+      <select class="inp"><option>ACARS → TOSS · gom điện Performance</option></select></div>
+    <div class="fld" style="margin-top:15px"><label>Phạm vi chạy lại <span class="req">*</span></label>
+      <select class="inp" onchange="this.value==='range'?rerunRange.removeAttribute('hidden'):rerunRange.setAttribute('hidden','')">
+        <option value="last">Lần chạy gần nhất bị lỗi</option>
+        <option value="range">Khoảng thời gian dữ liệu</option></select></div>
+    <div class="frow c2" id="rerunRange" hidden style="margin-top:15px">
+      <div class="fld"><label>Từ thời điểm</label><input class="inp" type="datetime-local" value="2026-09-09T00:00"></div>
+      <div class="fld"><label>Đến thời điểm</label><input class="inp" type="datetime-local" value="2026-09-09T12:00"></div></div>
+    <div class="note warn" style="margin-top:16px">
+      <span class="material-symbols-outlined">warning</span>
+      <div>Chạy lại sẽ <b>gửi lại dữ liệu tới các hệ thống nhận</b> đã cấu hình. Với luồng gửi điện văn ra
+      ngoài (SITA, Sabre), thao tác này tạo ra điện thật.</div></div>
+    <div style="margin-top:15px"><label class="sw-row"><span class="sw"><input type="checkbox"><span></span></span>
+      Chỉ đọc lại, không gửi tới hệ thống nhận</label></div>
+  </div></div>
+  <div class="modal-f"><button class="btn btn-ghost" onclick="closeModal('mRerun')">Đóng</button>
+    <button class="btn btn-primary" onclick="closeModal('mRerun');toast('Đã đưa vào hàng đợi chạy lại','ok')">Xác nhận chạy lại</button></div>
+</div></div>
+
+<!-- ===== POPUP CHI TIẾT LỖI — học từ trục UBCKNN (ảnh SRS "Xem chi tiết lỗi") ===== -->
+<div class="ovl" id="mErr"><div class="modal">
+  <div class="modal-h"><h2>Chi tiết lỗi</h2>
+    <button class="x" onclick="closeModal('mErr')"><span class="material-symbols-outlined">close</span></button></div>
+  <div class="modal-b"><div class="mcard" style="padding:0;overflow:hidden">
+    <div class="tw" style="border-top:0"><table><thead><tr><th style="width:44px">STT</th>
+      <th>Thời điểm</th><th>Mã truy vết</th><th>Mã lỗi</th><th>Nội dung lỗi</th></tr></thead>
+      <tbody id="errBody"></tbody></table></div>
+  </div></div>
+  <div class="modal-f"><button class="btn btn-ghost" onclick="closeModal('mErr')">Đóng</button></div>
+</div></div>
+
+<!-- ===== POPUP DANH SÁCH LUỒNG CỦA HỆ THỐNG — học từ UBCKNN (số đếm bấm được) ===== -->
+<div class="ovl" id="mFlows"><div class="modal">
+  <div class="modal-h"><h2 id="mFlowsTitle">Luồng dữ liệu của hệ thống</h2>
+    <button class="x" onclick="closeModal('mFlows')"><span class="material-symbols-outlined">close</span></button></div>
+  <div class="modal-b"><div class="mcard" style="padding:0;overflow:hidden">
+    <div class="tw" style="border-top:0"><table><thead><tr><th style="width:44px">STT</th>
+      <th>Tên luồng</th><th>Chiều</th><th>Phương thức</th><th>Lịch chạy</th><th>Trạng thái</th></tr></thead>
+      <tbody id="sysFlowBody"></tbody></table></div>
+  </div></div>
+  <div class="modal-f"><button class="btn btn-ghost" onclick="closeModal('mFlows')">Đóng</button></div>
+</div></div>
+
+<!-- =====================================================================
+     MÀN 19 — CHI TIẾT MỘT BẢN GHI NHẬT KÝ   (M6 · task #52)
+     Dạng drawer trượt từ phải — bố cục lấy từ Figma "Quản lý ULD.png".
+     ===================================================================== -->
+<div class="drw-ovl" id="drwOvl" onclick="closeDrawer()"></div>
+<div class="drw" id="drwLog">
+  <div class="drw-h">
+    <div class="t"><h2 id="drwTitle">TXN-20260909-004821</h2>
+      <span class="bdg bdg-err" id="drwBadge">Lỗi hệ thống đích</span>
+      <button class="x" onclick="closeDrawer()"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="st" id="drwSub">AVES → TOSS · lịch tổ bay · 09/09/2026 06:12:04</div>
+    <div class="acts">
+      <button class="btn btn-sm btn-ghost" onclick="toast('Đã sao chép mã truy vết','ok')">
+        <span class="material-symbols-outlined">content_copy</span>Sao chép mã</button>
+      <button class="btn btn-sm btn-ghost" onclick="closeDrawer();openModal('mRerun')">
+        <span class="material-symbols-outlined">replay</span>Chạy lại</button></div>
+  </div>
+  <div class="drw-b">
+    <dl class="dl" id="drwFields"></dl>
+    <div style="margin-top:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:13px">Các bước xử lý</div>
+      <div class="tl">
+        <div class="tl-i ok"><div class="tt">Tiếp nhận yêu cầu</div><div class="td">06:12:04.118 · nguồn AVES · 1 bản tin</div></div>
+        <div class="tl-i ok"><div class="tt">Xác thực</div><div class="td">06:12:04.121 · tài khoản/mật khẩu · hợp lệ</div></div>
+        <div class="tl-i ok"><div class="tt">Kiểm tra dữ liệu đầu vào</div><div class="td">06:12:04.147 · đúng lược đồ bản tin</div></div>
+        <div class="tl-i err"><div class="tt">Gọi hệ thống đích</div>
+          <div class="td">06:12:06.402 · HTTP 500 sau 2,25s · đã thử lại 3/3 lần</div></div>
+        <div class="tl-i err"><div class="tt">Kết thúc — thất bại</div>
+          <div class="td">06:12:06.410 · đã gửi email cảnh báo tới 3 người nhận</div></div>
+      </div>
+    </div>
+    <div style="margin-top:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:9px">Nội dung bản tin
+        <span style="font-weight:400;color:var(--tx-3);font-size:11.5px">— đã che thông tin nhạy cảm</span></div>
+      <div class="code-box"><span class="k">POST</span> /ws/crewRoster  <span class="m">SOAP 1.1</span>
+<span class="k">Authorization</span>: Basic <span class="m">****************</span>
+<span class="k">Content-Length</span>: 4.182
+
+&lt;soap:Envelope&gt;
+  &lt;crewRosterRequest&gt;
+    &lt;fromDate&gt;<span class="s">2026-09-09</span>&lt;/fromDate&gt;
+    &lt;toDate&gt;<span class="s">2026-09-16</span>&lt;/toDate&gt;
+    &lt;staffId&gt;<span class="m">*******</span>&lt;/staffId&gt;
+  &lt;/crewRosterRequest&gt;
+&lt;/soap:Envelope&gt;
+
+<span class="k">-- Phản hồi --</span>
+HTTP <span class="m">500</span> Internal Server Error
+&lt;faultstring&gt;Backend datasource unavailable&lt;/faultstring&gt;</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<!-- ========================= BẢNG TRA COMPONENT ========================= -->
+<div class="legend">
+  <div class="sec-h"><span class="material-symbols-outlined">widgets</span>
+    <h3>Bảng tra component — DEV implement theo cột này</h3>
+    <span class="sub">Wrapper nội bộ ESB-FE ưu tiên trước PrimeNG gốc</span></div>
+  <div class="tw" style="border-top:0"><table><thead><tr>
+    <th style="width:270px">data-pui</th><th>Component thật</th><th>Dùng ở đâu</th></tr></thead><tbody>
+    <tr><td>IamSidebar (p-panelMenu)</td><td>Menu dọc có nhóm, thu gọn được</td><td>Sidebar 7 module của trục</td></tr>
+    <tr><td>p-breadcrumb</td><td><span class="mono">p-breadcrumb</span></td><td>Đường dẫn Home › màn hiện tại</td></tr>
+    <tr><td>IamTable (p-table)</td><td><span class="mono">p-table</span> bọc trong wrapper IamTable</td><td>Toàn bộ 12 bảng danh sách</td></tr>
+    <tr><td>IamTable (p-table, editable cell)</td><td><span class="mono">p-table</span> + <span class="mono">p-cellEditor</span></td><td>Màn 20 — ngưỡng cảnh báo chỉnh tại chỗ</td></tr>
+    <tr><td>cmm-dynamic-form</td><td>Form động nội bộ (đổi bộ trường theo loại)</td><td>Màn 2, 6, 9, 11 — popup đa hình</td></tr>
+    <tr><td>p-card (nhóm thẻ thống kê)</td><td><span class="mono">p-card</span></td><td>Dải KPI ở màn 1, 10, 14, 15, 16, 18</td></tr>
+    <tr><td>p-button</td><td><span class="mono">p-button</span></td><td>Thêm mới, Tra cứu, Lưu</td></tr>
+    <tr><td>p-button (severity=warn)</td><td><span class="mono">p-button severity="warn"</span></td><td>Kết xuất Excel (màu cam theo Figma)</td></tr>
+    <tr><td>p-button (text)</td><td><span class="mono">p-button text</span></td><td>Nút Bộ lọc thu/mở</td></tr>
+    <tr><td>p-inputtext · p-select · p-datepicker</td><td>Ô nhập, danh sách chọn, chọn ngày</td><td>Mọi bộ lọc và form</td></tr>
+    <tr><td>p-chips</td><td><span class="mono">p-chips</span></td><td>Email nhận, hệ thống phụ trách, nguồn dữ liệu báo cáo</td></tr>
+    <tr><td>p-toggleswitch</td><td><span class="mono">p-toggleswitch</span></td><td>Bật/tắt luồng, kết nối, cảnh báo</td></tr>
+    <tr><td>p-tag</td><td><span class="mono">p-tag</span></td><td>Badge trạng thái, badge giao thức</td></tr>
+    <tr><td>DialogRegistry (p-dialog)</td><td><span class="mono">p-dialog</span> qua DialogRegistry</td><td>8 popup: hệ thống, đầu mối, kết nối, kiểm tra kết nối, xác thực, chạy lại, chi tiết lỗi, danh sách luồng</td></tr>
+    <tr><td>p-drawer</td><td><span class="mono">p-drawer</span> (position=right)</td><td>Màn 19 — chi tiết bản ghi nhật ký</td></tr>
+    <tr><td>p-paginator</td><td><span class="mono">p-paginator</span></td><td>Chân mọi bảng danh sách</td></tr>
+    <tr><td>p-toast</td><td><span class="mono">p-toast</span></td><td>Thông báo kết quả thao tác</td></tr>
+    <tr><td>p-progressbar (custom)</td><td>Thanh độ phủ — <span class="mono">p-progressbar</span> thu nhỏ</td><td>Màn 15, 16 — độ phủ ACARS/QAR</td></tr>
+    <tr><td>p-chart (bar)</td><td><span class="mono">p-chart type="bar"</span></td><td>Màn 14 — số lần chạy theo giờ</td></tr>
+  </tbody></table></div>
+</div>
+
+<script>
+/* ===========================================================================
+   DỮ LIỆU
+   - SYS: 32 hệ thống — DỮ LIỆU THẬT từ sheet "Tích hợp" dòng 4–35.
+   - Còn lại: dữ liệu mẫu để minh họa bố cục.
+   =========================================================================== */
+const SYS = [{"r":4,"code":"NETLINE_FLIGHT_OPS","name":"Netline Flight Ops++","kind":"Nội bộ VNA","prio":"—","method":"SFTP","ep":"DB Netlines: <netline-db>:1521","data":"—","dir":"Nhận","st":"Đang khai thác","note":"Tháng 10 UAT"},{"r":5,"code":"DWH_LAKEHOUS_TCT","name":"DWH/Lakehous TCT","kind":"Nội bộ VNA","prio":"1.0","method":"Đọc/Ghi database","ep":"Tùy theo từng hệ thống","data":"AMOS","dir":"Nhận","st":"Đang khai thác","note":"VNA"},{"r":6,"code":"FLIGHT_SCHEDULING","name":"Flight Scheduling System","kind":"Đối tác ngoài","prio":"—","method":"SFTP (chưa rõ kết nối, Tần suất ra file)","ep":"Share file: IP <flightsched-sftp>, thư mục IN. Cần mapping thư mục này","data":"SSIM - Lịch bay mùa ASM - Cập nhật của SSIM (cập nhật 1 số chuyến) SSM - Cập nhật 1 list cho 1 giai đoạn dài h","dir":"Nhận","st":"Chờ mô tả bản tin","note":"VNA"},{"r":7,"code":"AVES","name":"AVES","kind":"Nội bộ VNA","prio":"1.0","method":"Soap API","ep":"http://<aves-host>:8080","data":"Thông tin PC, TV Tổ bay","dir":"Nhận","st":"Đang khai thác","note":"Hỏi Skytrack( Thắng, Vinh)"},{"r":8,"code":"CREW_TRIP","name":"Crew Trip","kind":"Đối tác ngoài","prio":"10.0","method":"Chưa có phương thức. Đang làm việc với CĐS","ep":"Chưa có phương thức. Đang làm việc với CĐS","data":"Chi phí khách sạn Chi phí xe chở tổ bay Thực tế sử dụng khách sạn tổ bay","dir":"Nhận","st":"Chờ mô tả bản tin","note":"—"},{"r":9,"code":"MO_PLUS","name":"MO Plus","kind":"Nội bộ VNA","prio":"1.0","method":"Api (làm rõ phạm vi nghiệp vụ)","ep":"—","data":"OFP/eOFP Flight Release Document Confirmation Tài liệu Library Lido Flight 4D/ Adapter Lido","dir":"Nhận","st":"Đang khai thác","note":"Làm tài liệu và dev sync dữ liệu từ MO-TOSS: - Bóc tách - Confirm, reject, submit eCFP - T"},{"r":10,"code":"MRO_AMOS","name":"MRO/ AMOS","kind":"Đối tác ngoài","prio":"—","method":"Đợi CĐS xác nhận","ep":"DB AMOS: <amos-db>:1521","data":"lịch bảo dưỡng tàu bay MEL/CDL, Techlog fuel/time","dir":"Nhận","st":"Chờ mô tả bản tin","note":"—"},{"r":11,"code":"ETECHLOG","name":"eTechlog","kind":"Nội bộ VNA","prio":"—","method":"Dữ liệu đổ chung vào AMOS","ep":"—","data":"Flight Log, Defect log, bảo dưỡng, dữ liệu kỹ thuật máy bay, hạn định bảo dưỡng,","dir":"Nhận","st":"Hoãn tích hợp","note":"VNA"},{"r":12,"code":"AMADEUS_PSS_1A","name":"Amadeus PSS (1A):","kind":"Đối tác ngoài","prio":"—","method":"DWH","ep":"<dwh-host> đến <dwh-host> Port 1521","data":"Danh sách, số lượng hành khách Config tàu bay, config mở bản Hành khách nối chuyến, VIP, CIP","dir":"Nhận","st":"Đang khai thác","note":"Yêu cầu mở kết nối ? Nếu ko xin được xin cấu trúc, dữ liệu mẫu - Trao đổi lại MO lấy từ đâ"},{"r":13,"code":"LIDO_FLIGHT_4D_ADA","name":"Lido Flight 4D/ Adapter Lido","kind":"Đối tác ngoài","prio":"1.0","method":"Qua MO Plus","ep":"Qua MO Plus","data":"Kế hoạch bay NOTAM, WX filed ATC/ điện thay đổi","dir":"Nhận","st":"Đang khai thác","note":"Chủ động làm với MO"},{"r":14,"code":"HE_THONG_VMS_CUA_V","name":"Hệ thống VMS của VIAGS","kind":"Đối tác ngoài","prio":"1.0","method":"Như MO Plus","ep":"Như MO Plus","data":"Thông tin khai thác tại sân bay","dir":"Nhận","st":"Đang khai thác","note":"Chủ động làm với MO"},{"r":15,"code":"FM_LOTUS_AIRPORT_P","name":"FM, Lotus Airport, PTS","kind":"Đối tác ngoài","prio":"—","method":"Hỏi An","ep":"Hỏi An","data":"(Hệ thống thông tin dịch vụ mặt đất)","dir":"Nhận","st":"Chờ mô tả bản tin","note":"—"},{"r":16,"code":"ACDM","name":"ACDM","kind":"Đối tác ngoài","prio":"—","method":"Chưa có thông tin. An cung cấp","ep":"Chưa có thông tin. An cung cấp","data":"Milestone times, vị trí, trạng thái chuyến bay, thông tin điều phối mặt đất, điều phối không lưu, năng lực kha","dir":"Nhận","st":"Chờ mô tả bản tin","note":"Crawler Web"},{"r":17,"code":"ANCM","name":"ANCM","kind":"Nội bộ VNA","prio":"—","method":"Chưa có phương thức. Sử dụng FIMS thay thế","ep":"Kết nối FIMS như MO Plus","data":"chi phí điều hành bay, bay qua, hạ cất cánh Hóa đơn nhiên liệu Giá nhiên liệu · Đẩy file ảnh phiếu dầu","dir":"Hai chiều","st":"Hoãn tích hợp","note":"—"},{"r":18,"code":"CARGO_SPOT","name":"Cargo Spot","kind":"Đối tác ngoài","prio":"1.0","method":"Hỏi An","ep":"Hỏi An","data":"thông tin hàng hóa cho chuyến bay (lấy đánh giá so sánh độ trễ, độ chính xác so với CLC cung cấp)","dir":"Nhận","st":"Chờ mô tả bản tin","note":"Hỏi Adaptor"},{"r":19,"code":"DCS","name":"DCS","kind":"Đối tác ngoài","prio":"—","method":"Chưa có thông tin","ep":"—","data":"thông tin phục vụ hành khách","dir":"Nhận","st":"Chờ mô tả bản tin","note":"VNA"},{"r":20,"code":"FLIGHT_RADAR24","name":"Flight Radar24","kind":"Đối tác ngoài","prio":"2.0","method":"VTIT đánh giá","ep":"—","data":"Vị trí máy bay, hành trình bay","dir":"Nhận","st":"Chờ mô tả bản tin","note":"Tìm hiểu trên tài liệu online"},{"r":21,"code":"NETZERO","name":"NetZero","kind":"Đối tác ngoài","prio":"10.0","method":"Đẩy dữ liệu cho net zero (hệ thống đang triển khai) · Chưa có (HT đang xây dựng)","ep":"—","data":"Nhiên liệu kế hoạch ACARS","dir":"Hai chiều","st":"Chờ mô tả bản tin","note":"—"},{"r":22,"code":"CIRIUM","name":"Cirium","kind":"Đối tác ngoài","prio":"10.0","method":"Hỏi An · Hỏi An","ep":"—","data":"Cũ MVT + Supplemental Cần rà soát và nâng cáp đẻ tăng tỷ lệ dữ liệu · 1. ASM (Netline (confirm An lấy từ đâu))","dir":"Hai chiều","st":"Chờ mô tả bản tin","note":"—"},{"r":23,"code":"SPECTRA","name":"SPECTRA","kind":"Đối tác ngoài","prio":"10.0","method":"Lê trao đổi CĐS về các đầu ra","ep":"—","data":"(CĐS) define","dir":"Gửi","st":"Chờ mô tả bản tin","note":"—"},{"r":24,"code":"ETS_QUAN_LY_KHI_TH","name":"ETS - Quản lý Khí thải","kind":"Đối tác ngoài","prio":"10.0","method":"Lê trao đổi CĐS về các đầu ra","ep":"—","data":"ACARS","dir":"Gửi","st":"Chờ mô tả bản tin","note":"—"},{"r":25,"code":"QUAN_LY_HOP_DONG_C","name":"Quản lý Hợp đồng (CMS)","kind":"Đối tác ngoài","prio":"10.0","method":"Lê trao đổi CĐS về các đầu ra","ep":"—","data":"(CĐS) define","dir":"Gửi","st":"Chờ mô tả bản tin","note":"—"},{"r":26,"code":"LMS","name":"LMS","kind":"Đối tác ngoài","prio":"10.0","method":"Chưa có phương thức Đang làm việc với CĐS · Lê trao đổi CĐS về các đầu ra","ep":"—","data":"(CĐS) define Vật tư, vật phẩm phục vụ chuyến bay · Lịch bay","dir":"Hai chiều","st":"Chờ mô tả bản tin","note":"—"},{"r":27,"code":"ACARS","name":"ACARS","kind":"Đối tác ngoài","prio":"1.0","method":"SFTP Mail","ep":"Cần VTIT set-up SFTP và cung cấp IP để đẩy dữ liệu vào","data":"MVA Danh mục điện acars","dir":"Nhận","st":"Đang khai thác","note":"VNA"},{"r":28,"code":"SITA_TEXT","name":"SITA TEXT","kind":"Đối tác ngoài","prio":"1.0","method":"SFTP Mail","ep":"Hỏi An","data":"UCM, ASM","dir":"Nhận","st":"Đang khai thác","note":"VNA"},{"r":29,"code":"CASSIOPEE_ALPHA","name":"Cassiopee Alpha","kind":"Đối tác ngoài","prio":"—","method":"API","ep":"https://<cassiopee-host>/swagger/index.html (Tài khoản gửi riêng cho đầu mối","data":"Analyzed QAR","dir":"Nhận","st":"Đang khai thác","note":"—"},{"r":30,"code":"NOTAM_WX_VATM","name":"NOTAM, WX VATM","kind":"Đối tác ngoài","prio":"—","method":"Email","ep":"Server mail: <smtp-vna>:587","data":"—","dir":"Nhận","st":"Đang khai thác","note":"—"},{"r":31,"code":"WEATHER_DATA","name":"Weather data","kind":"Đối tác ngoài","prio":"1.0","method":"Website","ep":"Nguồn lấy METAR/TAF các sân nội địa 1/ https://mwomet.vatm.vn/ 2/ http://113.161","data":"TAF - 6 tiếng 1 lần) METAR - (30p 1 lần)","dir":"Nhận","st":"Đang khai thác","note":"Nghiên cứu link web"},{"r":32,"code":"MIGRATE_FIMS","name":"Migrate FIMS","kind":"Nội bộ VNA","prio":"—","method":"DB FIMS: <fims-db>:1521 FIMS API: https://<fims-api>:9998","ep":"—","data":"cơ sở dữ liệu lịch bay, kế hoạch bay, các dữ liệu FIMS đã tích hợp liên quan đến chuyến bay","dir":"Nhận","st":"Đang khai thác","note":"Như MO Plus"},{"r":33,"code":"AD_LDAP","name":"AD/LDAP","kind":"Nội bộ VNA","prio":"—","method":"Như MO Plus","ep":"—","data":"—","dir":"Nhận","st":"Đang khai thác","note":"Như MO Plus"},{"r":34,"code":"FOEM_FLIGHT_OPS_EN","name":"FOEM (Flight Ops Engineering)","kind":"Nội bộ VNA","prio":"—","method":"(chưa có)","ep":"—","data":"Bảng DOW. Trường hợp FOEM chưa xong sử dụng trước 1 file DOW fixed (tương tự Adapter hiện nay)","dir":"Nhận","st":"Hoãn tích hợp","note":"Chưa xây dựng. Hoãn tích hợp"},{"r":35,"code":"HT_THU_PHI_DAM_BAO","name":"HT thu phí đảm bảo ANHK","kind":"Đối tác ngoài","prio":"—","method":"API","ep":"Base URL : https://<anhk-host> Prefix API : /api","data":"Loadsheet/Manifest/LDM","dir":"Gửi","st":"Đang khai thác","note":"—"}];
+
+/* nhãn + màu badge cho 6 giao thức (học từ trục UBCKNN: mỗi loại một màu) */
+const PROTO = {
+  'SFTP':'bdg-info','Database':'bdg-mute','REST':'bdg-ok','SOAP':'bdg-warn',
+  'Email':'bdg-err','Web':'bdg-info','LDAP':'bdg-mute'
+};
+function protoOf(m){
+  const s=(m||'').toLowerCase();
+  /* "Như/Qua MO Plus" là tham chiếu tới hệ thống khác, KHÔNG phải khai báo giao thức
+     -> không gán badge, để nguyên văn cho người đọc tự hiểu. */
+  if(/^(như|qua)\s+mo plus/.test(s.trim()))return '';
+  if(s.includes('sftp'))return 'SFTP';
+  if(s.includes('database')||s.includes('db ')||s.includes('dwh')||s.includes('đọc/ghi'))return 'Database';
+  if(s.includes('soap'))return 'SOAP';
+  if(s.includes('website')||s.includes('web'))return 'Web';
+  if(s.includes('api'))return 'REST';
+  if(s.includes('mail')||s.includes('email'))return 'Email';
+  return '';
+}
+/* chỉ hiện phần mô tả THÊM so với badge giao thức, tránh lặp chữ */
+function extraMethod(m,pr){
+  let t=(m||'').trim();
+  if(!t||t==='(chua co)'||t==='(chưa có)')return pr?'':'<span style="color:var(--tx-mute)">—</span>';
+  if(pr){
+    /* Cat phan lap lai voi badge giao thuc. Dung [ ] va (?![A-Za-z]) thay cho \s, 
+       de khong phai escape trong chuoi JS. */
+    const alias={Web:'Web(site)?',Database:'Database',REST:'(REST|API)',SOAP:'SOAP',SFTP:'SFTP',Email:'E-?mail'};
+    const pat=alias[pr]||pr;
+    t=t.replace(new RegExp('^[ ]*(?:'+pat+')(?![A-Za-z])[ ]*','i'),'').trim();
+    t=t.replace(new RegExp('^[ ]*(?:API|Api)(?![A-Za-z])[ ]*','i'),'').trim();
+    t=t.replace(/^[·–—,-]+[ ]*/,'').trim();
+    if(!t||new RegExp('^(?:'+pat+'|API)$','i').test(t))return '';
+  }
+  return `<span class="sub" style="display:inline;margin-left:7px">${esc(t)}</span>`;
+}
+/* ---------------------------------------------------------------------------
+   PHƯƠNG THỨC GIẢ ĐỊNH
+   Sheet Tích hợp còn 15 hệ thống chưa chốt phương thức, ô nguồn chỉ ghi ghi chú
+   công việc ("Hỏi An", "Đợi CĐS xác nhận", "Chưa có thông tin"…). Để mockup đọc
+   được, những dòng này điền phương thức + điểm cuối GIẢ ĐỊNH, đánh dấu bằng badge
+   "giả định". Nguyên văn YCKT vẫn giữ nguyên trong tooltip của badge để đối chiếu.
+   --------------------------------------------------------------------------- */
+const FAKE={
+ 'Flight Scheduling System':['SFTP','sftp://<flightsched-sftp>/IN — SSIM, ASM, SSM'],
+ 'Crew Trip':            ['REST','https://crewtrip.vietnamairlines.com/api/v1'],
+ 'MRO/ AMOS':            ['Database','jdbc:oracle:thin:@<amos-db>:1521/AMOS'],
+ 'eTechlog':             ['Database','Qua AMOS — jdbc:oracle:thin:@<amos-db>:1521'],
+ 'FM, Lotus Airport, PTS':['REST','https://gs-gateway.vietnamairlines.com/api'],
+ 'ACDM':                 ['Web','https://acdm.vatm.vn — lấy 16 mốc thời gian'],
+ 'ANCM':                 ['Database','Qua FIMS — jdbc:oracle:thin:@<fims-db>:1521'],
+ 'Cargo Spot':           ['REST','https://cargospot.vietnamairlines.com/api/v2'],
+ 'DCS':                  ['Database','jdbc:oracle:thin:@<dcs-db>:1521/DCS'],
+ 'Flight Radar24':       ['REST','https://api.flightradar24.com/common/v1'],
+ 'NetZero':              ['REST','https://netzero.vietnamairlines.com/api/ingest'],
+ 'Cirium':               ['SFTP','sftp://feeds.cirium.com/vna — MVT, ASM'],
+ 'SPECTRA':              ['REST','https://spectra.vietnamairlines.com/api/ingest'],
+ 'ETS - Quản lý Khí thải':['SFTP','sftp://ets.vietnamairlines.com/IN — ACARS'],
+ 'Quản lý Hợp đồng (CMS)':['REST','https://cms.vietnamairlines.com/api/v1'],
+ 'LMS':                  ['REST','https://lms.vietnamairlines.com/api/v1'],
+ 'AD/LDAP':              ['LDAP','ldaps://ad.vietnamairlines.com:636'],
+ 'Lido Flight 4D/ Adapter Lido':['REST','https://moplus.vietnamairlines.com/api/adapter/lido'],
+ 'Hệ thống VMS của VIAGS':['REST','https://moplus.vietnamairlines.com/api/viags'],
+};
+/* phương thức hiển thị = giả định nếu có, ngược lại lấy nguyên văn sheet */
+function methodOf(x){
+  const f=FAKE[x.name];
+  return f?{proto:f[0],text:f[1],fake:true,src:x.method}
+          :{proto:protoOf(x.method),text:'',fake:false,src:x.method};
+}
+const stCls = s => s==='Đang khai thác' ? 'bdg-ok' : s==='Hoãn tích hợp' ? 'bdg-mute' : 'bdg-warn';
+
+const CONTACTS=[
+ ['Nguyễn Văn An','VNA — Ban CNTT','an.nv@vietnamairlines.com','0912 345 678','Cargo Spot, ACDM, FM/Lotus/PTS',1],
+ ['Trần Quốc Thắng','VNA — Ban Khai thác bay','thang.tq@vietnamairlines.com','0913 220 145','AVES, Crew Trip',1],
+ ['Lê Minh Đức','VNA — Ban CNTT','duc.lm@vietnamairlines.com','0988 401 233','Weather data, NOTAM/WX VATM',1],
+ ['Phạm Thanh Tùng','Viettel Solutions','tungpt@viettel.com.vn','0977 512 004','Netline Flight Ops++, MO Plus',1],
+ ['Hoàng Thị Vân','Viettel Solutions','vanht@viettel.com.vn','0965 118 720','ACARS, SITA TEXT',1],
+ ['Đỗ Quang Huy','VNA — Ban Kỹ thuật','huy.dq@vietnamairlines.com','0904 336 187','MRO/AMOS, eTechlog',0],
+ ['Nguyễn Thị Mai','VIAGS','mai.nt@viags.vn','0918 774 250','Hệ thống VMS của VIAGS',1],
+ ['Vũ Đình Long','VNA — Ban Tài chính','long.vd@vietnamairlines.com','0912 668 043','ANCM, Quản lý Hợp đồng (CMS)',0]];
+
+const CONNS=[
+ ['SFTP — Netline Ops++ pickup','Netline Flight Ops++','SFTP','<netline-sftp>:22 · /IN','Khóa SSH Netline','09/09 15:42','ok',1],
+ ['Database — Netline','Netline Flight Ops++','Database','jdbc:oracle:@<netline-db>:1521','Tài khoản NETLINE_RO','09/09 15:40','ok',1],
+ ['Database — DWH/Lakehouse TCT','DWH/Lakehous TCT','Database','Tùy hệ thống nguồn','Tài khoản DWH_RO','09/09 14:05','ok',1],
+ ['SOAP — AVES','AVES','SOAP','http://<aves-host>:8080','AVES — tài khoản/mật khẩu','09/09 06:12','err',1],
+ ['REST — MO Plus','MO Plus','REST','https://moplus.vietnamairlines.com/api','MO Plus — OAuth2','09/09 15:44','ok',1],
+ ['REST — Adapter Lido (qua MO Plus)','Lido Flight 4D/ Adapter Lido','REST','https://moplus…/adapter/lido','MO Plus — OAuth2','09/09 15:44','ok',1],
+ ['REST — VMS VIAGS (qua MO Plus)','Hệ thống VMS của VIAGS','REST','https://moplus…/viags','MO Plus — OAuth2','09/09 15:30','ok',1],
+ ['Database — AMOS','MRO/ AMOS','Database','jdbc:oracle:@<amos-db>:1521','Tài khoản AMOS_RO','—','wait',0],
+ ['Database — Amadeus PSS qua DWH','Amadeus PSS (1A):','Database','<dwh-db>:1521','Tài khoản DWH_RO','09/09 12:00','ok',1],
+ ['SFTP — ACARS pickup','ACARS','SFTP','Chờ VTIT cấp IP · /IN','Khóa SSH ACARS','09/09 15:45','ok',1],
+ ['Email — hộp thư ACARS','ACARS','Email','IMAP · INBOX/ACARS','ACARS — tài khoản/mật khẩu','09/09 15:45','ok',1],
+ ['SFTP — SITA TEXT','SITA TEXT','SFTP','Chờ xác nhận đầu mối · /IN','Khóa SSH SITA','09/09 15:20','ok',1],
+ ['REST — Cassiopee Alpha','Cassiopee Alpha','REST','https://<cassiopee-host>','Cassiopee — API Key','09/09 09:00','ok',1],
+ ['Email — NOTAM/WX VATM','NOTAM, WX VATM','Email','<smtp-vna>:587','VATM — tài khoản/mật khẩu','09/09 15:10','ok',1],
+ ['Web — METAR/TAF nội địa','Weather data','Web','https://mwomet.vatm.vn','(không cần)','09/09 15:30','warn',1],
+ ['REST — HT thu phí ANHK','HT thu phí đảm bảo ANHK','REST','https://<anhk-host>/api','ANHK — API Key','08/09 18:00','ok',1]];
+
+const CREDS=[
+ ['Khóa SSH Netline','Khóa SSH','Netline Flight Ops++','—','12/03/2027','04/09/2026'],
+ ['Tài khoản NETLINE_RO','Tài khoản / Mật khẩu','Netline Flight Ops++','—','—','04/09/2026'],
+ ['Tài khoản DWH_RO','Tài khoản / Mật khẩu','DWH/Lakehous TCT','—','—','21/08/2026'],
+ ['AVES — tài khoản/mật khẩu','Tài khoản / Mật khẩu','AVES','—','30/11/2026','15/07/2026'],
+ ['MO Plus — OAuth2','OAuth2','MO Plus','—','—','02/09/2026'],
+ ['Tài khoản AMOS_RO','Tài khoản / Mật khẩu','MRO/ AMOS','—','—','28/08/2026'],
+ ['Khóa SSH ACARS','Khóa SSH','ACARS','—','08/01/2028','05/09/2026'],
+ ['ACARS — tài khoản/mật khẩu','Tài khoản / Mật khẩu','ACARS','—','—','05/09/2026'],
+ ['Khóa SSH SITA','Khóa SSH','SITA TEXT','—','19/06/2027','30/08/2026'],
+ ['Cassiopee — API Key','API Key / Token','Cassiopee Alpha','—','31/12/2026','11/08/2026'],
+ ['ANHK — API Key','API Key / Token','HT thu phí đảm bảo ANHK','—','—','29/08/2026']];
+
+const FLOWS=[
+ ['ACARS → TOSS · gom điện Performance','ACARS','TOSS',1,'SFTP + Email','Mỗi 5 phút','09/09 15:45','ok',1],
+ ['ACARS → TOSS · điện MVA','ACARS','TOSS',1,'SFTP','Mỗi 5 phút','09/09 15:45','ok',1],
+ ['SITA TEXT → TOSS · UCM, ASM','SITA TEXT','TOSS, OPS++',2,'SFTP + Email','Mỗi 10 phút','09/09 15:20','ok',1],
+ ['Netline Ops++ → TOSS · lịch bay','Netline Flight Ops++','TOSS',1,'SFTP','Mỗi 15 phút','09/09 15:42','ok',1],
+ ['Netline Ops++ → TOSS · dữ liệu chuyến bay','Netline Flight Ops++','TOSS',1,'Database','Mỗi 30 phút','09/09 15:40','ok',1],
+ ['MO Plus → TOSS · OFP, Flight Release','MO Plus','TOSS',1,'REST','Mỗi 10 phút','09/09 15:44','ok',1],
+ ['Adapter Lido → TOSS · kế hoạch bay','Lido Flight 4D/ Adapter Lido','TOSS',1,'REST','Mỗi 15 phút','09/09 15:44','ok',1],
+ ['VMS VIAGS → TOSS · khai thác sân bay','Hệ thống VMS của VIAGS','TOSS',1,'REST','Mỗi 15 phút','09/09 15:30','ok',1],
+ ['AVES → TOSS · lịch tổ bay','AVES','TOSS',1,'SOAP','1 lần/ngày 06:00','09/09 06:12','err',1],
+ ['DWH → TOSS · dữ liệu dùng chung','DWH/Lakehous TCT','TOSS',1,'Database','1 lần/ngày 02:00','09/09 02:04','ok',1],
+ ['Amadeus PSS → TOSS · hành khách','Amadeus PSS (1A):','TOSS',1,'Database','Mỗi 30 phút','09/09 12:00','ok',1],
+ ['Weather data → TOSS · METAR','Weather data','TOSS',1,'Web','Mỗi 30 phút','09/09 05:30','warn',1],
+ ['Weather data → TOSS · TAF','Weather data','TOSS',1,'Web','Mỗi 6 giờ','09/09 12:00','ok',0],
+ ['NOTAM/WX VATM → TOSS','NOTAM, WX VATM','TOSS',1,'Email','Mỗi 15 phút','09/09 15:10','ok',0]];
+
+const RUNS=[
+ ['09/09/2026 15:45:02','09/09/2026 15:45:04','1,8s',412,412,0,'ok','—'],
+ ['09/09/2026 15:40:01','09/09/2026 15:40:03','1,6s',388,388,0,'ok','—'],
+ ['09/09/2026 15:35:02','09/09/2026 15:35:05','2,4s',401,399,2,'warn','2 bản tin sai lược đồ'],
+ ['09/09/2026 15:30:01','09/09/2026 15:30:03','1,7s',377,377,0,'ok','—'],
+ ['09/09/2026 15:25:02','09/09/2026 15:25:03','1,5s',360,360,0,'ok','—'],
+ ['09/09/2026 15:20:01','09/09/2026 15:20:09','7,9s',402,402,0,'warn','Chậm hơn ngưỡng 5s'],
+ ['09/09/2026 15:15:02','09/09/2026 15:15:04','1,8s',395,395,0,'ok','—'],
+ ['09/09/2026 15:10:01','—','—',0,0,0,'err','Không kết nối được máy chủ SFTP'],
+ ['09/09/2026 15:05:02','09/09/2026 15:05:04','1,9s',381,381,0,'ok','—'],
+ ['09/09/2026 15:00:01','09/09/2026 15:00:03','1,6s',369,369,0,'ok','—']];
+
+const LOGS=[
+ ['09/09 15:45:03','TXN-20260909-004912','ACARS → TOSS · gom điện Performance','ACARS → TOSS',412,'1,8s','ok'],
+ ['09/09 15:44:11','TXN-20260909-004911','MO Plus → TOSS · OFP, Flight Release','MO Plus → TOSS',96,'0,9s','ok'],
+ ['09/09 15:42:07','TXN-20260909-004908','Netline Ops++ → TOSS · lịch bay','Netline → TOSS',248,'2,1s','ok'],
+ ['09/09 15:35:04','TXN-20260909-004901','ACARS → TOSS · gom điện Performance','ACARS → TOSS',401,'2,4s','warn'],
+ ['09/09 15:30:02','TXN-20260909-004896','VMS VIAGS → TOSS · khai thác sân bay','VIAGS → TOSS',54,'1,2s','ok'],
+ ['09/09 15:20:09','TXN-20260909-004881','SITA TEXT → TOSS · UCM, ASM','SITA → TOSS, OPS++',180,'7,9s','warn'],
+ ['09/09 15:10:01','TXN-20260909-004870','NOTAM/WX VATM → TOSS','VATM → TOSS',0,'30,0s','err'],
+ ['09/09 12:00:03','TXN-20260909-004602','Amadeus PSS → TOSS · hành khách','Amadeus → TOSS',1204,'4,1s','ok'],
+ ['09/09 06:12:04','TXN-20260909-004821','AVES → TOSS · lịch tổ bay','AVES → TOSS',0,'2,3s','err'],
+ ['09/09 02:04:00','TXN-20260909-004120','DWH → TOSS · dữ liệu dùng chung','DWH → TOSS',8940,'42,6s','ok']];
+const LOGST={ok:['Thành công','bdg-ok'],warn:['Chậm hơn ngưỡng','bdg-warn'],err:['Lỗi hệ thống đích','bdg-err']};
+
+const ERRS=[
+ ['09/09 06:12:06','TXN-20260909-004821','BACKEND_FAILED','HTTP 500 — Backend datasource unavailable'],
+ ['09/09 06:12:04','TXN-20260909-004820','BACKEND_FAILED','HTTP 500 — Backend datasource unavailable'],
+ ['09/09 06:12:02','TXN-20260909-004819','BACKEND_FAILED','HTTP 500 — Backend datasource unavailable'],
+ ['09/09 15:10:31','TXN-20260909-004870','TIMEOUT','Quá thời gian chờ 30s khi kết nối máy chủ thư'],
+ ['08/09 22:05:12','TXN-20260908-004201','AUTH_FAILED','Mật khẩu hết hạn — cần cập nhật thông tin xác thực'],
+ ['08/09 18:40:03','TXN-20260908-003980','VALIDATE_FAILED','Thiếu trường bắt buộc: flightDate']];
+
+const AC=[['VN-A321','A321',72,71],['VN-A322','A321',68,66],['VN-A350','A350',54,53],['VN-A351','A350',51,50],
+ ['VN-A787','B787',60,58],['VN-A788','B787',57,55],['VN-A323','A321',70,52],['VN-A324','A321',66,49],
+ ['VN-A352','A350',48,46],['VN-A789','B787',59,44],['VN-A325','A321',71,70],['VN-A326','A321',64,63]];
+
+const TPLS=[['Cảnh báo luồng lỗi liên tiếp','TPL-FLOW-ERR',1],['Cảnh báo luồng trễ lịch','TPL-FLOW-LATE',1],
+ ['Cảnh báo không nhận dữ liệu','TPL-NO-DATA',1],['Báo cáo tỷ lệ dữ liệu hằng tuần','TPL-COVERAGE',1],
+ ['Báo cáo khai thác hằng ngày','TPL-DAILY-OPS',0],['Thông báo hết hạn thông tin xác thực','TPL-CRED-EXP',1]];
+
+const MAILS=[
+ ['Cảnh báo luồng lỗi liên tiếp',['an.nv@vietnamairlines.com','tungpt@viettel.com.vn','vanht@viettel.com.vn'],'Email',1],
+ ['Cảnh báo luồng trễ lịch',['an.nv@vietnamairlines.com','duc.lm@vietnamairlines.com'],'Email',1],
+ ['Cảnh báo không nhận dữ liệu',['tungpt@viettel.com.vn','huy.dq@vietnamairlines.com'],'Email',1],
+ ['Báo cáo tỷ lệ dữ liệu (YCKT d.231)',['occ@vietnamairlines.com','foe@vietnamairlines.com','+9 địa chỉ khác'],'Email',1],
+ ['Báo cáo khai thác hằng ngày TBT (YCKT d.232)',['tbt@vietnamairlines.com','+6 địa chỉ khác'],'Email',0],
+ ['Thông báo hết hạn thông tin xác thực',['admin@vietnamairlines.com'],'Email',1]];
+
+/* =========================== HÀM DÙNG CHUNG =========================== */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CRUMBS={s1:'Hệ thống tích hợp',s3:'Đầu mối kỹ thuật',s5:'Kết nối',s8:'Thông tin xác thực',
+ s10:'Luồng dữ liệu',s11:'Chi tiết luồng',s12:'Lịch sử chạy',s14:'Tổng quan tích hợp',
+ s15:'Độ phủ ACARS',s16:'Độ phủ QAR',s17:'Báo cáo tỷ lệ dữ liệu',s18:'Nhật ký tích hợp',
+ s20:'Ngưỡng cảnh báo',s21:'Email nhận thông báo',s22:'Mẫu nội dung email'};
+
+function go(id){
+  $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  $$('.side-item').forEach(i=>i.classList.toggle('active',i.dataset.go===id));
+  $('#crumbCur').textContent=CRUMBS[id]||'';
+  $('.content').scrollTop=0;
+}
+$$('.side-item').forEach(i=>i.onclick=()=>go(i.dataset.go));
+function toggleSide(){const s=$('#sidebar');s.classList.toggle('collapsed');
+  $('#sideIco').textContent=s.classList.contains('collapsed')?'chevron_right':'chevron_left';}
+function toggleFilter(btn,id){const f=document.getElementById(id);
+  f.classList.toggle('hidden');btn.classList.toggle('closed');}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function openDrawer(){$('#drwOvl').classList.add('open');$('#drwLog').classList.add('open')}
+function closeDrawer(){$('#drwOvl').classList.remove('open');$('#drwLog').classList.remove('open')}
+$$('.ovl').forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove('open')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){
+  $$('.ovl.open').forEach(o=>o.classList.remove('open'));closeDrawer();}});
+
+function toast(msg,kind){
+  const ico={ok:'check_circle',err:'error'}[kind]||'info';
+  const el=document.createElement('div');
+  el.className='toast'+(kind?' '+kind:'');
+  el.innerHTML=`<span class="material-symbols-outlined">${ico}</span><div>${esc(msg)}</div>`;
+  $('#toasts').appendChild(el);setTimeout(()=>el.remove(),3800);
+}
+
+/* ============================ MÀN 1 — HỆ THỐNG ============================ */
+function renderSys(){
+  const q=($('#q1').value||'').toLowerCase().trim();
+  const k=$('#k1').value, st=$('#st1').value, p=$('#p1').value;
+  const rows=SYS.filter(x=>
+    (!q||x.code.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)) &&
+    (!k||x.kind===k) && (!st||x.st===st) && (!p||x.prio===p));
+  $('#sysTotal').textContent=rows.length;
+  $('#sysBody').innerHTML=rows.length?rows.map((x,i)=>{
+    const M=methodOf(x), pr=M.proto;
+    const nf=FLOWS.filter(f=>f[1]===x.name).length;
+    return `<tr>
+      <td class="mid">${i+1}</td>
+      <td><span class="mono" style="font-size:10.5px;color:var(--tx-mute);display:block">${esc(x.code)}</span>
+        <span class="strong">${esc(x.name)}</span>${x.data&&x.data!=='—'?`<span class="sub">${esc(x.data)}</span>`:''}</td>
+      <td>${esc(x.kind)}<span class="sub">${esc(x.dir)}</span></td>
+      <td>${pr?`<span class="bdg nodot ${PROTO[pr]}">${pr}</span>`:''}${
+        M.fake
+          ? `<span class="bdg nodot bdg-warn" style="margin-left:6px" title="Nguyên văn YCKT: ${esc(M.src)}">giả định</span><span class="sub">${esc(M.text)}</span>`
+          : extraMethod(x.method,pr)}</td>
+      <td class="mid">${x.prio==='—'?'<span style="color:var(--tx-mute)">—</span>':`<span class="bdg nodot ${x.prio==='1.0'?'bdg-err':x.prio==='2.0'?'bdg-warn':'bdg-mute'}">${esc(x.prio)}</span>`}</td>
+      <td><span class="bdg ${stCls(x.st)}">${esc(x.st)}</span></td>
+      <td class="num">${nf?`<a href="#" onclick="showFlows('${esc(x.name)}');return false" style="color:var(--teal);font-weight:600">${nf}</a>`:'<span style="color:var(--tx-mute)">0</span>'}</td>
+      <td>${i%3===0?'Nguyễn Văn An':i%3===1?'Phạm Thanh Tùng':'Lê Minh Đức'}</td>
+      <td><div class="acts">
+        <button class="ico-btn" title="Xem chi tiết" onclick="toast('Xem chi tiết ${esc(x.code)} — dữ liệu mẫu')"><span class="material-symbols-outlined">visibility</span></button>
+        <button class="ico-btn" title="Sửa" onclick="openSysModal('${esc(x.code)}')"><span class="material-symbols-outlined">edit</span></button>
+        <button class="ico-btn del" title="Xóa" onclick="toast('Xóa hệ thống — cần xác nhận','err')"><span class="material-symbols-outlined">delete</span></button>
+      </div></td></tr>`;}).join('')
+    :`<tr><td colspan="9" style="text-align:center;padding:34px;color:var(--tx-mute)">Chưa có dữ liệu</td></tr>`;
+}
+function resetSys(){$('#q1').value='';$('#k1').value='';$('#st1').value='';$('#p1').value='';
+  $$('.kpi[data-st]').forEach(e=>e.classList.remove('on'));
+  document.querySelector('.kpi[data-st=""]').classList.add('on');renderSys();}
+function pickKpi(el){
+  $$('.kpi[data-st]').forEach(e=>e.classList.remove('on'));el.classList.add('on');
+  $('#st1').value=el.dataset.st;renderSys();
+}
+function showFlows(sysName){
+  $('#mFlowsTitle').textContent='Luồng dữ liệu — '+sysName;
+  const rows=FLOWS.filter(f=>f[1]===sysName);
+  $('#sysFlowBody').innerHTML=rows.map((f,i)=>`<tr><td class="mid">${i+1}</td>
+    <td><span class="strong">${esc(f[0])}</span></td><td>Nhận</td>
+    <td><span class="bdg nodot ${PROTO[protoOf(f[4])]||'bdg-mute'}">${esc(f[4])}</span></td>
+    <td>${esc(f[5])}</td>
+    <td><span class="bdg ${f[8]?'bdg-ok':'bdg-mute'}">${f[8]?'Đang bật':'Đã tắt'}</span></td></tr>`).join('');
+  openModal('mFlows');
+}
+function openSysModal(code){
+  const x=code?SYS.find(s=>s.code===code):null;
+  $('#mSysTitle').textContent=x?'Sửa hệ thống tích hợp':'Thêm mới hệ thống tích hợp';
+  $('#fSysCode').value=x?x.code:''; $('#fSysName').value=x?x.name:'';
+  $('#fSysKind').value=x?x.kind:''; $('#fSysSt').value=x?x.st:'Chờ mô tả bản tin';
+  $('#fSysOwner').value=x?(x.kind==='Nội bộ VNA'?'Vietnam Airlines':''):'';
+  sysStHint(); openModal('mSys');
+}
+function sysStHint(){
+  const v=$('#fSysSt').value;
+  $('#sysStHint').innerHTML = v==='Đang khai thác'
+    ? 'Đã có bộ đọc — hệ thống <b>xuất hiện ở màn Luồng dữ liệu</b>.'
+    : v==='Hoãn tích hợp'
+    ? 'Sheet Tích hợp ghi hoãn / thay thế / gộp vào hệ thống khác.'
+    : 'Chưa đủ dữ kiện để viết bộ đọc — hệ thống hiện ở đây nhưng <b>không xuất hiện ở màn Luồng dữ liệu</b>.';
+}
+function saveSys(){closeModal('mSys');toast('Đã lưu hệ thống tích hợp','ok');}
+
+/* ======================== CÁC BẢNG CÒN LẠI ======================== */
+function renderAll(){
+  $('#contactBody').innerHTML=CONTACTS.map((c,i)=>`<tr><td class="mid">${i+1}</td>
+    <td><span class="strong">${esc(c[0])}</span></td><td>${esc(c[1])}</td>
+    <td>${esc(c[2])}</td><td>${esc(c[3])}</td><td class="wrap">${esc(c[4])}</td>
+    <td class="mid"><span class="bdg ${c[5]?'bdg-ok':'bdg-mute'}">${c[5]?'Có':'Không'}</span></td>
+    <td><div class="acts">
+      <button class="ico-btn" onclick="openModal('mContact')"><span class="material-symbols-outlined">edit</span></button>
+      <button class="ico-btn del" onclick="toast('Xóa đầu mối — cần xác nhận','err')"><span class="material-symbols-outlined">delete</span></button>
+    </div></td></tr>`).join('');
+
+  const cst={ok:['Thành công','bdg-ok'],err:['Thất bại','bdg-err'],warn:['Chậm','bdg-warn'],wait:['Chưa kiểm tra','bdg-mute']};
+  $('#connBody').innerHTML=CONNS.map((c,i)=>`<tr><td class="mid">${i+1}</td>
+    <td><span class="strong">${esc(c[0])}</span><span class="sub">${esc(c[1])}</span></td>
+    <td><span class="bdg nodot ${PROTO[c[2]]||'bdg-mute'}">${esc(c[2])}</span></td>
+    <td class="mono">${esc(c[3])}</td><td>${esc(c[4])}</td>
+    <td><span class="bdg ${cst[c[6]][1]}">${cst[c[6]][0]}</span><span class="sub">${esc(c[5])}</span></td>
+    <td class="mid"><label class="sw"><input type="checkbox" ${c[7]?'checked':''}><span></span></label></td>
+    <td><div class="acts">
+      <button class="ico-btn" title="Kiểm tra kết nối" onclick="openModal('mPing')"><span class="material-symbols-outlined">network_check</span></button>
+      <button class="ico-btn" title="Sửa" onclick="openConnModal()"><span class="material-symbols-outlined">edit</span></button>
+      <button class="ico-btn del" title="Xóa" onclick="toast('Xóa kết nối — cần xác nhận','err')"><span class="material-symbols-outlined">delete</span></button>
+    </div></td></tr>`).join('');
+
+  $('#credBody').innerHTML=CREDS.map((c,i)=>`<tr><td class="mid">${i+1}</td>
+    <td><span class="strong">${esc(c[0])}</span></td><td>${esc(c[1])}</td><td>${esc(c[2])}</td>
+    <td><span class="mono" style="letter-spacing:2px;color:var(--tx-mute)">••••••••</span>
+      <span class="bdg nodot bdg-mute" style="margin-left:7px">không đọc lại</span></td>
+    <td>${esc(c[4])}</td><td>${esc(c[5])}</td>
+    <td><div class="acts">
+      <button class="ico-btn" onclick="openCredModal()"><span class="material-symbols-outlined">edit</span></button>
+      <button class="ico-btn del" onclick="toast('Xóa thông tin xác thực — cần xác nhận','err')"><span class="material-symbols-outlined">delete</span></button>
+    </div></td></tr>`).join('');
+
+  const fst={ok:['Thành công','bdg-ok'],err:['Thất bại','bdg-err'],warn:['Trễ lịch','bdg-warn']};
+  $('#flowBody').innerHTML=FLOWS.map((f,i)=>`<tr><td class="mid">${i+1}</td>
+    <td><span class="strong">${esc(f[0])}</span>
+      <span class="sub">${esc(f[1])} → ${esc(f[2])}${f[3]>1?` · ${f[3]} đích`:''}</span></td>
+    <td><span class="bdg nodot ${PROTO[protoOf(f[4])]||'bdg-mute'}">${esc(f[4])}</span></td>
+    <td>${esc(f[5])}</td><td>${esc(f[6])}</td>
+    <td><span class="bdg ${fst[f[7]][1]}">${fst[f[7]][0]}</span></td>
+    <td class="mid"><label class="sw"><input type="checkbox" ${f[8]?'checked':''}><span></span></label></td>
+    <td><div class="acts">
+      <button class="ico-btn" title="Xem chi tiết" onclick="go('s11')"><span class="material-symbols-outlined">visibility</span></button>
+      <button class="ico-btn" title="Lịch sử chạy" onclick="go('s12')"><span class="material-symbols-outlined">history</span></button>
+      <button class="ico-btn" title="Chạy lại" onclick="openModal('mRerun')"><span class="material-symbols-outlined">replay</span></button>
+    </div></td></tr>`).join('');
+
+  const rst={ok:['Thành công','bdg-ok'],err:['Thất bại','bdg-err'],warn:['Có cảnh báo','bdg-warn']};
+  $('#runBody').innerHTML=RUNS.map((r,i)=>`<tr><td class="mid">${i+1}</td>
+    <td>${esc(r[0])}</td><td>${esc(r[1])}</td><td class="num">${esc(r[2])}</td>
+    <td class="num">${r[3].toLocaleString('vi')}</td><td class="num">${r[4].toLocaleString('vi')}</td>
+    <td class="num">${r[5]?`<a href="#" onclick="openModal('mErr');return false" style="color:var(--err);font-weight:700">${r[5]}</a>`:'0'}</td>
+    <td><span class="bdg ${rst[r[6]][1]}">${rst[r[6]][0]}</span></td>
+    <td class="wrap">${esc(r[7])}</td>
+    <td><button class="ico-btn" onclick="openLog(8)"><span class="material-symbols-outlined">visibility</span></button></td></tr>`).join('');
+
+  $('#logBody').innerHTML=LOGS.map((l,i)=>`<tr><td class="mid">${i+1}</td>
+    <td>${esc(l[0])}</td><td class="mono">${esc(l[1])}</td>
+    <td class="wrap" style="max-width:250px">${esc(l[2])}</td><td>${esc(l[3])}</td>
+    <td class="num">${l[4].toLocaleString('vi')}</td><td class="num">${esc(l[5])}</td>
+    <td><span class="bdg ${LOGST[l[6]][1]}">${LOGST[l[6]][0]}</span></td>
+    <td><button class="ico-btn" title="Xem chi tiết" onclick="openLog(${i})"><span class="material-symbols-outlined">visibility</span></button></td></tr>`).join('');
+
+  $('#errBody').innerHTML=ERRS.map((e,i)=>`<tr><td class="mid">${i+1}</td><td>${esc(e[0])}</td>
+    <td class="mono">${esc(e[1])}</td><td><span class="bdg nodot bdg-err">${esc(e[2])}</span></td>
+    <td class="wrap">${esc(e[3])}</td></tr>`).join('');
+
+  const cov=(a,b)=>Math.round(b/a*1000)/10;
+  $('#acarsBody').innerHTML=AC.map((a,i)=>{const p=cov(a[2],a[3]);
+    return `<tr><td class="mid">${i+1}</td><td><span class="strong">${a[0]}</span></td><td>${a[1]}</td>
+      <td class="num">${a[2]}</td><td class="num">${a[3]}</td><td class="num">${a[2]-a[3]}</td>
+      <td><div class="cov"><span class="mini"><i class="${p<80?'e':p<90?'w':''}" style="width:${p}%"></i></span><b>${p.toFixed(1).replace('.',',')}%</b></div></td>
+      <td><span class="bdg ${p<80?'bdg-err':p<90?'bdg-warn':'bdg-ok'}">${p<80?'Dưới ngưỡng':p<90?'Cần theo dõi':'Đạt'}</span></td>
+      <td><button class="ico-btn" onclick="toast('Danh sách chuyến thiếu dữ liệu — dữ liệu mẫu')"><span class="material-symbols-outlined">visibility</span></button></td></tr>`;}).join('');
+
+  $('#qarBody').innerHTML=AC.map((a,i)=>{const q=Math.max(30,a[3]-Math.round(a[2]*0.18));const p=cov(a[2],q);
+    return `<tr><td class="mid">${i+1}</td><td><span class="strong">${a[0]}</span></td><td>${a[1]}</td>
+      <td class="num">${a[2]}</td><td class="num">${q}</td><td class="num">${a[2]-q}</td>
+      <td><div class="cov"><span class="mini"><i class="${p<80?'e':p<90?'w':''}" style="width:${p}%"></i></span><b>${p.toFixed(1).replace('.',',')}%</b></div></td>
+      <td><span class="bdg ${p<80?'bdg-err':p<90?'bdg-warn':'bdg-ok'}">${p<80?'Dưới ngưỡng':p<90?'Cần theo dõi':'Đạt'}</span></td>
+      <td><button class="ico-btn" onclick="toast('Danh sách chuyến thiếu dữ liệu — dữ liệu mẫu')"><span class="material-symbols-outlined">visibility</span></button></td></tr>`;}).join('');
+
+  /* giá trị cố định theo mã tàu — trước đây dùng Math.random() nên mỗi lần tải lại
+     bảng ra số khác, người review sẽ tưởng dữ liệu không ổn định */
+  const seed=str=>{let h=0;for(const c of str)h=(h*31+c.charCodeAt(0))>>>0;return h;};
+  $('#repBody').innerHTML=AC.map(a=>{let h=seed(a[0]);
+    return `<tr><td><span class="strong">${a[0]}</span></td><td class="num">${a[2]}</td>
+      ${[...Array(9)].map((_,k)=>{h=(h*1103515245+12345)>>>0;const v=85+(h>>16)%16;
+        return `<td class="num" style="color:${v<90?'var(--warn-tx)':'var(--tx-2)'}">${v}%</td>`;}).join('')}</tr>`;}).join('');
+
+  /* màn 14 — tổng quan theo hệ thống, cột số liệu học từ trục UBCKNN
+     (Throughput / Latency / Số lượng lỗi) */
+  const ov=SYS.filter(s=>s.st==='Đang khai thác').slice(0,10);
+  $('#ovBody').innerHTML=ov.map((s,i)=>{
+    const nf=FLOWS.filter(f=>f[1]===s.name).length||1;
+    const H={'AVES':[62.5,41,'09/09 06:12'],'Weather data':[88.2,12,'09/09 05:30'],
+             'ACARS':[99.6,2,'09/09 15:45'],'SITA TEXT':[99.1,3,'09/09 15:20']};
+    const h=H[s.name]||[[99.8,99.1,100,98.6,99.9,99.4,96.7,99.5][i%8],[0,1,0,3,0,1,6,0][i%8],'09/09 15:4'+(i%10)];
+    const ok=h[0], err=h[1];
+    return `<tr><td><span class="strong">${esc(s.name)}</span></td>
+      <td class="num">${nf}</td><td>${h[2]}</td>
+      <td><div class="cov"><span class="mini"><i class="${ok<90?'e':ok<97?'w':''}" style="width:${ok}%"></i></span><b>${String(ok).replace('.',',')}%</b></div></td>
+      <td class="num">${(1200+i*730).toLocaleString('vi')}</td>
+      <td>${err?`<a href="#" onclick="openModal('mErr');return false"><span class="bdg bdg-err">${err} lỗi</span></a>`:'<span class="bdg bdg-ok">Bình thường</span>'}</td></tr>`;}).join('');
+
+  $('#thrBody').innerHTML=FLOWS.map((f,i)=>`<tr><td class="mid">${i+1}</td>
+    <td><span class="strong">${esc(f[0])}</span></td>
+    <td class="mid"><input class="inp inp-sm" style="width:66px;text-align:center" value="${[3,3,5,3,3,2,3,3,2,3,3,4,4,3][i]}"></td>
+    <td class="mid"><input class="inp inp-sm" style="width:96px;text-align:center" value="${['60 phút','60 phút','30 phút','30 phút','60 phút','30 phút','30 phút','30 phút','26 giờ','26 giờ','60 phút','8 giờ','—','30 phút'][i]}"></td>
+    <td class="mid"><input class="inp inp-sm" style="width:72px;text-align:center" value="5 giây"></td>
+    <td class="wrap" style="max-width:280px">${i<3?'Nhóm cảnh báo luồng lỗi (3 người)':'Đầu mối kỹ thuật của hệ thống nguồn'}</td>
+    <td class="mid"><label class="sw"><input type="checkbox" ${i===12?'':'checked'}><span></span></label></td></tr>`).join('');
+
+  $('#mailBody').innerHTML=MAILS.map((m,i)=>`<tr><td class="mid">${i+1}</td>
+    <td><span class="strong">${esc(m[0])}</span></td>
+    <td class="wrap"><div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${m[1].map(e=>`<span class="chip">${esc(e)}<span class="x">×</span></span>`).join('')}
+      <span class="chip" style="border-style:dashed;cursor:pointer" onclick="toast('Thêm email — dữ liệu mẫu')">
+        <span class="material-symbols-outlined">add</span>Thêm</span></div></td>
+    <td class="mid"><span class="bdg nodot bdg-info">${esc(m[2])}</span></td>
+    <td class="mid"><label class="sw"><input type="checkbox" ${m[3]?'checked':''}><span></span></label></td>
+    <td><div class="acts">
+      <button class="ico-btn" onclick="go('s22')" title="Mẫu nội dung"><span class="material-symbols-outlined">mail</span></button>
+      <button class="ico-btn del" onclick="toast('Xóa loại thông báo — cần xác nhận','err')"><span class="material-symbols-outlined">delete</span></button>
+    </div></td></tr>`).join('');
+
+  $('#tplList').innerHTML=TPLS.map((t,i)=>`<div class="side-item ${i===0?'active':''}" style="margin:0 0 3px"
+      onclick="[...this.parentNode.children].forEach(c=>c.classList.remove('active'));this.classList.add('active')">
+      <span class="material-symbols-outlined">${t[2]?'mark_email_read':'drafts'}</span>
+      <span class="si-label" style="flex:1"><span style="display:block;font-size:12.5px">${esc(t[0])}</span>
+        <span style="font-size:10.5px;opacity:.75" class="mono">${esc(t[1])}</span></span></div>`).join('');
+
+  /* biểu đồ cột — số lần chạy theo giờ */
+  const vals=[38,32,29,26,24,22,26,41,58,63,61,59,64,57,55,60,62,58,52,47,44,40,39,36];
+  $('#barsRun').innerHTML=vals.map((v,i)=>`<div class="b ${[8,16].includes(i)?'e':''}" style="height:${v/64*100}%" title="${i}h: ${v} lần chạy"></div>`).join('');
+  $('#axisRun').innerHTML=vals.map((_,i)=>`<span>${i%4===0?i+'h':''}</span>`).join('');
+}
+
+function openLog(i){
+  const l=LOGS[i]||LOGS[8];
+  $('#drwTitle').textContent=l[1];
+  $('#drwBadge').className='bdg '+LOGST[l[6]][1];
+  $('#drwBadge').textContent=LOGST[l[6]][0];
+  $('#drwSub').textContent=l[2]+' · 09/09/2026 '+l[0].split(' ')[1];
+  $('#drwFields').innerHTML=[
+    ['Luồng',l[2]],['Hệ thống nguồn → đích',l[3]],['Thời điểm bắt đầu','09/09/2026 '+l[0].split(' ')[1]],
+    ['Thời lượng xử lý',l[5]],['Số bản ghi',l[4].toLocaleString('vi')],
+    ['Phương thức','SOAP 1.1'],['Số lần đã thử lại','3 / 3'],
+    ['Mã lỗi',l[6]==='err'?'BACKEND_FAILED':'—'],
+    ['Kích thước bản tin','4.182 byte'],['Địa chỉ nguồn','<aves-host>'],
+    ['Đã gửi cảnh báo',l[6]==='err'?'Có — 3 người nhận':'Không']
+  ].map(([k,v])=>`<div class="row"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
+  openDrawer();
+}
+
+/* ---------- màn 11: hệ thống nhận, tối đa 3 (§6.2 mục 3) ---------- */
+const TGT_MAX=3;
+let targets=[{sys:'TOSS — Kho dữ liệu khai thác',m:'Database'},{sys:'PEP / PET',m:'SFTP'}];
+function renderTargets(){
+  $('#tgtList').innerHTML=targets.map((t,i)=>`
+    <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);padding:14px">
+      <div style="display:flex;align-items:center;margin-bottom:12px">
+        <b style="font-size:13px">Hệ thống nhận ${i+1}</b>
+        <button class="ico-btn del" style="margin-left:auto" onclick="delTarget(${i})" title="Xóa">
+          <span class="material-symbols-outlined">delete</span></button></div>
+      <div class="frow c2">
+        <div class="fld"><label>Hệ thống nhận <span class="req">*</span></label>
+          <select class="inp"><option>${esc(t.sys)}</option><option>OPS++ / NetOps++</option>
+            <option>SITA</option><option>Sabre</option></select></div>
+        <div class="fld"><label>Phương thức <span class="req">*</span></label>
+          <select class="inp"><option>${esc(t.m)}</option><option>SFTP</option><option>REST</option>
+            <option>Database</option></select></div></div>
+    </div>`).join('');
+  $('#tgtCount').textContent=targets.length;
+  const full=targets.length>=TGT_MAX;
+  $('#btnAddTgt').disabled=full;
+  $('#tgtHint').innerHTML=full
+    ? '<b style="color:var(--warn-tx)">Đã đạt giới hạn 3 hệ thống nhận.</b> Giới hạn này lấy theo trục UBCKNN (§6.2 mục 3).'
+    : 'Tối đa <b>3</b> hệ thống nhận cho một luồng.';
+}
+function addTarget(){
+  if(targets.length>=TGT_MAX){toast('Một luồng chỉ được tối đa 3 hệ thống nhận','err');return;}
+  targets.push({sys:'OPS++ / NetOps++',m:'SFTP'});renderTargets();
+}
+function delTarget(i){
+  if(targets.length<=1){toast('Luồng phải có ít nhất một hệ thống nhận','err');return;}
+  targets.splice(i,1);renderTargets();
+}
+function clampRetry(){
+  const el=$('#retryN');let v=parseInt(el.value,10);
+  if(isNaN(v))return;
+  if(v>5){el.value=5;toast('Số lần thử lại tối đa là 5 (§6.2 mục 3)','err');}
+  if(v<0){el.value=0;}
+}
+
+/* ---------- popup đa hình ---------- */
+function openConnModal(){
+  const sel=$('#connSys');
+  if(sel.options.length<2) SYS.forEach(s=>sel.add(new Option(s.name,s.code)));
+  switchConn();openModal('mConn');
+}
+function switchConn(){
+  const t=$('#connType').value;
+  $$('#mConn .cfields').forEach(f=>f.hidden=(f.id!=='cf-'+t));
+  $('#connTypeLbl').textContent='— '+$('#connType').selectedOptions[0].text;
+}
+function openCredModal(){
+  const sel=$('#credSys');
+  if(sel.options.length<2) SYS.forEach(s=>sel.add(new Option(s.name,s.code)));
+  switchCred();openModal('mCred');
+}
+function switchCred(){
+  const t=$('#credType').value;
+  $$('#mCred .cfields').forEach(f=>f.hidden=(f.id!=='cr-'+t));
+}
+
+/* ---------- kiểm tra kết nối (mô phỏng) ---------- */
+function runPing(){
+  const box=$('#pingOut');
+  box.innerHTML='<div class="note"><span class="material-symbols-outlined">sync</span><div>Đang kiểm tra…</div></div>';
+  setTimeout(()=>{
+    box.innerHTML=`<div class="note" style="background:var(--ok-bg);border-color:#ABEFC6;color:var(--ok-tx)">
+      <span class="material-symbols-outlined">check_circle</span>
+      <div><b>Kết nối thành công</b><br>Bắt tay TCP 42 ms · xác thực hợp lệ · liệt kê được thư mục /IN (7 tệp chờ xử lý).<br>
+      <span style="font-size:11px;opacity:.8">Kết quả mô phỏng — bản mockup không gọi hệ thống thật.</span></div></div>`;
+  },900);
+}
+
+/* ---------- đồng hồ ---------- */
+/* gắn chấm số cho mọi vùng có data-pui, theo thứ tự xuất hiện */
+function initAnn(){
+  $$('[data-pui]').forEach((el,i)=>{
+    if(getComputedStyle(el).position==='static')el.style.position='relative';
+    const t=document.createElement('span');
+    t.className='annt';
+    t.innerHTML=`<span class="n">${i+1}</span><span class="full">${esc(el.dataset.pui)}</span>`;
+    el.appendChild(t);
+  });
+}
+function toggleAnn(){
+  const on=document.body.classList.toggle('ann');
+  $('#annLbl').textContent=on?'Ẩn chú thích component':'Hiện chú thích component cho DEV';
+}
+
+function tick(){
+  const d=new Date();
+  $('#clock').textContent=[d.getHours(),d.getMinutes(),d.getSeconds()]
+    .map(n=>String(n).padStart(2,'0')).join(':');
+}
+setInterval(tick,1000);tick();
+
+renderSys();renderAll();renderTargets();initAnn();
+
+/* điều hướng bằng hash: ...html#s11 mở thẳng màn Chi tiết luồng */
+const HASH_MODAL={mSys:openSysModal,mConn:openConnModal,mCred:openCredModal,
+  mContact:()=>openModal('mContact'),mPing:()=>openModal('mPing'),
+  mRerun:()=>openModal('mRerun'),mErr:()=>openModal('mErr'),drwLog:()=>openLog(8)};
+function fromHash(){
+  const id=(location.hash||'').replace('#','');
+  if(CRUMBS[id]){go(id);return;}
+  if(HASH_MODAL[id]){HASH_MODAL[id]();}
+}
+window.addEventListener('hashchange',fromHash);
+fromHash();
+</script>
+</body>
+</html>

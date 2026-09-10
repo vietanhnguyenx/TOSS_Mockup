@@ -1,4 +1,4 @@
-﻿# TOSS — Interactive Mockups
+# TOSS — Interactive Mockups
 
 UI mockups for the **TOSS** (Total Operations Steering System) project, published for review.
 
@@ -11,6 +11,7 @@ UI mockups for the **TOSS** (Total Operations Steering System) project, publishe
 | Taxi Time | Data Maintenance › Airport Master Data | v1.4 | [taxi-time.html](https://vietanhnguyenx.github.io/TOSS_Mockup/taxi-time.html) |
 | System Log | System Admin | v0.1 | [system-log.html](https://vietanhnguyenx.github.io/TOSS_Mockup/system-log.html) |
 | Performance Factor | Operations Analysis | v0.15 | [performance-factor.html](https://vietanhnguyenx.github.io/TOSS_Mockup/performance-factor.html) |
+| Integration Hub | Integration Hub (Trục tích hợp) | v0.1 | [integration-hub.html](https://vietanhnguyenx.github.io/TOSS_Mockup/integration-hub.html) |
 
 ## Performance Factor — what to look at
 
