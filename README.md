@@ -10,7 +10,7 @@ UI mockups for the **TOSS** (Total Operations Steering System) project, publishe
 |---|---|---|---|
 | Taxi Time | Data Maintenance › Airport Master Data | v1.4 | [taxi-time.html](https://vietanhnguyenx.github.io/TOSS_Mockup/taxi-time.html) |
 | System Log | System Admin | v0.1 | [system-log.html](https://vietanhnguyenx.github.io/TOSS_Mockup/system-log.html) |
-| Performance Factor | Operations Analysis | v0.15 | [performance-factor.html](https://vietanhnguyenx.github.io/TOSS_Mockup/performance-factor.html) |
+| Performance Factor | Operations Analysis | v0.21 | [performance-factor.html](https://vietanhnguyenx.github.io/TOSS_Mockup/performance-factor.html) |
 | Integration Hub | Integration Hub (Trục tích hợp) | v0.1 | [integration-hub.html](https://vietanhnguyenx.github.io/TOSS_Mockup/integration-hub.html) |
 
 ## Performance Factor — what to look at
@@ -20,7 +20,7 @@ Three screens reached from the tabs at the top:
 | Tab | What it does |
 |---|---|
 | **PF Messages From AC** | Which aircraft sent performance messages, and how many per flight. Export them to a text file, split by the tool that will process them |
-| **Import Performance Data** | Load the result files produced by the manufacturer tools, review the validation preview, then write the data in |
+| **Import Performance Data** | Pick the source branch — Airbus (PEP), Boeing (PET) or ATR — load its result files, review the flight-level validation preview, then write the data in |
 | **PF Register** | Read the factor per aircraft, chart it over time, and list aircraft above a threshold. Export for OCD compares two months side by side |
 
 Worth knowing while reviewing:
