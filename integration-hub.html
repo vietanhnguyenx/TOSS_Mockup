@@ -69,6 +69,10 @@
   --sh-xl:0 24px 48px -12px rgba(16,24,40,.25);
 }
 *{box-sizing:border-box}
+/* .fld và .frow khai báo display nên thắng quy tắc [hidden] của trình duyệt —
+   phải ép lại, nếu không các khối lẽ ra ẩn (Received through, Reason for stopping)
+   vẫn hiện. */
+[hidden]{display:none!important}
 html,body{margin:0;padding:0}
 body{font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;background:#333;color:var(--tx);
   font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
@@ -296,6 +300,10 @@ td .sub{display:block;font-size:11px;color:var(--tx-mute);font-weight:400;margin
 .sec-h .right{margin-left:auto;display:flex;gap:8px;align-items:center}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+/* Dải nhắc số hàng đang bị ẩn khỏi danh sách (hệ thống đã dừng) */
+.stopbar{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:12.5px;
+  color:var(--tx-3);background:var(--surface-2);border-top:1px solid var(--line)}
+.stopbar .material-symbols-outlined{font-size:17px}
 .note{background:var(--info-bg);border:1px solid #B6E3EE;border-radius:var(--r-md);padding:11px 13px;
   font-size:12px;color:var(--info-tx);line-height:1.55;display:flex;gap:9px;align-items:flex-start}
 .note .material-symbols-outlined{font-size:17px;flex-shrink:0;margin-top:1px}
@@ -418,7 +426,7 @@ body.ann .legend{display:block}
 
 <div class="devbar">
   <span class="material-symbols-outlined" style="font-size:16px">draft</span>
-  <span><b>MOCKUP v0.1</b> — TOSS › Integration Hub (Data Integration Bus) · 22 screens / 7 modules</span>
+  <span><b>MOCKUP v0.1</b> — TOSS › Integration Hub (Data Integration Bus) · 24 screens / 8 modules</span>
   <span class="tag d">32 systems = REAL DATA ("Tích hợp" sheet, rows 4–35)</span>
   <span class="tag">Everything else = sample data</span>
   <span class="tag" style="margin-left:0">Infrastructure addresses masked for the public page</span>
@@ -475,6 +483,10 @@ body.ann .legend{display:block}
       <div class="side-item" data-go="s17"><span class="material-symbols-outlined">lab_profile</span>
         <span class="si-label">Data coverage report</span></div>
 
+      <div class="side-cap">Manual handling</div>
+      <div class="side-item" data-go="s23"><span class="material-symbols-outlined">rule</span>
+        <span class="si-label">Unmatched records</span><span class="pip">37</span></div>
+
       <div class="side-cap">Logs</div>
       <div class="side-item" data-go="s18"><span class="material-symbols-outlined">receipt_long</span>
         <span class="si-label">Integration log</span></div>
@@ -523,16 +535,16 @@ body.ann .legend{display:block}
       <div class="kpis" data-pui="p-card (stat tile row)" data-src="[Figma] stat tile row · [§6.3] three integration statuses">
         <div class="kpi on" data-st="" onclick="pickKpi(this)">
           <div class="k"><span class="material-symbols-outlined">lan</span>Total systems</div>
-          <div class="v">32</div><div class="s">"Tích hợp" sheet, rows 4–35</div></div>
+          <div class="v">32</div><div class="s">Register total, "Tích hợp" sheet rows 4–35</div></div>
+        <div class="kpi warn" data-st="Setting up" onclick="pickKpi(this)">
+          <div class="k"><span class="material-symbols-outlined">build_circle</span>Setting up</div>
+          <div class="v">14</div><div class="s">Being brought into service</div></div>
         <div class="kpi ok" data-st="In service" onclick="pickKpi(this)">
           <div class="k"><span class="material-symbols-outlined">check_circle</span>In service</div>
-          <div class="v">15</div><div class="s">Connection method known</div></div>
-        <div class="kpi warn" data-st="Waiting for message spec" onclick="pickKpi(this)">
-          <div class="k"><span class="material-symbols-outlined">pending</span>Waiting for message spec</div>
-          <div class="v">14</div><div class="s">Not enough to write a parser</div></div>
-        <div class="kpi err" data-st="Integration deferred" onclick="pickKpi(this)">
-          <div class="k"><span class="material-symbols-outlined">pause_circle</span>Integration deferred</div>
-          <div class="v">3</div><div class="s">eTechlog · ANCM · FOEM</div></div>
+          <div class="v">17</div><div class="s">2 of them integrated indirectly</div></div>
+        <div class="kpi err" data-st="Stopped" onclick="pickKpi(this)">
+          <div class="k"><span class="material-symbols-outlined">do_not_disturb_on</span>Stopped</div>
+          <div class="v">1</div><div class="s">Hidden from the list by default</div></div>
       </div>
 
       <div class="panel">
@@ -556,22 +568,22 @@ body.ann .legend{display:block}
             <select class="inp" id="k1" onchange="renderSys()"><option value="">All</option>
               <option>VNA internal</option><option>External partner</option></select></div>
           <div class="fld narrow"><label>Integration status</label>
-            <select class="inp" id="st1" onchange="renderSys()"><option value="">All</option>
-              <option>In service</option><option>Waiting for message spec</option><option>Integration deferred</option></select></div>
-          <div class="fld narrow"><label>Priority</label>
-            <select class="inp" id="p1" onchange="renderSys()"><option value="">All</option>
-              <option value="1.0">1.0 — high</option><option value="2.0">2.0</option>
-              <option value="10.0">10.0 — low</option><option value="—">Unassigned</option></select></div>
+            <select class="inp" id="st1" onchange="renderSys()"><option value="">All (stopped hidden)</option>
+              <option>Setting up</option><option>In service</option><option>Stopped</option></select></div>
+          <div class="fld narrow"><label>Integration mode</label>
+            <select class="inp" id="m1" onchange="renderSys()"><option value="">All</option>
+              <option>Direct</option><option>Indirect</option></select></div>
           <div class="f-actions">
             <button class="btn btn-primary" onclick="renderSys()"><span class="material-symbols-outlined">search</span>Search</button>
             <button class="btn btn-ghost" onclick="resetSys()"><span class="material-symbols-outlined">restart_alt</span>Reset</button>
           </div>
         </div>
 
+        <div class="stopbar" id="stoppedBar" hidden></div>
         <div class="tw" data-pui="IamTable (p-table)" data-src="[Tích hợp sheet rows 4–35] 32 systems — real data">
           <table><thead><tr>
             <th style="width:44px">No.</th><th>System</th><th>Type · Direction</th>
-            <th>Connection method</th><th class="mid">Priority</th>
+            <th>Connection method</th><th>Integration mode</th>
             <th>Integration status</th><th class="num">Flows</th><th>Contact</th>
             <th style="width:86px">Actions</th></tr></thead>
             <tbody id="sysBody"></tbody></table>
@@ -582,11 +594,14 @@ body.ann .legend{display:block}
 
       <div class="note" style="margin-top:14px" data-src="[§6.3] decision of 09/09/2026">
         <span class="material-symbols-outlined">info</span>
-        <div><b>Why the placeholder lives here and not on Data flows:</b> a flow that appears on the
-        Data flows screen and can be switched on but does not run gets written up as a <b>DEFECT</b>,
-        not as "not built yet". A system marked <i>Waiting for message spec</i> is an honest statement of
-        progress — the customer still sees all 32 systems without being promised what does not exist.
-        Values in this column are <b>provisional</b>, settled once the message specs are reviewed.</div>
+        <div><b>Three lifecycle states, not a progress label.</b> A flow that appears on Data flows and
+        can be switched on but does not run gets written up as a <b>DEFECT</b>, not as "not built yet" —
+        so a system stays on <i>Setting up</i> until a parser exists, and only then reaches Data flows.
+        The states keep their meaning after handover: every new integration required by TOSS-064 starts
+        at <i>Setting up</i>.
+        <br><b>Temporary pauses use the on/off switch</b>, not a state. <i>Stopped</i> is reserved for
+        dropping a system for good and requires a reason and a date.
+        <br>Current values are <b>provisional</b>, settled once the message specs are reviewed.</div>
       </div>
     </section>
 
@@ -1145,6 +1160,78 @@ body.ann .legend{display:block}
     </section>
 
     <!-- ================================================================
+         SCREEN 23 — UNMATCHED RECORD QUEUE   (M8 · new)
+         Source: BR-PF-31 agreed 14/09/2026 — measurements whose flight cannot
+         be resolved go to "the unmatched-record monitoring screen on the
+         integration bus (PF tab)", and that screen is specified in the bus
+         document, not in the PF SRS.
+         Built as a SHARED queue rather than a PF-only screen: the same problem
+         appears for ACARS, SITA and cargo messages.
+         NOTE ON USERS — option A: the queue stays on the bus but needs its own
+         permission group. Picking the right flight is work for a performance
+         engineer, not for IT operations.
+         ================================================================ -->
+    <section class="screen" id="s23">
+      <div class="kpis">
+        <div class="kpi err"><div class="k"><span class="material-symbols-outlined">inbox</span>Waiting to be resolved</div>
+          <div class="v">37</div><div class="s">Across all sources</div></div>
+        <div class="kpi warn"><div class="k"><span class="material-symbols-outlined">schedule</span>Older than 48h</div>
+          <div class="v">6</div><div class="s">Oldest: 4 days</div></div>
+        <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">done_all</span>Resolved this week</div>
+          <div class="v">128</div><div class="s">94 assigned · 34 skipped</div></div>
+        <div class="kpi ok"><div class="k"><span class="material-symbols-outlined">percent</span>Auto-match rate</div>
+          <div class="v">97.4%</div><div class="s">7-day average</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f23')">
+            <span class="material-symbols-outlined">filter_list</span>Filters
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-plain" onclick="renderAll()"><span class="material-symbols-outlined">refresh</span>Reload</button>
+            <button class="btn btn-ghost" onclick="toast('Re-running the auto-match on all pending records — sample data')">
+              <span class="material-symbols-outlined">replay</span>Re-run auto-match</button>
+            <button class="btn btn-amber" onclick="toast('Export to Excel — sample data')"><span class="material-symbols-outlined">download</span>Export to Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f23" data-pui="cmm-dynamic-form" data-src="[BR-PF-31] filter by source and reason">
+          <div class="fld narrow"><label>Source</label>
+            <select class="inp"><option>All</option><option>Performance Factor — PEP</option>
+              <option>Performance Factor — PET</option><option>Performance Factor — ATR</option>
+              <option>ACARS</option><option>SITA TEXT</option><option>Cargo Spot</option></select></div>
+          <div class="fld narrow"><label>Reason</label>
+            <select class="inp"><option>All</option><option>No matching flight</option>
+              <option>Multiple matching flights</option><option>Missing airport code</option>
+              <option>Schema mismatch</option></select></div>
+          <div class="fld narrow"><label>From</label><input class="inp" type="date" value="2026-09-14"></div>
+          <div class="fld narrow"><label>To</label><input class="inp" type="date" value="2026-09-21"></div>
+          <div class="fld narrow"><label>Age</label>
+            <select class="inp"><option>All</option><option>Older than 24h</option><option>Older than 48h</option></select></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Search</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Reset</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[BR-PF-31] queue of records that could not be matched · sample data">
+          <table><thead><tr><th style="width:44px">No.</th><th>Received</th><th>Source</th>
+            <th>Record</th><th>Reason</th><th class="num">Candidates</th><th class="num">Age</th>
+            <th>Effect on the factor</th><th style="width:64px">Actions</th></tr></thead>
+            <tbody id="qBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="qBody"></div>
+      </div>
+
+      <div class="note" style="margin-top:14px" data-src="[BR-PF-31] · [BR-PF-27/28/29]">
+        <span class="material-symbols-outlined">info</span>
+        <div><b>Why a shared queue rather than a screen per source.</b> Performance Factor is only one
+        producer of records whose flight cannot be resolved; ACARS, SITA and cargo messages hit the same
+        problem. One queue means one place to look and one set of habits.
+        <br><b>Effect on the factor differs by branch:</b> PEP and PET measurements are counted into the
+        factor straight away, so resolving them here only corrects the attribution. ATR measurements are
+        <b>not counted until matched</b> — once assigned, the period is recalculated.</div>
+      </div>
+    </section>
+
+    <!-- ================================================================
          SCREEN 20 — ALERT THRESHOLDS   (M7 · task #53)  YCKT TOSS-168
          §3 configurable group — users edit these themselves.
          ================================================================ -->
@@ -1292,10 +1379,10 @@ TOSS Data Integration Bus</textarea></div>
           <input class="inp" id="fSysOwner" placeholder="e.g. Vietnam Airlines — IT Department"></div>
         <div class="fld"><label>Direction <span class="req">*</span></label>
           <select class="inp"><option>Inbound</option><option>Outbound</option><option>Both ways</option></select></div>
-        <div class="fld"><label>Priority</label>
-          <select class="inp" id="fSysPrio"><option value="">Unassigned</option>
-            <option>1.0 — high</option><option>2.0</option><option>10.0 — low</option></select>
-          <div class="hint">From the Priority column of the "Tích hợp" sheet.</div></div>
+        <div class="fld"><label>Integration mode <span class="req">*</span></label>
+          <select class="inp" id="fSysMode" onchange="sysModeHint()">
+            <option>Direct</option><option>Indirect</option></select>
+          <div class="hint" id="sysModeHint">The system has its own connection and flow.</div></div>
       </div>
     </div>
 
@@ -1304,12 +1391,22 @@ TOSS Data Integration Bus</textarea></div>
       <div class="frow c2">
         <div class="fld"><label>Integration status <span class="req">*</span></label>
           <select class="inp" id="fSysSt" onchange="sysStHint()">
-            <option>In service</option><option selected>Waiting for message spec</option><option>Integration deferred</option></select>
+            <option selected>Setting up</option><option>In service</option><option>Stopped</option></select>
           <div class="hint" id="sysStHint">Not enough to write a parser — the system shows here but
             <b>does not appear on Data flows</b>.</div></div>
+        <div class="fld" id="fldVia" hidden><label>Received through <span class="req">*</span></label>
+          <select class="inp"><option>AMOS</option><option>FIMS</option><option>MO Plus</option><option>DWH</option></select>
+          <div class="hint">The system that actually carries this data.</div></div>
         <div class="fld"><label>Expected connection method</label>
           <input class="inp" placeholder="e.g. SFTP · REST · Database…">
           <div class="hint">Copy the wording from the "Tích hợp" sheet where there is any.</div></div>
+      </div>
+      <div class="frow c2" id="fldStop" hidden style="margin-top:15px">
+        <div class="fld"><label>Reason for stopping <span class="req">*</span></label>
+          <input class="inp" placeholder="e.g. system never built — VNA deferred integration">
+          <div class="hint">Required. This is the record of who decided and why.</div></div>
+        <div class="fld"><label>Stop date <span class="req">*</span></label>
+          <input class="inp" type="date"></div>
       </div>
       <div class="fld" style="margin-top:15px"><label>Note</label>
         <textarea class="inp" placeholder="e.g. ask An about the method · waiting on CĐS to confirm the outputs…"></textarea></div>
@@ -1621,6 +1718,69 @@ HTTP <span class="m">500</span> Internal Server Error
   </div>
 </div>
 
+<!-- =====================================================================
+     SCREEN 24 — RESOLVE ONE RECORD   (M8 · new)
+     Opened from the queue. Shows the record, the candidate flights with their
+     time gap, and the three things the user can do: assign, skip, send back.
+     Candidate rules come from the PF decisions: PEP narrows by aircraft +
+     flight number + sector (BR-PF-27); PET keys on aircraft + measurement date
+     + flight number (BR-PF-28); sectors are compared by ICAO code, and a record
+     only reaches this queue when the runner-up is less than 6 hours away.
+     ===================================================================== -->
+<div class="drw-ovl" id="rsvOvl" onclick="closeResolve()"></div>
+<div class="drw" id="drwResolve" style="width:620px">
+  <div class="drw-h">
+    <div class="t"><h2 id="rsvTitle">PF-PET · VN-A869 · 17/09/2026</h2>
+      <span class="bdg bdg-warn" id="rsvBadge">Multiple matching flights</span>
+      <button class="x" onclick="closeResolve()"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="st" id="rsvSub">Received 17/09/2026 04:12 · waiting 4 days · Performance Factor — PET</div>
+    <div class="acts">
+      <button class="btn btn-sm btn-ghost" onclick="toast('Record skipped — it stays out of the factor','ok');closeResolve()">
+        <span class="material-symbols-outlined">block</span>Skip</button>
+      <button class="btn btn-sm btn-ghost" onclick="toast('Sent back to the source system for a re-send','ok');closeResolve()">
+        <span class="material-symbols-outlined">undo</span>Send back</button>
+    </div>
+  </div>
+  <div class="drw-b">
+    <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:11px">The record</div>
+    <dl class="dl" id="rsvFields"></dl>
+
+    <div style="margin-top:22px;display:flex;align-items:center;gap:9px">
+      <span style="font-size:13px;font-weight:700;color:var(--tx)">Candidate flights</span>
+      <span style="font-size:11.5px;color:var(--tx-3)">matched on aircraft + measurement date + flight number</span>
+    </div>
+
+    <div class="note warn" style="margin:11px 0 13px">
+      <span class="material-symbols-outlined">help</span>
+      <div>Two flights fit the key. They are <b>2h 05m</b> apart, under the 6-hour window, so the system
+      will not choose on its own.</div>
+    </div>
+
+    <div class="tw" style="border:1px solid var(--line);border-radius:var(--r-md);max-height:none">
+      <table><thead><tr><th style="width:38px"></th><th>Flight</th><th>Sector</th>
+        <th>Departure</th><th class="num">Gap</th></tr></thead>
+        <tbody id="rsvCand"></tbody></table>
+    </div>
+
+    <div class="note" style="margin-top:16px">
+      <span class="material-symbols-outlined">calculate</span>
+      <div><b>This is a PET record, so the factor already counts it.</b> Assigning a flight here only
+      corrects which flight it belongs to. For an ATR record the measurement is held out of the factor
+      until assigned, and the period is recalculated afterwards.</div>
+    </div>
+
+    <div style="margin-top:18px">
+      <label style="font-size:12px;font-weight:600;color:var(--tx-2);display:block;margin-bottom:6px">Note (optional)</label>
+      <textarea class="inp" style="min-height:70px" placeholder="Why this flight was chosen"></textarea>
+    </div>
+  </div>
+  <div style="padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-ghost" onclick="closeResolve()">Close</button>
+    <button class="btn btn-primary" onclick="toast('Flight assigned — recorded against your account','ok');closeResolve()">
+      <span class="material-symbols-outlined">check</span>Assign selected flight</button>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toasts"></div>
 
 <!-- ========================= COMPONENT REFERENCE ========================= -->
@@ -1644,7 +1804,8 @@ HTTP <span class="m">500</span> Internal Server Error
     <tr><td>p-toggleswitch</td><td><span class="mono">p-toggleswitch</span></td><td>Switching flows, connections and alerts</td></tr>
     <tr><td>p-tag</td><td><span class="mono">p-tag</span></td><td>Status and protocol badges</td></tr>
     <tr><td>DialogRegistry (p-dialog)</td><td><span class="mono">p-dialog</span> via DialogRegistry</td><td>8 dialogs: system, contact, connection, connection test, credential, re-run, error detail, flow list</td></tr>
-    <tr><td>p-drawer</td><td><span class="mono">p-drawer</span> (position=right)</td><td>Screen 19 — log record detail</td></tr>
+    <tr><td>IamTable (p-table) + p-radiobutton</td><td><span class="mono">p-table</span> with single-select</td><td>Screen 24 — candidate flight picker</td></tr>
+    <tr><td>p-drawer</td><td><span class="mono">p-drawer</span> (position=right)</td><td>Screen 19 — log record detail · screen 24 — resolve a record</td></tr>
     <tr><td>p-paginator</td><td><span class="mono">p-paginator</span></td><td>Foot of every list table</td></tr>
     <tr><td>p-toast</td><td><span class="mono">p-toast</span></td><td>Action result messages</td></tr>
     <tr><td>p-progressbar (custom)</td><td>Coverage bar — a small <span class="mono">p-progressbar</span></td><td>Screens 15, 16 — ACARS/QAR coverage</td></tr>
@@ -1658,7 +1819,7 @@ HTTP <span class="m">500</span> Internal Server Error
    - SYS: 32 systems — REAL DATA from the "Tích hợp" sheet, rows 4–35.
    - Everything else: sample data used to illustrate the layout.
    =========================================================================== */
-const SYS = [{"r":4,"code":"NETLINE_FLIGHT_OPS","name":"Netline Flight Ops++","kind":"VNA internal","prio":"—","method":"SFTP","ep":"Netline DB: <netline-db>:1521","data":"—","dir":"Inbound","st":"In service","note":"UAT in October"},{"r":5,"code":"DWH_LAKEHOUS_TCT","name":"DWH/Lakehous TCT","kind":"VNA internal","prio":"1.0","method":"Read/write database","ep":"Depends on the source system","data":"AMOS","dir":"Inbound","st":"In service","note":"VNA"},{"r":6,"code":"FLIGHT_SCHEDULING","name":"Flight Scheduling System","kind":"External partner","prio":"—","method":"SFTP (connection and file frequency still unclear)","ep":"File share: <flightsched-sftp>, folder IN — folder mapping still needed","data":"SSIM — seasonal schedule · ASM — SSIM updates for individual flights · SSM — bulk update over a longer period","dir":"Inbound","st":"Waiting for message spec","note":"VNA"},{"r":7,"code":"AVES","name":"AVES","kind":"VNA internal","prio":"1.0","method":"SOAP API","ep":"http://<aves-host>:8080","data":"Pilot, cabin crew and roster data","dir":"Inbound","st":"In service","note":"Ask Skytrack (Thắng, Vinh)"},{"r":8,"code":"CREW_TRIP","name":"Crew Trip","kind":"External partner","prio":"10.0","method":"No method yet — in discussion with CĐS","ep":"No method yet — in discussion with CĐS","data":"Hotel costs, crew transport costs, actual crew hotel usage","dir":"Inbound","st":"Waiting for message spec","note":"—"},{"r":9,"code":"MO_PLUS","name":"MO Plus","kind":"VNA internal","prio":"1.0","method":"API (business scope to be clarified)","ep":"—","data":"OFP/eOFP, flight release, document confirmation, Library documents, Lido Flight 4D / Adapter Lido","dir":"Inbound","st":"In service","note":"Write the spec and build the MO-TOSS sync: parsing, confirm/reject/submit eCFP, UAT approach"},{"r":10,"code":"MRO_AMOS","name":"MRO/ AMOS","kind":"External partner","prio":"—","method":"Waiting for CĐS to confirm","ep":"AMOS DB: <amos-db>:1521","data":"Aircraft maintenance schedule, MEL/CDL, techlog fuel and time","dir":"Inbound","st":"Waiting for message spec","note":"—"},{"r":11,"code":"ETECHLOG","name":"eTechlog","kind":"VNA internal","prio":"—","method":"Data lands in AMOS","ep":"—","data":"Flight log, defect log, maintenance, aircraft technical data, maintenance deadlines","dir":"Inbound","st":"Integration deferred","note":"VNA"},{"r":12,"code":"AMADEUS_PSS_1A","name":"Amadeus PSS (1A):","kind":"External partner","prio":"—","method":"DWH","ep":"<dwh-host> to <dwh-host>, port 1521","data":"Passenger lists and counts, aircraft configuration, seats released for sale, connecting passengers, VIP and CIP","dir":"Inbound","st":"In service","note":"Request a connection; if refused, ask for the structure and sample data, then confirm the source with MO"},{"r":13,"code":"LIDO_FLIGHT_4D_ADA","name":"Lido Flight 4D/ Adapter Lido","kind":"External partner","prio":"1.0","method":"Via MO Plus","ep":"Via MO Plus","data":"Flight plans, NOTAM, filed weather, ATC messages and changes","dir":"Inbound","st":"In service","note":"Handled directly with MO"},{"r":14,"code":"HE_THONG_VMS_CUA_V","name":"VIAGS VMS","kind":"External partner","prio":"1.0","method":"Same as MO Plus","ep":"Same as MO Plus","data":"Airport ground operations data","dir":"Inbound","st":"In service","note":"Handled directly with MO"},{"r":15,"code":"FM_LOTUS_AIRPORT_P","name":"FM, Lotus Airport, PTS","kind":"External partner","prio":"—","method":"Ask An","ep":"Ask An","data":"(Ground handling information systems)","dir":"Inbound","st":"Waiting for message spec","note":"—"},{"r":16,"code":"ACDM","name":"ACDM","kind":"External partner","prio":"—","method":"No information yet — An to supply","ep":"No information yet — An to supply","data":"Milestone times, position, flight status, ground and air traffic coordination, airport capacity","dir":"Inbound","st":"Waiting for message spec","note":"Web crawler"},{"r":17,"code":"ANCM","name":"ANCM","kind":"VNA internal","prio":"—","method":"No method yet — FIMS used instead","ep":"FIMS connection, same as MO Plus","data":"Air navigation, overflight and landing charges, fuel invoices, fuel prices · uploads scanned fuel slips","dir":"Both ways","st":"Integration deferred","note":"—"},{"r":18,"code":"CARGO_SPOT","name":"Cargo Spot","kind":"External partner","prio":"1.0","method":"Ask An","ep":"Ask An","data":"Cargo data per flight (used to compare latency and accuracy against what CLC supplies)","dir":"Inbound","st":"Waiting for message spec","note":"Ask about the adapter"},{"r":19,"code":"DCS","name":"DCS","kind":"External partner","prio":"—","method":"No information yet","ep":"—","data":"Passenger handling data","dir":"Inbound","st":"Waiting for message spec","note":"VNA"},{"r":20,"code":"FLIGHT_RADAR24","name":"Flight Radar24","kind":"External partner","prio":"2.0","method":"Under assessment by VTIT","ep":"—","data":"Aircraft position and track","dir":"Inbound","st":"Waiting for message spec","note":"Research from public documentation"},{"r":21,"code":"NETZERO","name":"NetZero","kind":"External partner","prio":"10.0","method":"Push data to NetZero (system being rolled out) · none yet, still under construction","ep":"—","data":"Planned fuel, ACARS","dir":"Both ways","st":"Waiting for message spec","note":"—"},{"r":22,"code":"CIRIUM","name":"Cirium","kind":"External partner","prio":"10.0","method":"Ask An","ep":"—","data":"Legacy MVT plus supplemental; needs review and upgrade to raise the data rate · ASM from Netline / Ops++, MVT","dir":"Both ways","st":"Waiting for message spec","note":"—"},{"r":23,"code":"SPECTRA","name":"SPECTRA","kind":"External partner","prio":"10.0","method":"Lê to agree the outputs with CĐS","ep":"—","data":"To be defined by CĐS","dir":"Outbound","st":"Waiting for message spec","note":"—"},{"r":24,"code":"ETS_QUAN_LY_KHI_TH","name":"ETS — Emissions Management","kind":"External partner","prio":"10.0","method":"Lê to agree the outputs with CĐS","ep":"—","data":"ACARS","dir":"Outbound","st":"Waiting for message spec","note":"—"},{"r":25,"code":"QUAN_LY_HOP_DONG_C","name":"Contract Management (CMS)","kind":"External partner","prio":"10.0","method":"Lê to agree the outputs with CĐS","ep":"—","data":"To be defined by CĐS","dir":"Outbound","st":"Waiting for message spec","note":"—"},{"r":26,"code":"LMS","name":"LMS","kind":"External partner","prio":"10.0","method":"No method yet, in discussion with CĐS · Lê to agree the outputs with CĐS","ep":"—","data":"To be defined by CĐS — inflight supplies and materials · flight schedule","dir":"Both ways","st":"Waiting for message spec","note":"—"},{"r":27,"code":"ACARS","name":"ACARS","kind":"External partner","prio":"1.0","method":"SFTP, Mail","ep":"VTIT to set up SFTP and provide an IP to push data to","data":"MVA, ACARS message catalogue","dir":"Inbound","st":"In service","note":"VNA"},{"r":28,"code":"SITA_TEXT","name":"SITA TEXT","kind":"External partner","prio":"1.0","method":"SFTP, Mail","ep":"Ask An","data":"UCM, ASM","dir":"Inbound","st":"In service","note":"VNA"},{"r":29,"code":"CASSIOPEE_ALPHA","name":"Cassiopee Alpha","kind":"External partner","prio":"—","method":"API","ep":"https://<cassiopee-host>/swagger/index.html (credentials sent separately)","data":"Analysed QAR","dir":"Inbound","st":"In service","note":"—"},{"r":30,"code":"NOTAM_WX_VATM","name":"NOTAM, WX VATM","kind":"External partner","prio":"—","method":"Email","ep":"Mail server: <smtp-vna>:587","data":"—","dir":"Inbound","st":"In service","note":"—"},{"r":31,"code":"WEATHER_DATA","name":"Weather data","kind":"External partner","prio":"1.0","method":"Website","ep":"METAR/TAF for domestic airports: https://mwomet.vatm.vn/ and http://<wx-backup-host>/","data":"TAF every 6 hours, METAR every 30 minutes","dir":"Inbound","st":"In service","note":"Research the website"},{"r":32,"code":"MIGRATE_FIMS","name":"Migrate FIMS","kind":"VNA internal","prio":"—","method":"DB FIMS: <fims-db>:1521 FIMS API: https://<fims-api>:9998","ep":"—","data":"Flight schedule and flight plan database, plus flight-related data already integrated in FIMS","dir":"Inbound","st":"In service","note":"Same as MO Plus"},{"r":33,"code":"AD_LDAP","name":"AD/LDAP","kind":"VNA internal","prio":"—","method":"Same as MO Plus","ep":"—","data":"—","dir":"Inbound","st":"In service","note":"Same as MO Plus"},{"r":34,"code":"FOEM_FLIGHT_OPS_EN","name":"FOEM (Flight Ops Engineering)","kind":"VNA internal","prio":"—","method":"(none)","ep":"—","data":"DOW table. Until FOEM is ready, a fixed DOW file is used, as the current adapter does","dir":"Inbound","st":"Integration deferred","note":"Not built yet — integration deferred"},{"r":35,"code":"HT_THU_PHI_DAM_BAO","name":"Aviation Security Fee System (ANHK)","kind":"External partner","prio":"—","method":"API","ep":"Base URL: https://<anhk-host> · prefix /api","data":"Loadsheet / Manifest / LDM","dir":"Outbound","st":"In service","note":"—"}];
+const SYS = [{"r":4,"code":"NETLINE_FLIGHT_OPS","name":"Netline Flight Ops++","kind":"VNA internal","method":"SFTP","ep":"Netline DB: <netline-db>:1521","data":"—","dir":"Inbound","st":"In service","note":"UAT in October","mode":"Direct","reason":""},{"r":5,"code":"DWH_LAKEHOUS_TCT","name":"DWH/Lakehous TCT","kind":"VNA internal","method":"Read/write database","ep":"Depends on the source system","data":"AMOS","dir":"Inbound","st":"In service","note":"VNA","mode":"Direct","reason":""},{"r":6,"code":"FLIGHT_SCHEDULING","name":"Flight Scheduling System","kind":"External partner","method":"SFTP (connection and file frequency still unclear)","ep":"File share: <flightsched-sftp>, folder IN — folder mapping still needed","data":"SSIM — seasonal schedule · ASM — SSIM updates for individual flights · SSM — bulk update over a longer period","dir":"Inbound","st":"Setting up","note":"VNA","mode":"Direct","reason":"Đã rõ SFTP nhưng chưa rõ kết nối và tần suất ra file"},{"r":7,"code":"AVES","name":"AVES","kind":"VNA internal","method":"SOAP API","ep":"http://<aves-host>:8080","data":"Pilot, cabin crew and roster data","dir":"Inbound","st":"In service","note":"Ask Skytrack (Thắng, Vinh)","mode":"Direct","reason":""},{"r":8,"code":"CREW_TRIP","name":"Crew Trip","kind":"External partner","method":"No method yet — in discussion with CĐS","ep":"No method yet — in discussion with CĐS","data":"Hotel costs, crew transport costs, actual crew hotel usage","dir":"Inbound","st":"Setting up","note":"—","mode":"Direct","reason":"Chưa có phương thức — đang làm việc với CĐS"},{"r":9,"code":"MO_PLUS","name":"MO Plus","kind":"VNA internal","method":"API (business scope to be clarified)","ep":"—","data":"OFP/eOFP, flight release, document confirmation, Library documents, Lido Flight 4D / Adapter Lido","dir":"Inbound","st":"In service","note":"Write the spec and build the MO-TOSS sync: parsing, confirm/reject/submit eCFP, UAT approach","mode":"Direct","reason":""},{"r":10,"code":"MRO_AMOS","name":"MRO/ AMOS","kind":"External partner","method":"Waiting for CĐS to confirm","ep":"AMOS DB: <amos-db>:1521","data":"Aircraft maintenance schedule, MEL/CDL, techlog fuel and time","dir":"Inbound","st":"Setting up","note":"—","mode":"Direct","reason":"Chờ CĐS xác nhận phương thức"},{"r":11,"code":"ETECHLOG","name":"eTechlog","kind":"VNA internal","method":"Data lands in AMOS","ep":"—","data":"Flight log, defect log, maintenance, aircraft technical data, maintenance deadlines","dir":"Inbound","st":"In service","note":"VNA","mode":"Indirect","via":"AMOS","reason":""},{"r":12,"code":"AMADEUS_PSS_1A","name":"Amadeus PSS (1A):","kind":"External partner","method":"DWH","ep":"<dwh-host> to <dwh-host>, port 1521","data":"Passenger lists and counts, aircraft configuration, seats released for sale, connecting passengers, VIP and CIP","dir":"Inbound","st":"In service","note":"Request a connection; if refused, ask for the structure and sample data, then confirm the source with MO","mode":"Direct","reason":""},{"r":13,"code":"LIDO_FLIGHT_4D_ADA","name":"Lido Flight 4D/ Adapter Lido","kind":"External partner","method":"Via MO Plus","ep":"Via MO Plus","data":"Flight plans, NOTAM, filed weather, ATC messages and changes","dir":"Inbound","st":"In service","note":"Handled directly with MO","mode":"Direct","reason":""},{"r":14,"code":"HE_THONG_VMS_CUA_V","name":"VIAGS VMS","kind":"External partner","method":"Same as MO Plus","ep":"Same as MO Plus","data":"Airport ground operations data","dir":"Inbound","st":"In service","note":"Handled directly with MO","mode":"Direct","reason":""},{"r":15,"code":"FM_LOTUS_AIRPORT_P","name":"FM, Lotus Airport, PTS","kind":"External partner","method":"Ask An","ep":"Ask An","data":"(Ground handling information systems)","dir":"Inbound","st":"Setting up","note":"—","mode":"Direct","reason":"Chưa có thông tin — chờ đầu mối VNA"},{"r":16,"code":"ACDM","name":"ACDM","kind":"External partner","method":"No information yet — An to supply","ep":"No information yet — An to supply","data":"Milestone times, position, flight status, ground and air traffic coordination, airport capacity","dir":"Inbound","st":"Setting up","note":"Web crawler","mode":"Direct","reason":"Chưa có thông tin — chờ đầu mối VNA"},{"r":17,"code":"ANCM","name":"ANCM","kind":"VNA internal","method":"No method yet — FIMS used instead","ep":"FIMS connection, same as MO Plus","data":"Air navigation, overflight and landing charges, fuel invoices, fuel prices · uploads scanned fuel slips","dir":"Both ways","st":"In service","note":"—","mode":"Indirect","via":"FIMS","reason":""},{"r":18,"code":"CARGO_SPOT","name":"Cargo Spot","kind":"External partner","method":"Ask An","ep":"Ask An","data":"Cargo data per flight (used to compare latency and accuracy against what CLC supplies)","dir":"Inbound","st":"Setting up","note":"Ask about the adapter","mode":"Direct","reason":"Ưu tiên cao nhưng chưa rõ phương thức — cần làm rõ gấp"},{"r":19,"code":"DCS","name":"DCS","kind":"External partner","method":"No information yet","ep":"—","data":"Passenger handling data","dir":"Inbound","st":"Setting up","note":"VNA","mode":"Direct","reason":"Chưa có thông tin"},{"r":20,"code":"FLIGHT_RADAR24","name":"Flight Radar24","kind":"External partner","method":"Under assessment by VTIT","ep":"—","data":"Aircraft position and track","dir":"Inbound","st":"Setting up","note":"Research from public documentation","mode":"Direct","reason":"Đang được VTIT đánh giá"},{"r":21,"code":"NETZERO","name":"NetZero","kind":"External partner","method":"Push data to NetZero (system being rolled out) · none yet, still under construction","ep":"—","data":"Planned fuel, ACARS","dir":"Both ways","st":"Setting up","note":"—","mode":"Direct","reason":"Hệ thống đích đang xây dựng"},{"r":22,"code":"CIRIUM","name":"Cirium","kind":"External partner","method":"Ask An","ep":"—","data":"Legacy MVT plus supplemental; needs review and upgrade to raise the data rate · ASM from Netline / Ops++, MVT","dir":"Both ways","st":"Setting up","note":"—","mode":"Direct","reason":"Chưa có thông tin — chờ đầu mối VNA"},{"r":23,"code":"SPECTRA","name":"SPECTRA","kind":"External partner","method":"Lê to agree the outputs with CĐS","ep":"—","data":"To be defined by CĐS","dir":"Outbound","st":"Setting up","note":"—","mode":"Direct","reason":"Chờ CĐS chốt các đầu ra"},{"r":24,"code":"ETS_QUAN_LY_KHI_TH","name":"ETS — Emissions Management","kind":"External partner","method":"Lê to agree the outputs with CĐS","ep":"—","data":"ACARS","dir":"Outbound","st":"Setting up","note":"—","mode":"Direct","reason":"Chờ CĐS chốt các đầu ra"},{"r":25,"code":"QUAN_LY_HOP_DONG_C","name":"Contract Management (CMS)","kind":"External partner","method":"Lê to agree the outputs with CĐS","ep":"—","data":"To be defined by CĐS","dir":"Outbound","st":"Setting up","note":"—","mode":"Direct","reason":"Chờ CĐS chốt các đầu ra"},{"r":26,"code":"LMS","name":"LMS","kind":"External partner","method":"No method yet, in discussion with CĐS · Lê to agree the outputs with CĐS","ep":"—","data":"To be defined by CĐS — inflight supplies and materials · flight schedule","dir":"Both ways","st":"Setting up","note":"—","mode":"Direct","reason":"Chưa có phương thức — chờ CĐS chốt các đầu ra"},{"r":27,"code":"ACARS","name":"ACARS","kind":"External partner","method":"SFTP, Mail","ep":"VTIT to set up SFTP and provide an IP to push data to","data":"MVA, ACARS message catalogue","dir":"Inbound","st":"In service","note":"VNA","mode":"Direct","reason":""},{"r":28,"code":"SITA_TEXT","name":"SITA TEXT","kind":"External partner","method":"SFTP, Mail","ep":"Ask An","data":"UCM, ASM","dir":"Inbound","st":"In service","note":"VNA","mode":"Direct","reason":""},{"r":29,"code":"CASSIOPEE_ALPHA","name":"Cassiopee Alpha","kind":"External partner","method":"API","ep":"https://<cassiopee-host>/swagger/index.html (credentials sent separately)","data":"Analysed QAR","dir":"Inbound","st":"In service","note":"—","mode":"Direct","reason":""},{"r":30,"code":"NOTAM_WX_VATM","name":"NOTAM, WX VATM","kind":"External partner","method":"Email","ep":"Mail server: <smtp-vna>:587","data":"—","dir":"Inbound","st":"In service","note":"—","mode":"Direct","reason":""},{"r":31,"code":"WEATHER_DATA","name":"Weather data","kind":"External partner","method":"Website","ep":"METAR/TAF for domestic airports: https://mwomet.vatm.vn/ and http://<wx-backup-host>/","data":"TAF every 6 hours, METAR every 30 minutes","dir":"Inbound","st":"In service","note":"Research the website","mode":"Direct","reason":""},{"r":32,"code":"MIGRATE_FIMS","name":"Migrate FIMS","kind":"VNA internal","method":"DB FIMS: <fims-db>:1521 FIMS API: https://<fims-api>:9998","ep":"—","data":"Flight schedule and flight plan database, plus flight-related data already integrated in FIMS","dir":"Inbound","st":"In service","note":"Same as MO Plus","mode":"Direct","reason":""},{"r":33,"code":"AD_LDAP","name":"AD/LDAP","kind":"VNA internal","method":"Same as MO Plus","ep":"—","data":"—","dir":"Inbound","st":"In service","note":"Same as MO Plus","mode":"Direct","reason":""},{"r":34,"code":"FOEM_FLIGHT_OPS_EN","name":"FOEM (Flight Ops Engineering)","kind":"VNA internal","method":"(none)","ep":"—","data":"DOW table. Until FOEM is ready, a fixed DOW file is used, as the current adapter does","dir":"Inbound","st":"Stopped","note":"Not built yet — integration deferred","reason":"VNA chưa xây dựng hệ thống — hoãn tích hợp (ghi tại ô Note, sheet \"Tích hợp\" dòng 34)","stopDate":"2026-08-15","mode":"Direct"},{"r":35,"code":"HT_THU_PHI_DAM_BAO","name":"Aviation Security Fee System (ANHK)","kind":"External partner","method":"API","ep":"Base URL: https://<anhk-host> · prefix /api","data":"Loadsheet / Manifest / LDM","dir":"Outbound","st":"In service","note":"—","mode":"Direct","reason":""}];
 
 /* badge colour per protocol — borrowed from the UBCKNN bus, one colour each */
 const PROTO = {
@@ -1729,7 +1890,7 @@ function methodOf(x){
   return f?{proto:f[0],text:f[1],fake:true,src:x.method}
           :{proto:protoOf(x.method),text:'',fake:false,src:x.method};
 }
-const stCls = s => s==='In service' ? 'bdg-ok' : s==='Integration deferred' ? 'bdg-mute' : 'bdg-warn';
+const stCls = s => s==='In service' ? 'bdg-ok' : s==='Stopped' ? 'bdg-err' : 'bdg-warn';
 
 const CONTACTS=[
  ['Nguyễn Văn An','VNA — IT Department','an.nv@vietnamairlines.com','0912 345 678','Cargo Spot, ACDM, FM/Lotus/PTS',1],
@@ -1843,7 +2004,7 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const CRUMBS={s1:'Integration systems',s3:'Technical contacts',s5:'Connections',s8:'Credentials',
  s10:'Data flows',s11:'Flow detail',s12:'Run history',s14:'Integration overview',
  s15:'ACARS coverage',s16:'QAR coverage',s17:'Data coverage report',s18:'Integration log',
- s20:'Alert thresholds',s21:'Alert recipients',s22:'Email templates'};
+ s23:'Unmatched records',s20:'Alert thresholds',s21:'Alert recipients',s22:'Email templates'};
 
 function go(id){
   $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
@@ -1862,7 +2023,7 @@ function openDrawer(){$('#drwOvl').classList.add('open');$('#drwLog').classList.
 function closeDrawer(){$('#drwOvl').classList.remove('open');$('#drwLog').classList.remove('open')}
 $$('.ovl').forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove('open')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){
-  $$('.ovl.open').forEach(o=>o.classList.remove('open'));closeDrawer();}});
+  $$('.ovl.open').forEach(o=>o.classList.remove('open'));closeDrawer();closeResolve();}});
 
 function toast(msg,kind){
   const ico={ok:'check_circle',err:'error'}[kind]||'info';
@@ -1932,13 +2093,46 @@ function drawPager(key){
 }
 function redraw(){ renderSys(); renderAll(); }
 
+/* hàng đợi bản ghi chưa ghép được chuyến — nguồn, khoá bản ghi, lý do, số ứng viên */
+const QUEUE=[
+ ['17/09 04:12','Performance Factor — PET','VN-A869 · 17/09 · VN255','Multiple matching flights',2,'4 days','Already counted'],
+ ['18/09 02:40','Performance Factor — ATR','VN-B218 · 18/09 · VN1546','No matching flight',0,'3 days','Held out'],
+ ['19/09 23:05','ACARS','VN-A351 · MVT · SGN-HAN','Missing airport code',3,'2 days','—'],
+ ['20/09 06:18','Performance Factor — PEP','VN-A787 · 20/09 · VN31','Multiple matching flights',2,'1 day','Already counted'],
+ ['20/09 11:47','SITA TEXT','UCM · VN660 · 20/09','Schema mismatch',0,'1 day','—'],
+ ['20/09 14:02','Cargo Spot','AWB 738-4471 · VN417','No matching flight',0,'1 day','—'],
+ ['21/09 01:30','Performance Factor — ATR','VN-B219 · 21/09 · VN1823','No matching flight',0,'14 hours','Held out'],
+ ['21/09 03:55','ACARS','VN-A322 · OUT fuel · 21/09','Multiple matching flights',2,'12 hours','—'],
+ ['21/09 05:10','Performance Factor — PET','VN-A350 · 21/09 · VN11','No matching flight',0,'10 hours','Already counted'],
+ ['21/09 07:22','Cargo Spot','AWB 738-5012 · VN233','Missing airport code',1,'8 hours','—']];
+const QST={'No matching flight':'bdg-err','Multiple matching flights':'bdg-warn',
+ 'Missing airport code':'bdg-warn','Schema mismatch':'bdg-err'};
+
+/* ứng viên chuyến bay của bản ghi đang mở */
+const CAND=[
+ ['VN255','VIDP → VVNB','17/09/2026 02:05','+0h 12m',1],
+ ['VN255','VIDP → VVNB','17/09/2026 04:10','−2h 05m',0]];
+
 /* =========================== SCREEN 1 — SYSTEMS =========================== */
 function renderSys(){
   const q=($('#q1').value||'').toLowerCase().trim();
-  const k=$('#k1').value, st=$('#st1').value, p=$('#p1').value;
+  const k=$('#k1').value, st=$('#st1').value, md=$('#m1').value;
+  /* Không chọn trạng thái = xem danh sách đang theo dõi → ẩn hàng đã dừng.
+     Số đếm vẫn nằm trên thẻ Stopped, bấm thẻ là hiện ra. */
   const rows=SYS.filter(x=>
     (!q||x.code.toLowerCase().includes(q)||x.name.toLowerCase().includes(q)) &&
-    (!k||x.kind===k) && (!st||x.st===st) && (!p||x.prio===p));
+    (!k||x.kind===k) && (!md||x.mode===md) &&
+    (st ? x.st===st : x.st!=='Stopped'));
+  const hidden=st?0:SYS.filter(x=>x.st==='Stopped').length;
+  const bar=$('#stoppedBar');
+  if(bar){
+    bar.hidden = hidden===0;
+    bar.innerHTML = hidden
+      ? `<span class="material-symbols-outlined">visibility_off</span>
+         ${hidden} stopped system${hidden>1?'s':''} hidden from this list
+         <button class="btn btn-sm btn-ghost" style="margin-left:auto"
+           onclick="$('#st1').value='Stopped';renderSys()">Show</button>` : '';
+  }
   /* the pager shows the total now */
   $('#sysBody').innerHTML=rows.length?pg('sysBody',rows,'systems').map((x,i)=>{
     const M=methodOf(x), pr=M.proto;
@@ -1952,8 +2146,12 @@ function renderSys(){
         M.fake
           ? `<span class="bdg nodot bdg-warn" style="margin-left:6px" title="Original YCKT wording: ${esc(M.src)}">assumed</span><span class="sub">${esc(M.text)}</span>`
           : extraMethod(x.method,pr)}</td>
-      <td class="mid">${x.prio==='—'?'<span style="color:var(--tx-mute)">—</span>':`<span class="bdg nodot ${x.prio==='1.0'?'bdg-err':x.prio==='2.0'?'bdg-warn':'bdg-mute'}">${esc(x.prio)}</span>`}</td>
-      <td><span class="bdg ${stCls(x.st)}">${esc(x.st)}</span></td>
+      <td>${x.mode==='Indirect'
+            ? `<span class="bdg nodot bdg-info">Indirect</span><span class="sub">via ${esc(x.via||'')} — no flow of its own</span>`
+            : '<span class="bdg nodot bdg-mute">Direct</span>'}</td>
+      <td><span class="bdg ${stCls(x.st)}"${x.reason?` title="${esc(x.reason)}"`:''}>${esc(x.st)}</span>${
+            x.st==='Stopped'&&x.stopDate?`<span class="sub">since ${esc(x.stopDate)}</span>`:
+            x.reason?`<span class="sub">${esc(x.reason)}</span>`:''}</td>
       <td class="num">${nf?`<a href="#" onclick="showFlows('${esc(x.name)}');return false" style="color:var(--teal);font-weight:600">${nf}</a>`:'<span style="color:var(--tx-mute)">0</span>'}</td>
       <td>${i%3===0?'Nguyễn Văn An':i%3===1?'Phạm Thanh Tùng':'Lê Minh Đức'}</td>
       <td><div class="acts">
@@ -1963,7 +2161,7 @@ function renderSys(){
       </div></td></tr>`;}).join('')
     :`<tr><td colspan="9" style="text-align:center;padding:34px;color:var(--tx-mute)">No data</td></tr>`;
 }
-function resetSys(){$('#q1').value='';$('#k1').value='';$('#st1').value='';$('#p1').value='';
+function resetSys(){$('#q1').value='';$('#k1').value='';$('#st1').value='';$('#m1').value='';
   $$('.kpi[data-st]').forEach(e=>e.classList.remove('on'));
   document.querySelector('.kpi[data-st=""]').classList.add('on');renderSys();}
 function pickKpi(el){
@@ -1984,17 +2182,26 @@ function openSysModal(code){
   const x=code?SYS.find(s=>s.code===code):null;
   $('#mSysTitle').textContent=x?'Edit integration system':'Add integration system';
   $('#fSysCode').value=x?x.code:''; $('#fSysName').value=x?x.name:'';
-  $('#fSysKind').value=x?x.kind:''; $('#fSysSt').value=x?x.st:'Waiting for message spec';
+  $('#fSysKind').value=x?x.kind:''; $('#fSysSt').value=x?x.st:'Setting up';
+  $('#fSysMode').value=x?(x.mode||'Direct'):'Direct';
   $('#fSysOwner').value=x?(x.kind==='VNA internal'?'Vietnam Airlines':''):'';
-  sysStHint(); openModal('mSys');
+  sysStHint(); sysModeHint(); openModal('mSys');
 }
 function sysStHint(){
   const v=$('#fSysSt').value;
+  $('#fldStop').hidden = v!=='Stopped';
   $('#sysStHint').innerHTML = v==='In service'
-    ? 'A parser exists — the system <b>appears on Data flows</b>.'
-    : v==='Integration deferred'
-    ? 'The "Tích hợp" sheet records this as deferred, superseded or merged into another system.'
-    : 'Not enough to write a parser — the system shows here but <b>does not appear on Data flows</b>.';
+    ? 'Data is arriving — the system <b>appears on Data flows</b>.'
+    : v==='Stopped'
+    ? 'No longer used. Needs a reason and a date; the row is <b>hidden from the default list</b> and cannot be picked as a target for new flows.'
+    : 'Being brought into service. Shows here but <b>not on Data flows</b> until a parser exists.';
+}
+function sysModeHint(){
+  const v=$('#fSysMode').value;
+  $('#fldVia').hidden = v!=='Indirect';
+  $('#sysModeHint').innerHTML = v==='Indirect'
+    ? "No connection or flow of its own — the data arrives inside another system's flow."
+    : 'The system has its own connection and flow.';
 }
 function saveSys(){closeModal('mSys');toast('Integration system saved','ok');}
 
@@ -2131,6 +2338,19 @@ function renderAll(){
       <span class="si-label" style="flex:1"><span style="display:block;font-size:12.5px">${esc(t[0])}</span>
         <span style="font-size:10.5px;opacity:.75" class="mono">${esc(t[1])}</span></span></div>`).join('');
 
+  $('#qBody').innerHTML=pg('qBody',QUEUE,'records').map((r,i)=>`<tr>
+    <td class="mid">${_ofs+i+1}</td><td>${esc(r[0])}</td>
+    <td><span class="bdg nodot ${r[1].startsWith('Performance')?'bdg-info':'bdg-mute'}">${esc(r[1])}</span></td>
+    <td class="mono">${esc(r[2])}</td>
+    <td><span class="bdg ${QST[r[3]]||'bdg-mute'}">${esc(r[3])}</span></td>
+    <td class="num">${r[4]?`<span class="strong">${r[4]}</span>`:'<span style="color:var(--tx-mute)">0</span>'}</td>
+    <td class="num">${esc(r[5])}</td>
+    <td>${r[6]==='Held out'?'<span class="bdg bdg-warn">Held out of the factor</span>'
+        :r[6]==='Already counted'?'<span class="bdg bdg-ok">Already counted</span>'
+        :'<span style="color:var(--tx-mute)">—</span>'}</td>
+    <td><button class="ico-btn" title="Resolve" onclick="openResolve(${_ofs+i})">
+      <span class="material-symbols-outlined">edit_note</span></button></td></tr>`).join('');
+
   /* bar chart — runs by hour */
   const vals=[38,32,29,26,24,22,26,41,58,63,61,59,64,57,55,60,62,58,52,47,44,40,39,36];
   $('#barsRun').innerHTML=vals.map((v,i)=>`<div class="b ${[8,16].includes(i)?'e':''}" style="height:${v/64*100}%" title="${i}h: ${v} runs"></div>`).join('');
@@ -2153,6 +2373,34 @@ function openLog(i){
   ].map(([k,v])=>`<div class="row"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
   openDrawer();
 }
+
+/* ---------- màn 24: xử lý một bản ghi trong hàng đợi ---------- */
+function openResolve(i){
+  const r=QUEUE[i]||QUEUE[0];
+  $('#rsvTitle').textContent=r[1].replace('Performance Factor — ','PF-')+' · '+r[2].split(' · ')[0]
+    +' · '+r[2].split(' · ')[1];
+  $('#rsvBadge').className='bdg '+(QST[r[3]]||'bdg-mute');
+  $('#rsvBadge').textContent=r[3];
+  $('#rsvSub').textContent=`Received ${r[0]} · waiting ${r[5]} · ${r[1]}`;
+  $('#rsvFields').innerHTML=[
+    ['Source',r[1]],['Record key',r[2]],['Reason',r[3]],
+    ['Matching rule', r[1].includes('PEP')?'Nearest midpoint, narrowed by aircraft + flight number + sector (BR-PF-27)'
+      : r[1].includes('PET')?'Aircraft + measurement date + flight number (BR-PF-28)'
+      : r[1].includes('ATR')?'Flight known, aircraft resolved backwards (BR-PF-29)'
+      : 'Aircraft + timestamp + sector'],
+    ['Candidates found',String(r[4])],
+    ['Effect on the factor', r[6]==='Held out'
+      ? 'Held out until assigned — the period is recalculated afterwards'
+      : r[6]==='Already counted' ? 'Already counted; assigning only corrects the attribution' : 'Not applicable'],
+    ['Sector comparison','ICAO codes; IATA is converted through the airport catalogue']
+  ].map(([k,v])=>`<div class="row"><dt>${esc(k)}</dt><dd class="${k==='Matching rule'||k==='Effect on the factor'?'norm':''}">${esc(v)}</dd></div>`).join('');
+  $('#rsvCand').innerHTML=CAND.map((c,k)=>`<tr>
+    <td class="mid"><input type="radio" name="cand" ${c[4]?'checked':''}></td>
+    <td><span class="strong">${esc(c[0])}</span></td><td class="mono">${esc(c[1])}</td>
+    <td>${esc(c[2])}</td><td class="num">${esc(c[3])}</td></tr>`).join('');
+  $('#rsvOvl').classList.add('open'); $('#drwResolve').classList.add('open');
+}
+function closeResolve(){ $('#rsvOvl').classList.remove('open'); $('#drwResolve').classList.remove('open'); }
 
 /* ---------- screen 11: target systems, capped at 3 (§6.2 item 3) ---------- */
 const TGT_MAX=3;
@@ -2255,7 +2503,8 @@ renderSys();renderAll();renderTargets();initAnn();
 /* hash routing: ...html#s11 opens the flow detail screen directly */
 const HASH_MODAL={mSys:openSysModal,mConn:openConnModal,mCred:openCredModal,
   mContact:()=>openModal('mContact'),mPing:()=>openModal('mPing'),
-  mRerun:()=>openModal('mRerun'),mErr:()=>openModal('mErr'),drwLog:()=>openLog(8)};
+  mRerun:()=>openModal('mRerun'),mErr:()=>openModal('mErr'),drwLog:()=>openLog(8),
+  drwResolve:()=>{go('s23');openResolve(0);}};
 function fromHash(){
   const id=(location.hash||'').replace('#','');
   if(CRUMBS[id]){go(id);return;}
