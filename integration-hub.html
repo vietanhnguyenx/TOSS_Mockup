@@ -30,9 +30,8 @@
     · Everything on Connections / Credentials / Flows / Monitoring / Logs is SAMPLE DATA.
     · Layout and colour are a PROPOSAL and need BA + UI sign-off.
 
-  PUBLIC BUILD: every real internal infrastructure address (IP, port, hostname taken from
-  the "Tích hợp" sheet) is replaced with a placeholder of the form <host-name>. The full
-  version lives in the TOSS repo at ba/process/mockup/integration-hub-mockup.html
+  PUBLIC BUILD: every real internal infrastructure address is replaced with a placeholder of the
+  form <host-name>. Full version: ba/process/mockup/integration-hub-mockup.html in the TOSS repo
 
   Every UI region carries data-pui (PrimeNG component / ESB-FE wrapper) and data-src (source).
   Full component reference at the foot of the page.
@@ -426,7 +425,7 @@ body.ann .legend{display:block}
 
 <div class="devbar">
   <span class="material-symbols-outlined" style="font-size:16px">draft</span>
-  <span><b>MOCKUP v0.1</b> — TOSS › Integration Hub (Data Integration Bus) · 24 screens / 8 modules</span>
+  <span><b>MOCKUP v0.1</b> — TOSS › Integration Hub (Data Integration Bus) · 27 screens / 9 modules</span>
   <span class="tag d">32 systems = REAL DATA ("Tích hợp" sheet, rows 4–35)</span>
   <span class="tag">Everything else = sample data</span>
   <span class="tag" style="margin-left:0">Infrastructure addresses masked for the public page</span>
@@ -469,7 +468,7 @@ body.ann .legend{display:block}
 
       <div class="side-cap">Data flows</div>
       <div class="side-item" data-go="s10"><span class="material-symbols-outlined">swap_horiz</span>
-        <span class="si-label">Data flows</span><span class="pip">14</span></div>
+        <span class="si-label">Data flows</span><span class="pip">19</span></div>
       <div class="side-item" data-go="s12"><span class="material-symbols-outlined">history</span>
         <span class="si-label">Run history</span></div>
 
@@ -483,9 +482,15 @@ body.ann .legend{display:block}
       <div class="side-item" data-go="s17"><span class="material-symbols-outlined">lab_profile</span>
         <span class="si-label">Data coverage report</span></div>
 
+      <div class="side-cap">Published APIs</div>
+      <div class="side-item" data-go="s25"><span class="material-symbols-outlined">api</span>
+        <span class="si-label">Published APIs</span><span class="pip">7</span></div>
+      <div class="side-item" data-go="s26"><span class="material-symbols-outlined">group</span>
+        <span class="si-label">Consumers</span><span class="pip">5</span></div>
+
       <div class="side-cap">Manual handling</div>
       <div class="side-item" data-go="s23"><span class="material-symbols-outlined">rule</span>
-        <span class="si-label">Unmatched records</span><span class="pip">37</span></div>
+        <span class="si-label">Unmatched records</span><span class="pip">12</span></div>
 
       <div class="side-cap">Logs</div>
       <div class="side-item" data-go="s18"><span class="material-symbols-outlined">receipt_long</span>
@@ -713,6 +718,12 @@ body.ann .legend{display:block}
         </div>
         <div class="pgbar" data-pg="credBody"></div>
       </div>
+      <div class="note" style="margin-top:14px">
+        <span class="material-symbols-outlined">swap_horiz</span>
+        <div><b>These are the credentials the bus uses to call out.</b> Credentials issued to partners so
+        they can call <b>in</b> live on <a href="#" onclick="go('s26');return false">Consumers</a> — different
+        objects, different lifecycle, kept apart on purpose.</div>
+      </div>
       <div class="note warn" style="margin-top:14px">
         <span class="material-symbols-outlined">lock</span>
         <div><b>Write-only, never read back.</b> Once saved, a secret is never shown again to any role — it
@@ -732,7 +743,7 @@ body.ann .legend{display:block}
     <section class="screen" id="s10">
       <div class="kpis">
         <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">swap_horiz</span>Flows loaded</div>
-          <div class="v">14</div><div class="s">Parser available</div></div>
+          <div class="v">19</div><div class="s">14 inbound · 5 outbound</div></div>
         <div class="kpi ok"><div class="k"><span class="material-symbols-outlined">play_circle</span>Enabled</div>
           <div class="v">11</div><div class="s">Running on schedule</div></div>
         <div class="kpi warn"><div class="k"><span class="material-symbols-outlined">schedule</span>Behind schedule</div>
@@ -756,6 +767,10 @@ body.ann .legend{display:block}
         </div>
         <div class="filters" id="f10">
           <div class="fld"><label>Search by flow name</label><input class="inp" placeholder="Enter a flow name"></div>
+          <div class="fld narrow"><label>Direction</label>
+            <select class="inp" id="fd1" onchange="renderAll()"><option value="">All</option>
+              <option value="In">Inbound — data comes to TOSS</option>
+              <option value="Out">Outbound — TOSS sends data</option></select></div>
           <div class="fld narrow"><label>Source system</label><select class="inp"><option>All</option></select></div>
           <div class="fld narrow"><label>Method</label>
             <select class="inp"><option>All</option><option>SFTP</option><option>Database</option>
@@ -767,7 +782,7 @@ body.ann .legend{display:block}
         </div>
         <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2 M4] screen 10 · flows built from systems that are in service">
           <table><thead><tr><th style="width:44px">No.</th><th>Flow / Source → Target</th>
-            <th>Method</th><th>Schedule</th><th>Last run</th>
+            <th>Direction</th><th>Method</th><th>Schedule</th><th>Last run</th>
             <th>Result</th><th class="mid">On</th><th style="width:110px">Actions</th></tr></thead>
             <tbody id="flowBody"></tbody></table>
         </div>
@@ -864,10 +879,36 @@ body.ann .legend{display:block}
                 <input class="inp" value="60 minutes"></div>
             </div>
 
-            <div style="margin-top:18px;display:flex;gap:26px;flex-wrap:wrap">
+            <div class="frow c2" style="margin-top:20px" data-src="[QT-28] khoá chống trùng hai tầng">
+              <div class="fld"><label>Duplicate key — file level</label>
+                <select class="inp"><option>File name + size + modified time</option>
+                  <option>Message-ID (email)</option><option>Query parameters + period</option></select>
+                <div class="hint">A file that repeats this key is skipped and logged as already processed.</div></div>
+              <div class="fld"><label>Duplicate key — record level</label>
+                <input class="inp" value="Aircraft + measurement date + flight number">
+                <div class="hint">Applied inside the file. Keys are kept for 90 days, then dropped.</div></div>
+            </div>
+
+            <div style="margin-top:18px;display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start">
               <label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Flow enabled</label>
               <label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Email on failure</label>
-              <label class="sw-row"><span class="sw"><input type="checkbox"><span></span></span>Log message bodies</label>
+              <div>
+                <label class="sw-row"><span class="sw"><input type="checkbox"><span></span></span>Log message bodies</label>
+                <div class="hint" style="margin-left:47px">Turns itself off after
+                  <select class="inp inp-sm" style="width:92px;display:inline-block;vertical-align:middle">
+                    <option>7 days</option><option>14 days</option><option>30 days</option></select>.
+                  Passenger data must not be kept beyond that.</div>
+              </div>
+            </div>
+
+            <div class="note warn" style="margin-top:18px" data-src="[QT-29] bước duyệt cho luồng ra">
+              <span class="material-symbols-outlined">gavel</span>
+              <div><b>Approval before sending</b> — for outbound flows only.
+                <label class="sw-row" style="margin:8px 0 6px"><span class="sw"><input type="checkbox"><span></span></span>
+                  Hold each batch for approval</label>
+                <div>On by default when the target is <b>SITA</b> or <b>Sabre</b>: what TOSS sends there is an
+                instruction that changes other companies' operations automatically, and it cannot be recalled.
+                Held batches appear in the <a href="#" onclick="go('s23');return false">manual-handling queue</a>.</div></div>
             </div>
           </div>
         </div>
@@ -1160,6 +1201,118 @@ body.ann .legend{display:block}
     </section>
 
     <!-- ================================================================
+         SCREEN 25 — PUBLISHED APIs   (M9 · new)
+         The bus is the API gateway, so every call an outside system makes into
+         TOSS arrives here first. This is the opposite direction to Connections:
+         Connections is the bus calling OUT, this is the world calling IN.
+         Covers YCKT TOSS-058 (gateway), TOSS-062 (API lifecycle and versioning),
+         TOSS-108 / TOSS-109 (data services), rows 141 and 142 (MO Plus API and
+         the flight document package API).
+         ================================================================ -->
+    <section class="screen" id="s25">
+      <div class="kpis">
+        <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">api</span>Published APIs</div>
+          <div class="v">7</div><div class="s">6 live · 1 retiring</div></div>
+        <div class="kpi ok"><div class="k"><span class="material-symbols-outlined">group</span>Consumers</div>
+          <div class="v">5</div><div class="s">2 OAuth2 · 3 API key</div></div>
+        <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">bolt</span>Calls, 24h</div>
+          <div class="v">42,180</div><div class="s">Peak 1,812/h</div></div>
+        <div class="kpi err"><div class="k"><span class="material-symbols-outlined">shield</span>Rejected, 24h</div>
+          <div class="v">96</div><div class="s">81 auth · 15 rate limit</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f25')">
+            <span class="material-symbols-outlined">filter_list</span>Filters
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-ghost" onclick="go('s26')"><span class="material-symbols-outlined">group</span>Consumers</button>
+            <button class="btn btn-primary" onclick="openModal('mApi')"><span class="material-symbols-outlined">add</span>New</button>
+          </div>
+        </div>
+        <div class="filters" id="f25">
+          <div class="fld"><label>Search by path or description</label><input class="inp" placeholder="e.g. /api/v1/flights"></div>
+          <div class="fld narrow"><label>Version</label><select class="inp"><option>All</option><option>v1</option><option>v0 — retiring</option></select></div>
+          <div class="fld narrow"><label>Consumer</label><select class="inp"><option>All</option><option>MO Plus</option><option>OPS++ / NetOps++</option><option>EFB admin</option></select></div>
+          <div class="fld narrow"><label>Status</label><select class="inp"><option>All</option><option>Live</option><option>Retiring</option></select></div>
+          <div class="f-actions"><button class="btn btn-primary"><span class="material-symbols-outlined">search</span>Search</button>
+            <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Reset</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[YCKT TOSS-108, TOSS-109, rows 141–142] APIs the bus publishes">
+          <table><thead><tr><th style="width:44px">No.</th><th>Path</th><th class="mid">Method</th>
+            <th>What it returns</th><th>Internal service</th><th class="mid">Version</th>
+            <th>Who may call</th><th>Auth</th><th class="num">Calls/h</th>
+            <th class="mid">On</th><th style="width:86px">Actions</th></tr></thead>
+            <tbody id="apiBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="apiBody"></div>
+      </div>
+
+      <div class="note" style="margin-top:14px">
+        <span class="material-symbols-outlined">swap_horiz</span>
+        <div><b>Two directions, two screens.</b> <a href="#" onclick="go('s5');return false">Connections</a>
+        holds what the bus needs in order to call <b>out</b> to a partner. This screen holds what the bus
+        <b>publishes</b> so partners can call <b>in</b>. They are separate objects with separate credentials —
+        see <a href="#" onclick="go('s26');return false">Consumers</a>.</div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         SCREEN 26 — API CONSUMERS   (M9 · new)
+         Who may call in, with which credential, under which limits.
+         Covers YCKT TOSS-059 — OAuth2, JWT, IP validation, blocking abnormal
+         access — and the per-account permission required by row 142.
+         ================================================================ -->
+    <section class="screen" id="s26">
+      <div class="panel">
+        <div class="toolbar">
+          <div style="font-size:14px;font-weight:600;padding:6px 4px">Systems allowed to call into the bus</div>
+          <div class="tb-right">
+            <button class="btn btn-ghost" onclick="go('s25')"><span class="material-symbols-outlined">api</span>Published APIs</button>
+            <button class="btn btn-primary" onclick="toast('Add consumer — sample data')"><span class="material-symbols-outlined">add</span>New</button>
+          </div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[YCKT TOSS-059] access control for inbound calls">
+          <table><thead><tr><th style="width:44px">No.</th><th>Consumer</th><th>Credential type</th>
+            <th>Client / key id</th><th>Secret</th><th>APIs allowed</th><th>Expires</th>
+            <th>Last updated</th><th class="mid">On</th><th style="width:86px">Actions</th></tr></thead>
+            <tbody id="consBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="consBody"></div>
+      </div>
+
+      <div class="panel">
+        <div class="sec-h"><span class="material-symbols-outlined">shield</span>
+          <h3>Access policy</h3><span class="sub">Applied to every inbound call before it reaches TOSS</span>
+          <div class="right"><button class="btn btn-sm btn-primary" onclick="toast('Access policy saved','ok')">
+            <span class="material-symbols-outlined">save</span>Save</button></div></div>
+        <div class="sec">
+          <div class="frow">
+            <div class="fld"><label>Rate limit per consumer</label>
+              <select class="inp"><option>600 calls/minute</option><option>1,200 calls/minute</option><option>No limit</option></select></div>
+            <div class="fld"><label>Burst allowance</label><input class="inp" value="50"></div>
+            <div class="fld"><label>Request timeout (seconds)</label><input class="inp" value="30"></div>
+          </div>
+          <div class="frow" style="margin-top:15px">
+            <div class="fld span2"><label>IP allow list</label>
+              <div style="display:flex;gap:7px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:#fff;min-height:44px;align-items:center">
+                <span class="chip teal"><vna-range-1> <span class="x">×</span></span>
+                <span class="chip teal"><vna-range-2> <span class="x">×</span></span>
+                <span style="color:var(--tx-mute);font-size:12px">+ add more…</span></div>
+              <div class="hint">Calls from outside these ranges are rejected before authentication.</div></div>
+            <div class="fld"><label>Block after this many failed authentications</label><input class="inp" value="10"></div>
+          </div>
+          <div style="margin-top:18px;display:flex;gap:26px;flex-wrap:wrap">
+            <label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Require TLS</label>
+            <label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Validate JWT signature and expiry</label>
+            <label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>Log every rejected call</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
          SCREEN 23 — UNMATCHED RECORD QUEUE   (M8 · new)
          Source: BR-PF-31 agreed 14/09/2026 — measurements whose flight cannot
          be resolved go to "the unmatched-record monitoring screen on the
@@ -1174,9 +1327,9 @@ body.ann .legend{display:block}
     <section class="screen" id="s23">
       <div class="kpis">
         <div class="kpi err"><div class="k"><span class="material-symbols-outlined">inbox</span>Waiting to be resolved</div>
-          <div class="v">37</div><div class="s">Across all sources</div></div>
+          <div class="v">12</div><div class="s">7 matching · 3 delivery · 2 approval</div></div>
         <div class="kpi warn"><div class="k"><span class="material-symbols-outlined">schedule</span>Older than 48h</div>
-          <div class="v">6</div><div class="s">Oldest: 4 days</div></div>
+          <div class="v">3</div><div class="s">Oldest: 4 days</div></div>
         <div class="kpi teal"><div class="k"><span class="material-symbols-outlined">done_all</span>Resolved this week</div>
           <div class="v">128</div><div class="s">94 assigned · 34 skipped</div></div>
         <div class="kpi ok"><div class="k"><span class="material-symbols-outlined">percent</span>Auto-match rate</div>
@@ -1196,6 +1349,12 @@ body.ann .legend{display:block}
           </div>
         </div>
         <div class="filters" id="f23" data-pui="cmm-dynamic-form" data-src="[BR-PF-31] filter by source and reason">
+          <div class="fld narrow"><label>Work type</label>
+            <select class="inp" id="qk" onchange="renderAll()"><option value="">All</option>
+              <option value="match">Flight matching — business</option>
+              <option value="deliver">Delivery failed — operations</option>
+              <option value="approve">Approval needed — operations</option></select>
+          </div>
           <div class="fld narrow"><label>Source</label>
             <select class="inp"><option>All</option><option>Performance Factor — PEP</option>
               <option>Performance Factor — PET</option><option>Performance Factor — ATR</option>
@@ -1212,8 +1371,8 @@ body.ann .legend{display:block}
             <button class="btn btn-ghost"><span class="material-symbols-outlined">restart_alt</span>Reset</button></div>
         </div>
         <div class="tw" data-pui="IamTable (p-table)" data-src="[BR-PF-31] queue of records that could not be matched · sample data">
-          <table><thead><tr><th style="width:44px">No.</th><th>Received</th><th>Source</th>
-            <th>Record</th><th>Reason</th><th class="num">Candidates</th><th class="num">Age</th>
+          <table><thead><tr><th style="width:44px">No.</th><th>Received</th><th>Work type</th>
+            <th>Record / Source</th><th>Reason</th><th class="num">Candidates</th><th class="num">Age</th>
             <th>Effect on the factor</th><th style="width:64px">Actions</th></tr></thead>
             <tbody id="qBody"></tbody></table>
         </div>
@@ -1222,7 +1381,11 @@ body.ann .legend{display:block}
 
       <div class="note" style="margin-top:14px" data-src="[BR-PF-31] · [BR-PF-27/28/29]">
         <span class="material-symbols-outlined">info</span>
-        <div><b>Why a shared queue rather than a screen per source.</b> Performance Factor is only one
+        <div><b>Three kinds of work, one queue.</b> <i>Flight matching</i> is a business judgement —
+        a performance engineer picks the right flight. <i>Delivery failed</i> and <i>Approval needed</i> are
+        operations work. The <b>Work type</b> filter defaults to the group the signed-in role owns, so nobody
+        wades through items they cannot act on.
+        <br><b>Why a shared queue rather than a screen per source.</b> Performance Factor is only one
         producer of records whose flight cannot be resolved; ACARS, SITA and cargo messages hit the same
         problem. One queue means one place to look and one set of habits.
         <br><b>Effect on the factor differs by branch:</b> PEP and PET measurements are counted into the
@@ -1781,6 +1944,71 @@ HTTP <span class="m">500</span> Internal Server Error
   </div>
 </div>
 
+
+<!-- ===== SCREEN 27 — ADD / EDIT PUBLISHED API  (M9) ===== -->
+<div class="ovl" id="mApi"><div class="modal">
+  <div class="modal-h"><h2>Publish an API</h2>
+    <button class="x" onclick="closeModal('mApi')"><span class="material-symbols-outlined">close</span></button></div>
+  <div class="modal-b">
+    <div class="mcard" data-pui="cmm-dynamic-form" data-src="[YCKT TOSS-062] API lifecycle and versioning">
+      <h4>Route</h4>
+      <div class="frow">
+        <div class="fld span2"><label>Path <span class="req">*</span></label>
+          <input class="inp mono" placeholder="e.g. /api/v1/flights/{legNo}/documents"></div>
+        <div class="fld"><label>Method <span class="req">*</span></label>
+          <select class="inp"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select></div>
+      </div>
+      <div class="frow" style="margin-top:15px">
+        <div class="fld span2"><label>What it returns <span class="req">*</span></label>
+          <input class="inp" placeholder="e.g. Final flight document package"></div>
+        <div class="fld"><label>Version <span class="req">*</span></label>
+          <select class="inp"><option>v1</option><option>v2</option></select></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <h4>Upstream</h4>
+      <div class="frow c2">
+        <div class="fld"><label>Internal service <span class="req">*</span></label>
+          <select class="inp"><option>TOSS Flight Ops</option><option>TOSS Document Service</option>
+            <option>TOSS Airport Data</option><option>TOSS Data Maintenance</option>
+            <option>TOSS Operations Analysis</option></select></div>
+        <div class="fld"><label>Timeout (seconds)</label><input class="inp" value="30"></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <h4>Who may call</h4>
+      <div class="fld"><label>Consumers <span class="req">*</span></label>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:#fff;min-height:44px;align-items:center">
+          <span class="chip teal">MO Plus <span class="x">×</span></span>
+          <span style="color:var(--tx-mute);font-size:12px">+ add more…</span></div>
+        <div class="hint">Managed on <a href="#" onclick="closeModal('mApi');go('s26');return false">Consumers</a>.</div></div>
+      <div class="frow c2" style="margin-top:15px">
+        <div class="fld"><label>Authentication <span class="req">*</span></label>
+          <select class="inp"><option>OAuth2</option><option>OAuth2 + scope</option><option>API Key</option></select></div>
+        <div class="fld"><label>Rate limit for this API</label>
+          <select class="inp"><option>Use the global policy</option><option>60 calls/minute</option><option>300 calls/minute</option></select></div>
+      </div>
+      <div style="margin-top:16px"><label class="sw-row"><span class="sw"><input type="checkbox" checked><span></span></span>API enabled</label></div>
+    </div>
+
+    <div class="note warn">
+      <span class="material-symbols-outlined">schedule</span>
+      <div><b>Retiring an API.</b> Set a retirement date instead of switching it off — consumers keep
+      working while they migrate, and the date shows on the list. YCKT TOSS-062 asks for the full
+      lifecycle: design, release, versioning, maintenance, retirement.
+      <div class="frow c2" style="margin-top:11px">
+        <div class="fld"><label>Retirement date</label><input class="inp" type="date"></div>
+        <div class="fld"><label>Replaced by</label><input class="inp" placeholder="e.g. /api/v2/flights"></div>
+      </div></div>
+    </div>
+  </div>
+  <div class="modal-f">
+    <button class="btn btn-ghost" onclick="closeModal('mApi')">Close</button>
+    <button class="btn btn-primary" onclick="closeModal('mApi');toast('Published API saved','ok')">Save</button></div>
+</div></div>
+
 <div class="toast-wrap" id="toasts"></div>
 
 <!-- ========================= COMPONENT REFERENCE ========================= -->
@@ -1804,6 +2032,7 @@ HTTP <span class="m">500</span> Internal Server Error
     <tr><td>p-toggleswitch</td><td><span class="mono">p-toggleswitch</span></td><td>Switching flows, connections and alerts</td></tr>
     <tr><td>p-tag</td><td><span class="mono">p-tag</span></td><td>Status and protocol badges</td></tr>
     <tr><td>DialogRegistry (p-dialog)</td><td><span class="mono">p-dialog</span> via DialogRegistry</td><td>8 dialogs: system, contact, connection, connection test, credential, re-run, error detail, flow list</td></tr>
+    <tr><td>p-chips</td><td><span class="mono">p-chips</span></td><td>Consumers on a published API · IP allow list</td></tr>
     <tr><td>IamTable (p-table) + p-radiobutton</td><td><span class="mono">p-table</span> with single-select</td><td>Screen 24 — candidate flight picker</td></tr>
     <tr><td>p-drawer</td><td><span class="mono">p-drawer</span> (position=right)</td><td>Screen 19 — log record detail · screen 24 — resolve a record</td></tr>
     <tr><td>p-paginator</td><td><span class="mono">p-paginator</span></td><td>Foot of every list table</td></tr>
@@ -1934,20 +2163,27 @@ const CREDS=[
  ['ANHK — API Key','API Key / Token','Aviation Security Fee System (ANHK)','—','—','29/08/2026']];
 
 const FLOWS=[
- ['ACARS → TOSS · collect performance messages','ACARS','TOSS',1,'SFTP + Email','Every 5 minutes','09/09 15:45','ok',1],
- ['ACARS → TOSS · MVA messages','ACARS','TOSS',1,'SFTP','Every 5 minutes','09/09 15:45','ok',1],
- ['SITA TEXT → TOSS · UCM, ASM','SITA TEXT','TOSS, OPS++',2,'SFTP + Email','Every 10 minutes','09/09 15:20','ok',1],
- ['Netline Ops++ → TOSS · flight schedule','Netline Flight Ops++','TOSS',1,'SFTP','Every 15 minutes','09/09 15:42','ok',1],
- ['Netline Ops++ → TOSS · flight data','Netline Flight Ops++','TOSS',1,'Database','Every 30 minutes','09/09 15:40','ok',1],
- ['MO Plus → TOSS · OFP, flight release','MO Plus','TOSS',1,'REST','Every 10 minutes','09/09 15:44','ok',1],
- ['Adapter Lido → TOSS · flight plans','Lido Flight 4D/ Adapter Lido','TOSS',1,'REST','Every 15 minutes','09/09 15:44','ok',1],
- ['VIAGS VMS → TOSS · airport operations','VIAGS VMS','TOSS',1,'REST','Every 15 minutes','09/09 15:30','ok',1],
- ['AVES → TOSS · crew roster','AVES','TOSS',1,'SOAP','Once a day 06:00','09/09 06:12','err',1],
- ['DWH → TOSS · shared reference data','DWH/Lakehous TCT','TOSS',1,'Database','Once a day 02:00','09/09 02:04','ok',1],
- ['Amadeus PSS → TOSS · passengers','Amadeus PSS (1A):','TOSS',1,'Database','Every 30 minutes','09/09 12:00','ok',1],
- ['Weather data → TOSS · METAR','Weather data','TOSS',1,'Web','Every 30 minutes','09/09 05:30','warn',1],
- ['Weather data → TOSS · TAF','Weather data','TOSS',1,'Web','Every 6 hours','09/09 12:00','ok',0],
- ['NOTAM/WX VATM → TOSS','NOTAM, WX VATM','TOSS',1,'Email','Every 15 minutes','09/09 15:10','ok',0]];
+ /* [tên, nguồn, đích, số đích, phương thức, lịch, chạy gần nhất, kết quả, bật, chiều, cần duyệt] */
+ ['ACARS → TOSS · collect performance messages','ACARS','TOSS',1,'SFTP + Email','Every 5 minutes','09/09 15:45','ok',1,'In',0],
+ ['ACARS → TOSS · MVA messages','ACARS','TOSS',1,'SFTP','Every 5 minutes','09/09 15:45','ok',1,'In',0],
+ ['SITA TEXT → TOSS · UCM, ASM','SITA TEXT','TOSS, OPS++',2,'SFTP + Email','Every 10 minutes','09/09 15:20','ok',1,'In',0],
+ ['Netline Ops++ → TOSS · flight schedule','Netline Flight Ops++','TOSS',1,'SFTP','Every 15 minutes','09/09 15:42','ok',1,'In',0],
+ ['Netline Ops++ → TOSS · flight data','Netline Flight Ops++','TOSS',1,'Database','Every 30 minutes','09/09 15:40','ok',1,'In',0],
+ ['MO Plus → TOSS · OFP, flight release','MO Plus','TOSS',1,'REST','Every 10 minutes','09/09 15:44','ok',1,'In',0],
+ ['Adapter Lido → TOSS · flight plans','Lido Flight 4D/ Adapter Lido','TOSS',1,'REST','Every 15 minutes','09/09 15:44','ok',1,'In',0],
+ ['VIAGS VMS → TOSS · airport operations','VIAGS VMS','TOSS',1,'REST','Every 15 minutes','09/09 15:30','ok',1,'In',0],
+ ['AVES → TOSS · crew roster','AVES','TOSS',1,'SOAP','Once a day 06:00','09/09 06:12','err',1,'In',0],
+ ['DWH → TOSS · shared reference data','DWH/Lakehous TCT','TOSS',1,'Database','Once a day 02:00','09/09 02:04','ok',1,'In',0],
+ ['Amadeus PSS → TOSS · passengers','Amadeus PSS (1A):','TOSS',1,'Database','Every 30 minutes','09/09 12:00','ok',1,'In',0],
+ ['Weather data → TOSS · METAR','Weather data','TOSS',1,'Web','Every 30 minutes','09/09 05:30','warn',1,'In',0],
+ ['Weather data → TOSS · TAF','Weather data','TOSS',1,'Web','Every 6 hours','09/09 12:00','ok',0,'In',0],
+ ['NOTAM/WX VATM → TOSS','NOTAM, WX VATM','TOSS',1,'Email','Every 15 minutes','09/09 15:10','ok',0,'In',0],
+ /* ----- chiều ra: TOSS gửi dữ liệu đi ----- */
+ ['TOSS → SITA · ASM schedule messages','TOSS','SITA TEXT',1,'SFTP + Email','On change','09/09 15:12','ok',1,'Out',1],
+ ['TOSS → Sabre · SSIM seasonal schedule','TOSS','Sabre',1,'SFTP','Once a day 03:00','09/09 03:02','ok',1,'Out',1],
+ ['TOSS → NetZero · planned fuel, ACARS','TOSS','NetZero',1,'REST','Once a day 04:00','09/09 04:05','ok',1,'Out',0],
+ ['TOSS → ANHK fee system · loadsheet, manifest, LDM','TOSS','Aviation Security Fee System (ANHK)',1,'REST','On change','09/09 15:38','ok',1,'Out',0],
+ ['TOSS → Cirium · ASM, MVT','TOSS','Cirium',1,'SFTP','Every 30 minutes','—','warn',0,'Out',0]];
 
 const RUNS=[
  ['09/09/2026 15:45:02','09/09/2026 15:45:04','1.8s',412,412,0,'ok','—'],
@@ -1998,13 +2234,33 @@ const MAILS=[
  ['Daily operations report for TBT (YCKT row 232)',['tbt@vietnamairlines.com','+6 more'],'Email',0],
  ['Credential expiring',['admin@vietnamairlines.com'],'Email',1]];
 
+/* API trục công bố ra ngoài — trục đóng vai trò cổng vào duy nhất (YCKT TOSS-058,
+   TOSS-108, TOSS-109, R141, R142). Khác với Kết nối: Kết nối là trục gọi RA,
+   còn đây là bên ngoài gọi VÀO. */
+const APIS=[
+ ['/api/v1/flights','GET','Flight schedule and operational data','TOSS Flight Ops','v1','MO Plus, OPS++','OAuth2','1,240/h',1],
+ ['/api/v1/flights/{legNo}/documents','GET','Final flight document package','TOSS Document Service','v1','MO Plus','OAuth2 + scope','86/h',1],
+ ['/api/v1/dispatch-release','POST','Dispatch release, flight release, confirm document','TOSS Flight Ops','v1','MO Plus','OAuth2','142/h',1],
+ ['/api/v1/weather/{airport}','GET','Airport weather for EFB administration','TOSS Airport Data','v1','EFB admin','API Key','310/h',1],
+ ['/api/v1/aircraft/{reg}','GET','Aircraft attributes and current PF','TOSS Data Maintenance','v1','FOE tools','API Key','24/h',1],
+ ['/api/v1/fos-report','GET','FOS report fields by leg or flight key','TOSS Operations Analysis','v1','Internal reporting','API Key','8/h',0],
+ ['/api/v0/flights','GET','Superseded by v1 — retires 31/12/2026','TOSS Flight Ops','v0','MO Plus','OAuth2','12/h',0]];
+
+/* Bên ngoài gọi vào — thông tin xác thực cấp cho đối tác, ngược chiều với màn Credentials */
+const CONSUMERS=[
+ ['MO Plus','OAuth2 client','moplus-prod','4 APIs','—','02/09/2026',1],
+ ['OPS++ / NetOps++','OAuth2 client','opspp-prod','1 API','—','28/08/2026',1],
+ ['EFB administration','API Key','efb-admin','1 API','31/12/2026','15/07/2026',1],
+ ['FOE tools','API Key','foe-tools','1 API','—','11/08/2026',1],
+ ['Internal reporting','API Key','rpt-internal','1 API','—','29/08/2026',0]];
+
 /* ============================== HELPERS =============================== */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const CRUMBS={s1:'Integration systems',s3:'Technical contacts',s5:'Connections',s8:'Credentials',
  s10:'Data flows',s11:'Flow detail',s12:'Run history',s14:'Integration overview',
  s15:'ACARS coverage',s16:'QAR coverage',s17:'Data coverage report',s18:'Integration log',
- s23:'Unmatched records',s20:'Alert thresholds',s21:'Alert recipients',s22:'Email templates'};
+ s25:'Published APIs',s26:'Consumers',s23:'Unmatched records',s20:'Alert thresholds',s21:'Alert recipients',s22:'Email templates'};
 
 function go(id){
   $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
@@ -2095,18 +2351,27 @@ function redraw(){ renderSys(); renderAll(); }
 
 /* hàng đợi bản ghi chưa ghép được chuyến — nguồn, khoá bản ghi, lý do, số ứng viên */
 const QUEUE=[
- ['17/09 04:12','Performance Factor — PET','VN-A869 · 17/09 · VN255','Multiple matching flights',2,'4 days','Already counted'],
- ['18/09 02:40','Performance Factor — ATR','VN-B218 · 18/09 · VN1546','No matching flight',0,'3 days','Held out'],
- ['19/09 23:05','ACARS','VN-A351 · MVT · SGN-HAN','Missing airport code',3,'2 days','—'],
- ['20/09 06:18','Performance Factor — PEP','VN-A787 · 20/09 · VN31','Multiple matching flights',2,'1 day','Already counted'],
- ['20/09 11:47','SITA TEXT','UCM · VN660 · 20/09','Schema mismatch',0,'1 day','—'],
- ['20/09 14:02','Cargo Spot','AWB 738-4471 · VN417','No matching flight',0,'1 day','—'],
- ['21/09 01:30','Performance Factor — ATR','VN-B219 · 21/09 · VN1823','No matching flight',0,'14 hours','Held out'],
- ['21/09 03:55','ACARS','VN-A322 · OUT fuel · 21/09','Multiple matching flights',2,'12 hours','—'],
- ['21/09 05:10','Performance Factor — PET','VN-A350 · 21/09 · VN11','No matching flight',0,'10 hours','Already counted'],
- ['21/09 07:22','Cargo Spot','AWB 738-5012 · VN233','Missing airport code',1,'8 hours','—']];
+ /* [nhận lúc, nguồn, bản ghi, lý do, số ứng viên, chờ bao lâu, ảnh hưởng hệ số, loại việc] */
+ ['17/09 04:12','Performance Factor — PET','VN-A869 · 17/09 · VN255','Multiple matching flights',2,'4 days','Already counted','match'],
+ ['18/09 02:40','Performance Factor — ATR','VN-B218 · 18/09 · VN1546','No matching flight',0,'3 days','Held out','match'],
+ ['19/09 23:05','ACARS','VN-A351 · MVT · SGN-HAN','Missing airport code',3,'2 days','—','match'],
+ ['20/09 06:18','Performance Factor — PEP','VN-A787 · 20/09 · VN31','Multiple matching flights',2,'1 day','Already counted','match'],
+ ['20/09 11:47','SITA TEXT','UCM · VN660 · 20/09','Schema mismatch',0,'1 day','—','match'],
+ ['21/09 01:30','Performance Factor — ATR','VN-B219 · 21/09 · VN1823','No matching flight',0,'14 hours','Held out','match'],
+ ['21/09 05:10','Performance Factor — PET','VN-A350 · 21/09 · VN11','No matching flight',0,'10 hours','Already counted','match'],
+ /* ----- gửi đích thất bại sau khi hết số lần thử ----- */
+ ['20/09 14:02','TOSS → NetZero','Batch 20/09 · 412 records','Target refused after 5 retries',0,'1 day','—','deliver'],
+ ['21/09 04:05','TOSS → ANHK fee system','Loadsheet VN233 · 21/09','Target refused after 5 retries',0,'9 hours','—','deliver'],
+ ['21/09 06:40','TOSS → Cirium','MVT batch 21/09','Connection refused',0,'7 hours','—','deliver'],
+ /* ----- chờ duyệt trước khi gửi ra ----- */
+ ['21/09 08:15','TOSS → SITA','ASM · 6 flights · 22/09','Waiting for approval',0,'6 hours','—','approve'],
+ ['21/09 09:02','TOSS → Sabre','SSIM · winter season update','Waiting for approval',0,'5 hours','—','approve']];
 const QST={'No matching flight':'bdg-err','Multiple matching flights':'bdg-warn',
- 'Missing airport code':'bdg-warn','Schema mismatch':'bdg-err'};
+ 'Missing airport code':'bdg-warn','Schema mismatch':'bdg-err',
+ 'Target refused after 5 retries':'bdg-err','Connection refused':'bdg-err',
+ 'Waiting for approval':'bdg-info'};
+const QKIND={match:['Flight matching','bdg-warn'],deliver:['Delivery failed','bdg-err'],
+ approve:['Approval needed','bdg-info']};
 
 /* ứng viên chuyến bay của bản ghi đang mở */
 const CAND=[
@@ -2240,9 +2505,14 @@ function renderAll(){
     </div></td></tr>`).join('');
 
   const fst={ok:['Succeeded','bdg-ok'],err:['Failed','bdg-err'],warn:['Behind schedule','bdg-warn']};
-  $('#flowBody').innerHTML=pg('flowBody',FLOWS,'flows').map((f,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
+  const fdir=($('#fd1')&&$('#fd1').value)||'';
+  const flowRows=FLOWS.filter(f=>!fdir||f[9]===fdir);
+  $('#flowBody').innerHTML=pg('flowBody',flowRows,'flows').map((f,i)=>`<tr><td class="mid">${_ofs+i+1}</td>
     <td><span class="strong">${esc(f[0])}</span>
       <span class="sub">${esc(f[1])} → ${esc(f[2])}${f[3]>1?` · ${f[3]} targets`:''}</span></td>
+    <td>${f[9]==='Out'
+        ? `<span class="bdg nodot bdg-warn">Outbound</span>${f[10]?'<span class="sub">approval required</span>':''}`
+        : '<span class="bdg nodot bdg-mute">Inbound</span>'}</td>
     <td><span class="bdg nodot ${PROTO[protoOf(f[4])]||'bdg-mute'}">${esc(f[4])}</span></td>
     <td>${esc(f[5])}</td><td>${esc(f[6])}</td>
     <td><span class="bdg ${fst[f[7]][1]}">${fst[f[7]][0]}</span></td>
@@ -2338,18 +2608,51 @@ function renderAll(){
       <span class="si-label" style="flex:1"><span style="display:block;font-size:12.5px">${esc(t[0])}</span>
         <span style="font-size:10.5px;opacity:.75" class="mono">${esc(t[1])}</span></span></div>`).join('');
 
-  $('#qBody').innerHTML=pg('qBody',QUEUE,'records').map((r,i)=>`<tr>
+  const qk=($('#qk')&&$('#qk').value)||'';
+  const qRows=QUEUE.filter(r=>!qk||r[7]===qk);
+  $('#qBody').innerHTML=pg('qBody',qRows,'records').map((r,i)=>`<tr>
     <td class="mid">${_ofs+i+1}</td><td>${esc(r[0])}</td>
-    <td><span class="bdg nodot ${r[1].startsWith('Performance')?'bdg-info':'bdg-mute'}">${esc(r[1])}</span></td>
-    <td class="mono">${esc(r[2])}</td>
+    <td><span class="bdg ${QKIND[r[7]][1]}">${QKIND[r[7]][0]}</span></td>
+    <td><span class="strong mono">${esc(r[2])}</span><span class="sub">${esc(r[1])}</span></td>
     <td><span class="bdg ${QST[r[3]]||'bdg-mute'}">${esc(r[3])}</span></td>
     <td class="num">${r[4]?`<span class="strong">${r[4]}</span>`:'<span style="color:var(--tx-mute)">0</span>'}</td>
     <td class="num">${esc(r[5])}</td>
     <td>${r[6]==='Held out'?'<span class="bdg bdg-warn">Held out of the factor</span>'
         :r[6]==='Already counted'?'<span class="bdg bdg-ok">Already counted</span>'
         :'<span style="color:var(--tx-mute)">—</span>'}</td>
-    <td><button class="ico-btn" title="Resolve" onclick="openResolve(${_ofs+i})">
-      <span class="material-symbols-outlined">edit_note</span></button></td></tr>`).join('');
+    <td><button class="ico-btn" title="${r[7]==='approve'?'Review and send':r[7]==='deliver'?'Retry or fix':'Assign a flight'}"
+      onclick="openResolve(${_ofs+i})">
+      <span class="material-symbols-outlined">${r[7]==='approve'?'gavel':r[7]==='deliver'?'sync_problem':'edit_note'}</span></button></td></tr>`).join('');
+
+  $('#apiBody').innerHTML=pg('apiBody',APIS,'APIs').map((a,i)=>`<tr>
+    <td class="mid">${_ofs+i+1}</td>
+    <td><span class="strong mono">${esc(a[0])}</span></td>
+    <td class="mid"><span class="bdg nodot ${a[1]==='GET'?'bdg-ok':'bdg-warn'}">${esc(a[1])}</span></td>
+    <td class="wrap" style="max-width:250px">${esc(a[2])}</td>
+    <td>${esc(a[3])}</td>
+    <td class="mid">${a[4]==='v0'
+        ? '<span class="bdg bdg-warn">v0 · retiring</span>' : `<span class="bdg nodot bdg-mute">${esc(a[4])}</span>`}</td>
+    <td class="wrap">${esc(a[5])}</td>
+    <td><span class="bdg nodot bdg-info">${esc(a[6])}</span></td>
+    <td class="num">${esc(a[7])}</td>
+    <td class="mid"><label class="sw"><input type="checkbox" ${a[8]?'checked':''}><span></span></label></td>
+    <td><div class="acts">
+      <button class="ico-btn" title="Edit" onclick="openModal('mApi')"><span class="material-symbols-outlined">edit</span></button>
+      <button class="ico-btn del" title="Retire" onclick="toast('Set a retirement date instead of deleting','err')">
+        <span class="material-symbols-outlined">schedule</span></button>
+    </div></td></tr>`).join('');
+
+  $('#consBody').innerHTML=pg('consBody',CONSUMERS,'consumers').map((c,i)=>`<tr>
+    <td class="mid">${_ofs+i+1}</td><td><span class="strong">${esc(c[0])}</span></td>
+    <td>${esc(c[1])}</td><td class="mono">${esc(c[2])}</td>
+    <td><span class="mono" style="letter-spacing:2px;color:var(--tx-mute)">••••••••</span>
+      <span class="bdg nodot bdg-mute" style="margin-left:7px">write-only</span></td>
+    <td>${esc(c[3])}</td><td>${esc(c[4])}</td><td>${esc(c[5])}</td>
+    <td class="mid"><label class="sw"><input type="checkbox" ${c[6]?'checked':''}><span></span></label></td>
+    <td><div class="acts">
+      <button class="ico-btn" onclick="toast('Edit consumer — sample data')"><span class="material-symbols-outlined">edit</span></button>
+      <button class="ico-btn del" onclick="toast('Revoke consumer — needs confirmation','err')"><span class="material-symbols-outlined">delete</span></button>
+    </div></td></tr>`).join('');
 
   /* bar chart — runs by hour */
   const vals=[38,32,29,26,24,22,26,41,58,63,61,59,64,57,55,60,62,58,52,47,44,40,39,36];
@@ -2504,7 +2807,7 @@ renderSys();renderAll();renderTargets();initAnn();
 const HASH_MODAL={mSys:openSysModal,mConn:openConnModal,mCred:openCredModal,
   mContact:()=>openModal('mContact'),mPing:()=>openModal('mPing'),
   mRerun:()=>openModal('mRerun'),mErr:()=>openModal('mErr'),drwLog:()=>openLog(8),
-  drwResolve:()=>{go('s23');openResolve(0);}};
+  drwResolve:()=>{go('s23');openResolve(0);},mApi:()=>{go('s25');openModal('mApi');}};
 function fromHash(){
   const id=(location.hash||'').replace('#','');
   if(CRUMBS[id]){go(id);return;}
