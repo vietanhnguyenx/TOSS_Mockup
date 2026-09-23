@@ -113,14 +113,24 @@
     <span class="material-symbols-outlined go">arrow_forward</span>
   </a>
 
-  <div class="sec" style="margin-top:26px;">Integration Hub</div>
+  <div class="sec" style="margin-top:26px;">Data Source Monitoring</div>
 
-  <a class="card" href="integration-hub.html">
-    <div class="ic"><span class="material-symbols-outlined">hub</span></div>
+  <a class="card" href="data-source-monitoring.html">
+    <div class="ic"><span class="material-symbols-outlined">monitoring</span></div>
     <div class="body">
-      <div class="ttl">Integration Hub <span class="ver">v0.1</span></div>
-      <div class="desc">Separate admin site for the data integration bus between TOSS and the 32 external systems VNA exchanges data with. Four stacked layers — System, Connection, Credential, Data flow — so changing a host or rotating a password touches one record instead of every flow. Flows are seeded with their parser by the development team; operators switch them on, set the schedule, retries and alert thresholds, then watch coverage and transaction logs. Three lifecycle states keep the picture honest: a system stays on "setting up" until a parser exists, so the flow list never shows a switch that cannot work. Records whose flight cannot be resolved land in a shared manual-handling queue instead of being dropped.</div>
-      <div class="scope">27 screens · 9 modules · registry · connections · credentials · flows both ways · published APIs · monitoring · manual handling · logs · alerts · 32 real systems loaded</div>
+      <div class="ttl">Data Source Monitoring <span class="ver">v0.1</span></div>
+      <div class="desc">One of the four TOSS subsystems, sharing the same shell, sign-in and permission framework. It watches the eight external sources TOSS actually exchanges data with — Netline/Ops++, MO Plus, AMOS, LIDO, ACARS over SFTP, Amadeus over e-mail, VMS over API and AVES. Sources, connections and flows are seeded by the project team, so operators only switch them on, set the schedule and the alert threshold; a new flow goes through the project team. The status column keeps <i>empty</i> and <i>failed</i> apart, because a source that answered with no rows is not a source that is down, and other subsystems read that distinction. Messages whose flight cannot be resolved land in one shared queue — performance readings and flight documents alike — where a user picks the right flight and the answer travels back to the subsystem that asked.</div>
+      <div class="scope">8 menu entries · 4 groups · overview dashboard both ways · inbound sources · run history · outbound flows · e-mail templates · unmatched-record queue · data coverage · integration log</div>
+    </div>
+    <span class="material-symbols-outlined go">arrow_forward</span>
+  </a>
+
+  <a class="card" href="integration-hub.html" style="opacity:.62">
+    <div class="ic" style="background:#f1f5f9;color:#94a3b8"><span class="material-symbols-outlined">hub</span></div>
+    <div class="body">
+      <div class="ttl">Integration Hub <span class="ver" style="background:#f1f5f9;color:#64748b">superseded</span></div>
+      <div class="desc">The earlier 27-screen proposal, kept for reference only. It built the bus as a full administration site with create/edit screens for systems, connections and credentials. Review found that scope went well beyond the technical proposal, which describes this module as <i>integration monitoring</i> and puts the adding of a new system in the gateway configuration the project team owns. The screens above replace it.</div>
+      <div class="scope">27 screens · 9 modules · superseded on 22/09/2026 — read the replacement above</div>
     </div>
     <span class="material-symbols-outlined go">arrow_forward</span>
   </a>

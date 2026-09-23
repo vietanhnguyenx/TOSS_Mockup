@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<!--
+  MOCKUP v0.1 — TOSS / DATA SOURCE MONITORING (Giám sát nguồn dữ liệu)
+  ============================================================================
+  BA owner: Viet Anh · Dựng: 23/09/2026
+  Thay thế bản Integration Hub 27 màn (integration-hub-mockup.html) sau phản hồi
+  "overkill" của BA Lead ngày 22/09/2026.
+
+  CLAUDE.md §0 — chỉ vẽ element có nguồn, không suy diễn:
+    · Cấu trúc 8 mục menu / 4 nhóm        → DANH-GIA-SRS-FINAL-VA-KE-HOACH-THIET-KE-LAI-TRUC v0.3 §4.1
+    · Bố cục màn M1 (5 hàng, dạng biểu đồ) → cùng tài liệu §4.4
+    · 5 giá trị trạng thái, tách Rỗng/Lỗi  → BR-AOPS-11, SRS Station Manager v0.1
+    · Hàng đợi bản ghi chưa rõ chuyến      → BR-PF-31, SRS Operations-Analysis v0.1 §3.6
+    · 8 hệ thống có luồng đặc tả           → cùng tài liệu §2.1 và §2.2
+    · Chu kỳ Netline 5 phút/lần, ±3/±30 ngày, loại Leg_type Y/Z/N, leg_state CNL/DEL
+                                           → SRS Flight Load Control v0.1
+    · Kênh vào Email / API / SFTP          → Rule đồng bộ và bóc tách tài liệu.xlsx
+    · Mã điện M49 / M11 / DFD              → Bóc tách điện ACARS.xlsx
+    · Quy chuẩn phân trang, Table Settings, UTC, Change History, đặt tên
+                                           → SRS Thiết kế dùng chung v0.1
+    · Data Source Monitoring là 1 trong 4 phân hệ màn Home
+                                           → SRS Thiết kế dùng chung, "Kịch bản Title của hệ thống"
+
+  NGÔN NGỮ THIẾT KẾ — chủ đề SÁNG, kế thừa nguyên từ integration-hub-mockup.html
+  (lấy từ Figma sản phẩm thật "Quản lý ULD.png", xem memory feedback-mockup-design-source):
+    · teal #0090B3 (nút chính, mục sidebar đang chọn, trang hiện tại)
+    · amber #F39C0D (Export Excel) · nền trang #E5E9EC · sidebar #E1E9EC · panel trắng bo 14px
+    · bảng kẻ lưới ngang + dọc #E4E7EC, header #F2F4F7
+    · badge nền nhạt có chấm · ô nhập 44px · nút 40px · nhãn trên ô · dấu * đỏ khi bắt buộc
+    · thanh phân trang nằm NGOÀI vùng cuộn của bảng
+
+  MÀU BIỂU ĐỒ — đã chạy qua bộ kiểm tra bảng màu, không ước lượng bằng mắt:
+    cat1 teal #0090B3 (chiều VÀO) · cat2 indigo #5925DC (chiều RA)
+    → 6/6 kiểm tra PASS · ΔE mù màu deutan 18.0 (ngưỡng 8) · ΔE mắt thường 25.6 (ngưỡng 15)
+    Màu trạng thái (ok/warn/err) là bộ RIÊNG, không bao giờ dùng làm màu chuỗi dữ liệu.
+
+  VỀ DỮ LIỆU:
+    · TOÀN BỘ số liệu trên mockup là DỮ LIỆU MẪU, trừ tên 8 hệ thống và các quy tắc
+      đã dẫn nguồn ở trên.
+    · Địa chỉ máy chủ được CHE SẴN ngay từ đầu (<netline-db>:1521, <acars-sftp>:22…).
+      Bản thiết kế mới không cần phơi endpoint thật lên giao diện, nên không còn rủi ro
+      lộ hạ tầng khi đẩy bản công khai lên GitHub Pages.
+
+  BỐ CỤC VÀ MÀU LÀ ĐỀ XUẤT — cần BA/UI duyệt trước khi DEV dựng.
+  Mỗi vùng có data-pui (component PrimeNG/wrapper nội bộ) và data-src (dẫn nguồn).
+  Bật "Chú thích component" trên thanh đen để xem bản đồ component cho DEV.
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TOSS — Data Source Monitoring (mockup v0.1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<style>
+/* ===========================================================================
+   TOKENS — kế thừa nguyên từ integration-hub-mockup.html (Figma "Quản lý ULD")
+   =========================================================================== */
+:root{
+  --teal:#0090B3; --teal-dark:#0082A2; --teal-hover:#00789A; --teal-soft:#E6F5F9;
+  --amber:#F39C0D; --amber-hover:#DB8B08;
+  --page:#E5E9EC; --side:#E1E9EC; --side-2:#EAF0F2;
+  --panel:#FFFFFF; --surface:#F2F4F7; --surface-2:#F9FAFB;
+  --line:#E4E7EC; --line-strong:#D0D5DD;
+  --tx:#101828; --tx-2:#475467; --tx-3:#667085; --tx-mute:#98A2B3;
+  --ok:#16B364; --ok-bg:#EDFCF2; --ok-tx:#087443;
+  --warn:#F79009; --warn-bg:#FFFAEB; --warn-tx:#B54708;
+  --err:#F04438; --err-bg:#FEF3F2; --err-tx:#B42318;
+  --info:#0090B3; --info-bg:#E6F5F9; --info-tx:#00647C;
+  --neutral-bg:#F2F4F7; --neutral-tx:#475467;
+  /* màu chuỗi dữ liệu — TÁCH BIỆT khỏi màu trạng thái ở trên */
+  --cat1:#0090B3; --cat2:#5925DC;
+  --cat1-soft:rgba(0,144,179,.13); --cat2-soft:rgba(89,37,220,.10);
+  --r-sm:6px; --r:8px; --r-md:10px; --r-lg:14px; --r-xl:16px; --r-full:999px;
+  --sh-sm:0 1px 2px rgba(16,24,40,.05);
+  --sh:0 1px 3px rgba(16,24,40,.10),0 1px 2px rgba(16,24,40,.06);
+  --sh-lg:0 12px 32px rgba(16,24,40,.12),0 4px 8px rgba(16,24,40,.04);
+  --sh-xl:0 24px 48px -12px rgba(16,24,40,.25);
+}
+*{box-sizing:border-box}
+/* .fld và .frow khai báo display nên thắng quy tắc [hidden] của trình duyệt —
+   phải ép lại, nếu không các khối lẽ ra ẩn vẫn hiện. (Bẫy đã dẫm ở bản trước.) */
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;background:#333;color:var(--tx);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+  user-select:none;vertical-align:middle}
+
+/* --- thanh nháp, không thuộc sản phẩm --- */
+.devbar{display:flex;align-items:center;gap:10px;padding:9px 18px;background:#0B1220;color:#94A3B8;
+  font-size:11.5px;letter-spacing:.01em;flex-wrap:wrap}
+.devbar b{color:#fff}
+.devbar .tag{margin-left:auto;background:rgba(243,156,13,.16);color:#F3B34D;border:1px solid rgba(243,156,13,.35);
+  padding:3px 9px;border-radius:var(--r-full);font-weight:600;font-size:10.5px}
+.devbar .tag.d{background:rgba(0,144,179,.16);color:#5BC8E0;border-color:rgba(0,144,179,.4);margin-left:0}
+
+/* ============================= KHUNG ỨNG DỤNG ============================= */
+.stage{padding:14px;background:#333}
+.app{display:flex;height:calc(100vh - 76px);min-height:640px;background:var(--page);
+  border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh-xl)}
+
+/* ------------------------------ SIDEBAR ------------------------------ */
+.sidebar{width:246px;min-width:246px;background:linear-gradient(180deg,var(--side-2) 0%,var(--side) 100%);
+  display:flex;flex-direction:column;position:relative;transition:width .18s ease,min-width .18s ease}
+.sidebar.collapsed{width:66px;min-width:66px}
+.side-logo{padding:18px 16px 14px;display:flex;align-items:center;gap:9px}
+.side-logo svg{flex-shrink:0}
+.side-logo .lt{font-size:14.5px;font-weight:700;color:#0F2A44;letter-spacing:-.01em;line-height:1.1;white-space:nowrap}
+.side-logo .ls{display:block;font-size:9.5px;font-weight:600;color:var(--teal);letter-spacing:.06em;
+  text-transform:uppercase;margin-top:2px}
+.side-collapse{position:absolute;top:26px;right:-11px;width:22px;height:22px;border-radius:50%;
+  background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:5;box-shadow:var(--sh-sm);color:var(--tx-3)}
+.side-collapse .material-symbols-outlined{font-size:15px}
+.side-menu{flex:1;overflow-y:auto;padding:4px 12px 10px}
+.side-cap{font-size:9.5px;font-weight:700;color:var(--tx-mute);letter-spacing:.07em;text-transform:uppercase;
+  padding:14px 10px 6px}
+.side-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--r-md);cursor:pointer;
+  color:var(--tx-2);font-size:13px;font-weight:500;margin-bottom:2px;white-space:nowrap;transition:all .12s}
+.side-item .material-symbols-outlined{font-size:19px;flex-shrink:0;color:var(--tx-3)}
+.side-item:hover{background:rgba(255,255,255,.75);color:var(--tx)}
+.side-item.active{background:var(--teal);color:#fff;font-weight:600;box-shadow:0 2px 6px rgba(0,144,179,.32)}
+.side-item.active .material-symbols-outlined{color:#fff}
+.side-item .pip{margin-left:auto;font-size:10px;font-weight:700;background:rgba(255,255,255,.85);
+  color:var(--tx-3);border-radius:var(--r-full);padding:1px 7px}
+.side-item .pip.hot{background:var(--err);color:#fff}
+.side-item.active .pip{background:rgba(255,255,255,.24);color:#fff}
+.side-foot{border-top:1px solid rgba(255,255,255,.7);padding:12px}
+.side-user{display:flex;align-items:center;gap:10px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--teal);color:#fff;display:flex;
+  align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+.side-user .um{min-width:0;flex:1}
+.side-user .un{font-size:12.5px;font-weight:600;color:var(--tx);line-height:1.2;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-user .ue{font-size:10.5px;color:var(--tx-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.theme-seg{display:flex;background:#fff;border-radius:var(--r-full);padding:2px;flex-shrink:0;border:1px solid var(--line)}
+.theme-seg button{border:0;background:transparent;width:24px;height:22px;border-radius:var(--r-full);cursor:pointer;
+  color:var(--tx-mute);display:flex;align-items:center;justify-content:center}
+.theme-seg button.on{background:var(--teal-soft);color:var(--teal)}
+.theme-seg .material-symbols-outlined{font-size:14px}
+.sidebar.collapsed .lt,.sidebar.collapsed .ls,.sidebar.collapsed .si-label,.sidebar.collapsed .side-cap,
+.sidebar.collapsed .pip,.sidebar.collapsed .um,.sidebar.collapsed .theme-seg{display:none}
+.sidebar.collapsed .side-item{justify-content:center;padding:10px 0;gap:0}
+.sidebar.collapsed .side-logo{justify-content:center;padding:18px 0 14px}
+.sidebar.collapsed .side-user{justify-content:center}
+
+/* ------------------------------- MAIN -------------------------------- */
+.main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+.crumb{display:flex;align-items:center;gap:8px;padding:14px 20px 10px;font-size:12.5px;color:var(--tx-3)}
+.crumb .material-symbols-outlined{font-size:15px;color:var(--tx-mute)}
+.crumb .cur{color:var(--teal);font-weight:600}
+.crumb-right{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--tx-3)}
+.crumb-right b{color:var(--tx-2);font-weight:600}
+.live{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--ok-tx);
+  background:var(--ok-bg);border-radius:var(--r-full);padding:2px 9px}
+.live i{width:6px;height:6px;border-radius:50%;background:var(--ok);animation:bl 1.6s infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.25}}
+.content{flex:1;min-height:0;padding:0 20px 20px;overflow:auto;display:flex;flex-direction:column}
+.panel{background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden}
+.panel + .panel{margin-top:16px}
+/* Trong .chartrow các panel là Ô LƯỚI cạnh nhau, khoảng cách do gap lo.
+   Không chặn thì panel thứ hai ăn thêm margin-top:16px của quy tắc trên và
+   bị THỤT XUỐNG so với panel bên trái. (Lỗi đã bắt qua ảnh chụp.) */
+.chartrow > .panel + .panel{margin-top:0}
+.screen{display:none}
+.screen.active{display:flex;flex-direction:column;flex:1;min-height:0}
+.screen.active > .panel:has(.tw){flex:1;min-height:220px;display:flex;flex-direction:column}
+.screen.active > .panel:has(.tw) > .tw{flex:1;min-height:0}
+.screen.active > .kpis,.screen.active > .note,.screen.active > .chartrow{flex:0 0 auto}
+/* M1 là dashboard nên cuộn tự nhiên, không ép panel bảng giãn hết chiều cao */
+#m1.screen.active{display:block}
+
+/* ------------------------------ TOOLBAR ------------------------------ */
+.toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;flex-wrap:wrap}
+.filter-toggle{display:inline-flex;align-items:center;gap:8px;background:none;border:0;cursor:pointer;
+  font-family:inherit;font-size:13.5px;font-weight:600;color:var(--tx);padding:6px 4px}
+.filter-toggle .material-symbols-outlined{font-size:19px;color:var(--tx-2)}
+.filter-toggle .caret{font-size:20px;color:var(--tx-3);transition:transform .18s}
+.filter-toggle.closed .caret{transform:rotate(180deg)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 15px;
+  border-radius:var(--r);border:1px solid transparent;font-family:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:all .13s}
+.btn .material-symbols-outlined{font-size:18px}
+.btn-primary{background:var(--teal);color:#fff}
+.btn-primary:hover{background:var(--teal-hover)}
+.btn-amber{background:var(--amber);color:#fff}
+.btn-amber:hover{background:var(--amber-hover)}
+.btn-ghost{background:#fff;color:var(--tx-2);border-color:var(--line-strong)}
+.btn-ghost:hover{background:var(--surface-2);color:var(--tx)}
+.btn-plain{background:transparent;color:var(--tx-2);border-color:transparent}
+.btn-plain:hover{background:var(--surface)}
+.btn-sm{height:34px;padding:0 12px;font-size:12.5px}
+.btn-sm .material-symbols-outlined{font-size:16px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ------------------------------ FILTERS ------------------------------ */
+.filters{display:flex;gap:10px;padding:0 16px 14px;flex-wrap:wrap;align-items:flex-end}
+.filters.hidden{display:none}
+.fld{display:flex;flex-direction:column;gap:6px;flex:1 1 190px;min-width:0}
+.fld.narrow{flex:0 1 160px}
+.fld label{font-size:12px;font-weight:600;color:var(--tx-2)}
+.fld label .req{color:var(--err);margin-left:2px}
+.inp{height:44px;width:100%;padding:0 13px;border:1px solid var(--line-strong);border-radius:var(--r-md);
+  background:#fff;font-family:inherit;font-size:13px;color:var(--tx);outline:none;transition:border-color .13s,box-shadow .13s}
+.inp::placeholder{color:var(--tx-mute)}
+.inp:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,144,179,.13)}
+select.inp{appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;background-position:right 11px center;padding-right:36px}
+textarea.inp{height:auto;min-height:92px;padding:11px 13px;resize:vertical;line-height:1.5}
+.inp-sm{height:36px;font-size:12.5px;padding:0 10px}
+.f-actions{display:flex;gap:9px;flex-shrink:0}
+.hint{font-size:11.5px;color:var(--tx-3);margin-top:5px;line-height:1.45}
+
+/* ------------------------------ BẢNG ------------------------------- */
+.tw{overflow:auto;border-top:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+thead th{background:var(--surface);color:#344054;font-weight:600;text-align:left;padding:11px 13px;
+  border-bottom:1px solid var(--line);border-right:1px solid var(--line);position:sticky;top:0;z-index:3;
+  box-shadow:0 1px 0 var(--line)}
+thead th:last-child{border-right:0}
+tbody td{padding:11px 13px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);
+  color:var(--tx-2);vertical-align:middle}
+tbody td:last-child{border-right:0}
+tbody tr:hover td{background:#FBFCFD}
+tbody tr.dim td{opacity:.55}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.mid,th.mid{text-align:center}
+td .strong{color:var(--tx);font-weight:600}
+td .sub{display:block;font-size:11px;color:var(--tx-mute);font-weight:400;margin-top:2px;
+  white-space:normal;max-width:340px;line-height:1.4}
+.wrap{white-space:normal}
+.mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:11.5px}
+.ico-btn{border:0;background:transparent;cursor:pointer;color:var(--tx-3);padding:4px;border-radius:var(--r-sm);
+  display:inline-flex;transition:all .12s}
+.ico-btn:hover{background:var(--surface);color:var(--teal)}
+.ico-btn .material-symbols-outlined{font-size:18px}
+.acts{display:flex;gap:2px;align-items:center}
+.empty-row{padding:34px 16px;text-align:center;color:var(--tx-mute);font-size:13px}
+
+/* ------------------------------ BADGE -------------------------------- */
+/* Trạng thái LUÔN gồm biểu tượng + chữ, không bao giờ chỉ bằng màu. */
+.bdg{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:var(--r-sm);
+  font-size:11.5px;font-weight:600;white-space:nowrap}
+.bdg .material-symbols-outlined{font-size:14px}
+.bdg-ok{background:var(--ok-bg);color:var(--ok-tx)}
+.bdg-warn{background:var(--warn-bg);color:var(--warn-tx)}
+.bdg-err{background:var(--err-bg);color:var(--err-tx)}
+.bdg-info{background:var(--info-bg);color:var(--info-tx)}
+.bdg-mute{background:var(--neutral-bg);color:var(--neutral-tx)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--line);font-size:11.5px;color:var(--tx-2);font-weight:500}
+.chip .material-symbols-outlined{font-size:13px}
+.chip .x{cursor:pointer;color:var(--tx-mute);font-size:14px}
+.chip.teal{background:var(--teal-soft);border-color:#B6E3EE;color:var(--info-tx)}
+
+/* ------------------------------ SWITCH ------------------------------- */
+.sw{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;background:#D0D5DD;border-radius:var(--r-full);cursor:pointer;transition:.18s}
+.sw span::before{content:"";position:absolute;width:18px;height:18px;left:2px;top:2px;background:#fff;
+  border-radius:50%;transition:.18s;box-shadow:var(--sh-sm)}
+.sw input:checked + span{background:var(--ok)}
+.sw input:checked + span::before{transform:translateX(16px)}
+.sw-row{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--tx-2);font-weight:500}
+
+/* ----------------------------- THẺ SỐ -------------------------------- */
+.kpis{display:grid;grid-template-columns:1.35fr 1fr 1fr 1fr 1fr;gap:13px;margin-bottom:16px}
+.kpi{background:var(--panel);border-radius:var(--r-lg);padding:15px 17px;box-shadow:var(--sh);
+  border-left:3px solid var(--line);cursor:pointer;transition:all .14s;position:relative}
+.kpi:hover{box-shadow:var(--sh-lg);transform:translateY(-1px)}
+.kpi.on{border-left-color:var(--teal);background:linear-gradient(180deg,#F7FCFD,#fff)}
+.kpi .k{font-size:11.5px;color:var(--tx-3);font-weight:600;display:flex;align-items:center;gap:6px;padding-right:44px}
+.kpi .k .material-symbols-outlined{position:absolute;top:14px;right:14px;font-size:19px;
+  width:34px;height:34px;border-radius:var(--r);background:var(--surface);color:var(--tx-3);
+  display:flex;align-items:center;justify-content:center}
+.kpi.ok .k .material-symbols-outlined{background:var(--ok-bg);color:var(--ok-tx)}
+.kpi.warn .k .material-symbols-outlined{background:var(--warn-bg);color:var(--warn-tx)}
+.kpi.err .k .material-symbols-outlined{background:var(--err-bg);color:var(--err-tx)}
+.kpi.teal .k .material-symbols-outlined{background:var(--teal-soft);color:var(--teal)}
+/* thẻ số dùng CHỮ SỐ TỶ LỆ (không tabular) — chữ số đều ở cỡ lớn trông rời rạc */
+.kpi .v{font-size:26px;font-weight:700;color:var(--tx);line-height:1.15;margin-top:7px}
+.kpi.hero .v{font-size:40px;letter-spacing:-.02em}
+.kpi .s{font-size:11px;color:var(--tx-mute);margin-top:3px}
+.kpi.err .v{color:var(--err-tx)}
+.delta{display:inline-flex;align-items:center;gap:2px;font-size:11.5px;font-weight:700;margin-left:8px;
+  vertical-align:middle}
+.delta .material-symbols-outlined{font-size:15px}
+.delta.up{color:var(--ok-tx)} .delta.down{color:var(--err-tx)} .delta.flat{color:var(--tx-mute)}
+.spark{display:block;margin-top:8px}
+
+/* ---------------------------- PHÂN TRANG ----------------------------- */
+.pgbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line);
+  flex-wrap:wrap;flex:0 0 auto;background:var(--panel)}
+.pgbar .total{font-size:12.5px;color:var(--tx-2);font-weight:600}
+.pgbar .range{font-size:12px;color:var(--tx-mute)}
+.pg-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.pg-right .lb{font-size:12.5px;color:var(--tx-2)}
+.pg-btn{min-width:32px;height:32px;padding:0 8px;border-radius:var(--r);border:1px solid transparent;
+  background:transparent;color:var(--tx-2);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;transition:all .12s}
+.pg-btn:hover:not(:disabled):not(.on){background:var(--surface)}
+.pg-btn.on{background:var(--teal);color:#fff}
+.pg-btn:disabled{opacity:.3;cursor:default}
+.pg-btn .material-symbols-outlined{font-size:17px}
+
+/* --------------------------- ĐẦU MỤC KHỐI ---------------------------- */
+.sec{padding:16px}
+.sec-h{display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.sec-h .material-symbols-outlined{font-size:19px;color:var(--teal)}
+.sec-h h3{margin:0;font-size:14px;font-weight:600;color:var(--tx)}
+.sec-h .sub{font-size:11.5px;color:var(--tx-3);font-weight:400;margin-left:2px}
+.sec-h .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.note{background:var(--info-bg);border:1px solid #B6E3EE;border-radius:var(--r-md);padding:11px 13px;
+  font-size:12px;color:var(--info-tx);line-height:1.55;display:flex;gap:9px;align-items:flex-start}
+.note .material-symbols-outlined{font-size:17px;flex-shrink:0;margin-top:1px}
+.note.warn{background:var(--warn-bg);border-color:#FEDF89;color:var(--warn-tx)}
+.note b{font-weight:700}
+
+/* ------------------------------ BIỂU ĐỒ ------------------------------ */
+.chartrow{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.chartrow.half{grid-template-columns:1fr 1fr}
+.chart-b{padding:14px 16px 6px}
+.lgd{display:flex;gap:16px;align-items:center;padding:0 16px 10px;flex-wrap:wrap}
+.lgd i{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--tx-2);font-style:normal;font-weight:500}
+.lgd i b{width:11px;height:11px;border-radius:3px;display:inline-block}
+.svgwrap{position:relative}
+.svgwrap svg{display:block;width:100%;height:auto}
+.tipbox{position:absolute;pointer-events:none;background:#fff;border:1px solid var(--line-strong);
+  border-radius:var(--r-md);box-shadow:var(--sh-lg);padding:9px 11px;font-size:11.5px;color:var(--tx-2);
+  min-width:132px;display:none;z-index:9}
+.tipbox.on{display:block}
+.tipbox .tt{font-weight:700;color:var(--tx);font-size:12px;margin-bottom:5px}
+.tipbox .r{display:flex;align-items:center;gap:7px;margin-top:3px}
+.tipbox .r b{width:9px;height:9px;border-radius:2px}
+.tipbox .r span{margin-left:auto;font-weight:700;color:var(--tx);font-variant-numeric:tabular-nums}
+/* thanh ngang — MỘT màu cho mọi thanh, độ dài đã mang thông tin rồi */
+.hbars{padding:6px 16px 14px;display:flex;flex-direction:column;gap:9px}
+.hb{display:grid;grid-template-columns:132px 1fr 46px;align-items:center;gap:11px;cursor:pointer}
+.hb:hover .hb-t{background:var(--teal-dark)}
+.hb-l{font-size:12px;color:var(--tx-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* .hb-track là con của lưới nên được blockify sẵn; .hb-t thì KHÔNG —
+   span inline bỏ qua width/height, phải ép display:block. (Lỗi đã bắt khi chụp headless.) */
+.hb-track{display:block;height:19px;background:var(--surface);border-radius:var(--r-sm);overflow:hidden}
+.hb-t{display:block;height:100%;background:var(--cat1);border-radius:var(--r-sm);min-width:2px;transition:width .3s}
+.hb-v{font-size:12px;font-weight:700;color:var(--tx);text-align:right;font-variant-numeric:tabular-nums}
+/* VÀNH KHUYÊN (donut) — phần–tổng thể, 4 hạng mục, khe 2px bằng màu nền */
+.donutrow{display:flex;align-items:center;gap:20px;padding:14px 16px 10px}
+.donutrow svg{width:152px;height:152px;flex-shrink:0}
+.dlgd{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
+.dlgd i{display:flex;align-items:center;gap:9px;font-style:normal;font-size:12px;color:var(--tx-2);cursor:default}
+.dlgd i b{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.dlgd i em{font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dlgd i u{margin-left:auto;text-decoration:none;font-weight:700;color:var(--tx);font-variant-numeric:tabular-nums}
+.dlgd i s{text-decoration:none;color:var(--tx-mute);font-size:11px;min-width:38px;text-align:right;
+  font-variant-numeric:tabular-nums}
+/* ĐỒNG HỒ ĐO dạng cung tròn — KHÔNG phải bánh tròn 2 lát.
+   Cung giữ được vạch ngưỡng 80 / 90, thứ mà bánh tròn không thể hiện được. */
+.gaugewrap{padding:12px 16px 0;display:flex;justify-content:center}
+.gaugewrap svg{width:100%;max-width:300px;height:auto}
+.covbar{display:flex;align-items:center;gap:9px}
+.covbar .mini{height:7px;border-radius:var(--r-full);background:var(--surface);overflow:hidden;min-width:74px;flex:1}
+.covbar .mini i{display:block;height:100%;border-radius:var(--r-full);background:var(--ok)}
+.covbar .mini i.w{background:var(--warn)} .covbar .mini i.e{background:var(--err)}
+.covbar b{font-size:12.5px;font-variant-numeric:tabular-nums;min-width:46px;text-align:right;color:var(--tx)}
+/* bản bảng tương đương của mỗi biểu đồ */
+.tblview{display:none;padding:0 0 4px}
+.tblview.on{display:block}
+.tblview table{font-size:12px}
+.chartbody.off{display:none}
+
+/* ------------------------------ TAB THẺ ------------------------------ */
+.tabs{display:flex;gap:7px;padding:12px 16px 0;flex-wrap:wrap}
+.tab{height:34px;padding:0 14px;border-radius:9px;border:1px solid var(--line-strong);background:#fff;
+  font-family:inherit;font-size:12.5px;font-weight:600;color:var(--tx-2);cursor:pointer;display:inline-flex;
+  align-items:center;gap:7px;transition:all .12s}
+.tab:hover{border-color:var(--teal);color:var(--teal)}
+.tab.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.tab .cnt{background:var(--surface);color:var(--tx-3);border-radius:var(--r-full);padding:0 6px;font-size:10.5px}
+.tab.on .cnt{background:rgba(255,255,255,.25);color:#fff}
+
+/* ------------------------------ MODAL -------------------------------- */
+.ovl{position:fixed;inset:0;background:rgba(16,24,40,.55);display:none;align-items:flex-start;
+  justify-content:center;z-index:60;padding:34px 16px;overflow:auto;backdrop-filter:blur(1.5px)}
+.ovl.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--r-xl);width:100%;max-width:760px;box-shadow:var(--sh-xl);
+  overflow:hidden;animation:mIn .16s ease}
+.modal.sm{max-width:520px}
+@keyframes mIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.modal-h{display:flex;align-items:center;gap:10px;padding:20px 24px 6px}
+.modal-h h2{margin:0;font-size:19px;font-weight:700;color:var(--tx)}
+.modal-h .x{margin-left:auto;border:0;background:transparent;cursor:pointer;color:var(--tx-3);padding:5px;
+  border-radius:var(--r-sm);display:flex}
+.modal-h .x:hover{background:rgba(0,0,0,.05);color:var(--tx)}
+.modal-b{padding:14px 24px 20px;display:flex;flex-direction:column;gap:16px}
+.modal-f{display:flex;gap:10px;justify-content:flex-end;padding:16px 24px 22px}
+.mcard{background:#fff;border-radius:var(--r-lg);padding:18px 20px}
+.mcard h4{margin:0 0 15px;font-size:15px;font-weight:700;color:var(--tx)}
+.frow{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.frow.c2{grid-template-columns:repeat(2,1fr)}
+.frow.c1{grid-template-columns:1fr}
+
+/* ------------------------------ NGĂN KÉO ----------------------------- */
+.drw-ovl{position:fixed;inset:0;background:rgba(16,24,40,.45);display:none;z-index:70}
+.drw-ovl.open{display:block}
+.drw{position:fixed;top:0;right:0;bottom:0;width:508px;max-width:94vw;background:#fff;z-index:71;
+  transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:var(--sh-xl)}
+.drw.open{transform:none}
+.drw-h{padding:22px 24px 16px;background:linear-gradient(135deg,#F6FBFC 0%,#FFF9F2 100%);border-bottom:1px solid var(--line)}
+.drw-h .t{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.drw-h h2{margin:0;font-size:18px;font-weight:700;color:var(--tx)}
+.drw-h .st{font-size:12.5px;color:var(--tx-3);margin-top:4px}
+.drw-h .x{margin-left:auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
+  background:#fff;cursor:pointer;color:var(--tx-3);display:flex;align-items:center;justify-content:center}
+.drw-b{flex:1;overflow-y:auto;padding:6px 24px 24px}
+.drw-f{padding:14px 24px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;background:var(--surface-2)}
+.dl{display:block}
+.dl .row{padding:11px 0;border-bottom:1px solid var(--line)}
+.dl .row:last-child{border-bottom:0}
+.dl dt{font-size:12px;color:var(--tx-3);margin-bottom:4px}
+.dl dd{margin:0;font-size:13.5px;font-weight:600;color:var(--tx);word-break:break-word}
+.dl dd.norm{font-weight:400;color:var(--tx-2);font-size:13px;line-height:1.55}
+.cand{border:1px solid var(--line-strong);border-radius:var(--r-md);padding:12px 13px;margin-bottom:9px;
+  cursor:pointer;transition:all .13s;display:flex;align-items:center;gap:11px}
+.cand:hover{border-color:var(--teal);background:var(--teal-soft)}
+.cand.pick{border-color:var(--teal);background:var(--teal-soft);box-shadow:0 0 0 3px rgba(0,144,179,.12)}
+.cand .rb{width:17px;height:17px;border-radius:50%;border:2px solid var(--line-strong);flex-shrink:0;position:relative}
+.cand.pick .rb{border-color:var(--teal)}
+.cand.pick .rb::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--teal)}
+.cand .cm{flex:1;min-width:0}
+.cand .cn{font-size:13px;font-weight:700;color:var(--tx)}
+.cand .cs{font-size:11.5px;color:var(--tx-3);margin-top:2px}
+
+/* ------------------------------- TOAST ------------------------------- */
+.toast-wrap{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:9px;z-index:99}
+.toast{background:#fff;border-radius:var(--r-md);box-shadow:var(--sh-lg);padding:12px 15px;font-size:12.5px;
+  color:var(--tx-2);display:flex;gap:9px;align-items:flex-start;max-width:360px;
+  border-left:3px solid var(--teal);animation:tIn .18s ease}
+.toast.ok{border-left-color:var(--ok)} .toast.err{border-left-color:var(--err)}
+.toast .material-symbols-outlined{font-size:18px;color:var(--teal);flex-shrink:0}
+.toast.ok .material-symbols-outlined{color:var(--ok)} .toast.err .material-symbols-outlined{color:var(--err)}
+.toast b{display:block;color:var(--tx);font-size:13px;margin-bottom:2px}
+@keyframes tIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+
+/* -------------------------- CHÚ THÍCH COMPONENT ---------------------- */
+body.ann [data-pui]{outline:1px dashed rgba(0,144,179,.35);outline-offset:2px;border-radius:2px}
+body.ann [data-pui]>.annt{display:flex}
+.annt{display:none;position:absolute;top:-9px;right:-9px;z-index:45;align-items:center;
+  height:18px;min-width:18px;padding:0;border-radius:var(--r-full);background:var(--teal);color:#fff;
+  font:600 10px/1 Inter,sans-serif;justify-content:center;cursor:help;overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,.28);transition:min-width .13s,padding .13s}
+.annt .n{padding:0 5px;flex-shrink:0}
+.annt .full{max-width:0;opacity:0;white-space:nowrap;transition:max-width .16s,opacity .13s;font-weight:500}
+.annt:hover{padding-right:8px;z-index:60}
+.annt:hover .full{max-width:380px;opacity:1;padding-left:2px}
+.legend{display:none;margin:0 20px 20px;background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden}
+body.ann .legend{display:block}
+.legend table{white-space:normal}
+.legend td{font-size:12px}
+.legend td:first-child{font-family:ui-monospace,Consolas,monospace;color:var(--teal);font-weight:600;width:280px}
+
+@media (max-width:1240px){
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+  .chartrow,.chartrow.half{grid-template-columns:1fr}
+}
+@media (max-width:1180px){
+  .sidebar{width:66px;min-width:66px}
+  .sidebar .lt,.sidebar .ls,.sidebar .si-label,.sidebar .side-cap,.sidebar .pip,
+  .sidebar .um,.sidebar .theme-seg{display:none}
+  .sidebar .side-item{justify-content:center;padding:10px 0;gap:0}
+  .frow,.frow.c2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="devbar">
+  <span class="material-symbols-outlined" style="font-size:16px">draft</span>
+  <span><b>MOCKUP v0.1</b> — TOSS › Data Source Monitoring (Giám sát nguồn dữ liệu) · 8 mục menu / 4 nhóm</span>
+  <span class="tag d">Tên 8 hệ thống + quy tắc = có dẫn nguồn</span>
+  <span class="tag">Mọi số liệu = dữ liệu mẫu · địa chỉ máy chủ đã che</span>
+  <button class="btn btn-sm btn-ghost" style="height:26px;font-size:11px" onclick="toggleAnn()">
+    <span class="material-symbols-outlined" style="font-size:14px">label</span>
+    <span id="annLbl">Hiện chú thích component cho DEV</span></button>
+</div>
+
+<div class="stage">
+<div class="app">
+
+  <!-- ============================== SIDEBAR ==============================
+       §4.1 — 8 mục menu chia 4 nhóm. Data Source Monitoring là 1 trong 4 phân hệ
+       của TOSS (SRS Thiết kế dùng chung, "Kịch bản Title của hệ thống"), nên nó
+       dùng chung vỏ, chung đăng nhập và chung khung phân quyền — chỉ khác cây menu. -->
+  <nav class="sidebar" id="sidebar" data-pui="IamSidebar (p-panelMenu)" data-src="[§4.1] cây menu 8 mục / 4 nhóm">
+    <div class="side-logo">
+      <svg viewBox="0 0 200 150" width="24" height="18" fill="#D4B26F" aria-hidden="true">
+        <path d="M100,10 C101.5,45 118,70 148,82 C125,81 107,70 100,50 C93,70 75,81 52,82 C82,70 98.5,45 100,10 Z"/>
+        <path d="M100,60 C110,95 152,110 190,102 C150,107 118,92 100,74 C82,92 50,107 10,102 C48,110 90,95 100,60 Z"/>
+      </svg>
+      <div><span class="lt">Vietnam Airlines</span><span class="ls">Data Source Monitoring</span></div>
+    </div>
+    <button class="side-collapse" onclick="toggleSide()" title="Thu gọn menu">
+      <span class="material-symbols-outlined" id="sideIco">chevron_left</span></button>
+
+    <div class="side-menu">
+      <div class="side-item active" data-go="m1"><span class="material-symbols-outlined">monitoring</span>
+        <span class="si-label">Tổng quan giám sát</span></div>
+
+      <div class="side-cap">Đầu vào</div>
+      <div class="side-item" data-go="m2"><span class="material-symbols-outlined">input</span>
+        <span class="si-label">Nguồn dữ liệu vào</span><span class="pip">8</span></div>
+      <div class="side-item" data-go="m3"><span class="material-symbols-outlined">history</span>
+        <span class="si-label">Chi tiết &amp; lịch sử phiên</span></div>
+
+      <div class="side-cap">Đầu ra</div>
+      <div class="side-item" data-go="m4"><span class="material-symbols-outlined">output</span>
+        <span class="si-label">Luồng gửi ra</span><span class="pip">3</span></div>
+      <div class="side-item" data-go="m5"><span class="material-symbols-outlined">mail</span>
+        <span class="si-label">Mẫu nội dung email</span><span class="pip">4</span></div>
+
+      <div class="side-cap">Xử lý ngoại lệ</div>
+      <div class="side-item" data-go="m6"><span class="material-symbols-outlined">rule</span>
+        <span class="si-label">Bản ghi chưa rõ chuyến</span><span class="pip hot">37</span></div>
+
+      <div class="side-cap">Tra cứu</div>
+      <div class="side-item" data-go="m7"><span class="material-symbols-outlined">flight_takeoff</span>
+        <span class="si-label">Độ phủ dữ liệu</span></div>
+      <div class="side-item" data-go="m8"><span class="material-symbols-outlined">receipt_long</span>
+        <span class="si-label">Nhật ký tích hợp</span></div>
+    </div>
+
+    <div class="side-foot">
+      <div class="side-user">
+        <span class="avatar">VT</span>
+        <div class="um"><div class="un">Trực vận hành</div><div class="ue">ops@vietnamairlines.com</div></div>
+        <div class="theme-seg">
+          <button class="on" title="Giao diện sáng"><span class="material-symbols-outlined">light_mode</span></button>
+          <button onclick="toast('Giao diện tối — ngoài phạm vi mockup này')" title="Giao diện tối">
+            <span class="material-symbols-outlined">dark_mode</span></button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- =============================== MAIN =============================== -->
+  <div class="main">
+    <div class="crumb" data-pui="p-breadcrumb" data-src="[Figma] Home &gt; phân hệ &gt; màn hiện tại">
+      <span class="material-symbols-outlined">home</span><span>Data Source Monitoring</span>
+      <span class="material-symbols-outlined">chevron_right</span>
+      <span class="cur" id="crumbCur">Tổng quan giám sát</span>
+      <span class="crumb-right">
+        <span class="live"><i></i>Luồng trực tiếp</span>
+        <span class="material-symbols-outlined" style="font-size:15px">schedule</span>
+        Operating Date (UTC): <b id="opDate">23/09/2026</b> <b id="clock">--:--:--</b>
+      </span>
+    </div>
+
+    <div class="content">
+
+    <!-- ==================================================================
+         M1 — TỔNG QUAN GIÁM SÁT   (dashboard, CẢ HAI CHIỀU)
+         Nguồn: §4.4 · III.4.3 "Giám sát và vận hành tích hợp" (lưu lượng,
+         thời gian phản hồi, trạng thái xử lý thời gian thực) · BR-AOPS-11
+         ================================================================== -->
+    <section class="screen active" id="m1">
+
+      <!-- HÀNG 0 — thanh điều khiển chung: MỘT hàng lọc cho cả màn, không nhét
+           bộ lọc vào từng thẻ; đổi bộ lọc thì mọi khối bên dưới vẽ lại. -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f0')"
+                  data-pui="p-button (text)" data-src="[Figma] nút Filter thu/mở">
+            <span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-plain" onclick="refreshAll()">
+              <span class="material-symbols-outlined">refresh</span>Làm mới</button>
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')"
+                    data-pui="p-button (severity=warn)" data-src="[Thiết kế dùng chung] Quy chuẩn file xuất Excel">
+              <span class="material-symbols-outlined">download</span>Export Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f0"
+             data-pui="cmm-dynamic-form (p-datepicker, p-select, p-multiselect)"
+             data-src="[§4.4 Hàng 0] một hàng lọc duy nhất cho cả màn">
+          <div class="fld narrow"><label>Khoảng thời gian</label>
+            <select class="inp" id="fRange" onchange="refreshAll()">
+              <option value="24">24 giờ gần nhất</option>
+              <option value="7">7 ngày</option>
+              <option value="30">30 ngày</option>
+            </select></div>
+          <div class="fld narrow"><label>Chiều</label>
+            <select class="inp" id="fDir" onchange="refreshAll()">
+              <option value="">Tất cả</option><option value="Vào">Vào</option><option value="Ra">Ra</option>
+            </select></div>
+          <div class="fld"><label>Hệ thống</label>
+            <select class="inp" id="fSys" onchange="refreshAll()">
+              <option value="">Tất cả 8 hệ thống</option>
+            </select></div>
+          <div class="f-actions">
+            <button class="btn btn-primary" onclick="refreshAll()">
+              <span class="material-symbols-outlined">search</span>Tìm kiếm</button>
+            <button class="btn btn-ghost" onclick="resetF0()">
+              <span class="material-symbols-outlined">restart_alt</span>Xóa lọc</button>
+          </div>
+          <div style="flex:1 1 100%;margin-top:-4px">
+            <div class="hint"><b>Mọi mốc thời gian trên màn này là giờ UTC</b> — quy chuẩn thời gian hệ thống,
+              SRS Thiết kế dùng chung. Định dạng dd/MM/yyyy HH:mm.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HÀNG 1 — dải sức khỏe. Một giá trị hiện tại kèm xu hướng thì THẺ SỐ
+           đúng hơn biểu đồ một cột. -->
+      <div class="kpis" data-pui="p-card (KPI row · stat tile)" data-src="[§4.4 Hàng 1] số chủ đạo + 4 thẻ số">
+        <div class="kpi hero on" onclick="toast('Số chủ đạo — tỷ lệ xử lý thành công 24 giờ')">
+          <div class="k"><span class="material-symbols-outlined">check_circle</span>Tỷ lệ xử lý thành công</div>
+          <div class="v">99,2%<span class="delta up"><span class="material-symbols-outlined">arrow_upward</span>0,3</span></div>
+          <div class="s">24 giờ gần nhất · so với 24 giờ trước</div>
+          <svg class="spark" id="spkHero" height="30" viewBox="0 0 160 30" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="kpi teal" onclick="setDir('Vào')">
+          <div class="k"><span class="material-symbols-outlined">south_west</span>Bản tin vào 24 giờ</div>
+          <div class="v">12.480<span class="delta up"><span class="material-symbols-outlined">arrow_upward</span>4%</span></div>
+          <div class="s">Bấm để lọc Chiều = Vào</div>
+          <svg class="spark" id="spkIn" height="26" viewBox="0 0 160 26" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="kpi teal" onclick="setDir('Ra')">
+          <div class="k"><span class="material-symbols-outlined">north_east</span>Bản tin ra 24 giờ</div>
+          <div class="v">1.203<span class="delta down"><span class="material-symbols-outlined">arrow_downward</span>2%</span></div>
+          <div class="s">Bấm để lọc Chiều = Ra</div>
+          <svg class="spark" id="spkOut" height="26" viewBox="0 0 160 26" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="kpi err" onclick="filterErr()">
+          <div class="k"><span class="material-symbols-outlined">error</span>Nguồn đang lỗi</div>
+          <div class="v">1</div>
+          <div class="s">Bấm để lọc bảng sức khỏe bên dưới</div>
+        </div>
+        <div class="kpi warn" onclick="go('m6')">
+          <div class="k"><span class="material-symbols-outlined">rule</span>Bản ghi chờ xử lý</div>
+          <div class="v">37</div>
+          <div class="s"><b style="color:var(--err-tx)">6 quá 48 giờ</b> · bấm để sang hàng đợi</div>
+        </div>
+      </div>
+
+      <!-- HÀNG 2 — hai biểu đồ chính -->
+      <div class="chartrow">
+
+        <!-- 2a — lưu lượng theo thời gian: 2 chuỗi, MỘT trục y (cùng đơn vị) -->
+        <div class="panel" data-pui="p-chart (line) / SVG inline" data-src="[§4.4 Hàng 2a] · [III.4.3] lưu lượng theo thời gian">
+          <div class="sec-h">
+            <span class="material-symbols-outlined">show_chart</span>
+            <h3>Lưu lượng theo thời gian</h3>
+            <span class="sub" id="flowSub">24 giờ gần nhất · số bản tin</span>
+            <div class="right">
+              <button class="btn btn-sm btn-ghost" onclick="swapView('flow',this)">
+                <span class="material-symbols-outlined">table_rows</span>Xem dạng bảng</button>
+            </div>
+          </div>
+          <div class="lgd" id="flowLgd"></div>
+          <div class="chartbody" id="flowChart">
+            <div class="chart-b svgwrap" id="flowWrap">
+              <svg id="flowSvg" viewBox="0 0 760 236" preserveAspectRatio="none"></svg>
+              <div class="tipbox" id="flowTip"></div>
+            </div>
+          </div>
+          <div class="tblview" id="flowTbl"></div>
+        </div>
+
+        <!-- 2b — lỗi theo nguồn: thanh ngang, MỘT màu cho mọi thanh -->
+        <div class="panel" data-pui="p-chart (horizontal bar) / SVG inline" data-src="[§4.4 Hàng 2b] lỗi theo nguồn">
+          <div class="sec-h">
+            <span class="material-symbols-outlined">bar_chart</span>
+            <h3>Lỗi theo nguồn</h3>
+            <div class="right">
+              <button class="btn btn-sm btn-ghost" onclick="swapView('err',this)">
+                <span class="material-symbols-outlined">table_rows</span>Bảng</button>
+            </div>
+          </div>
+          <div class="chartbody" id="errChart"><div class="hbars" id="errBars"></div></div>
+          <div class="tblview" id="errTbl"></div>
+        </div>
+      </div>
+
+      <!-- HÀNG 3 — bảng sức khỏe từng nguồn (xương sống).
+           8 hệ thống đều mang nghĩa riêng ⇒ dùng BẢNG, không dùng biểu đồ 8 màu. -->
+      <div class="panel">
+        <div class="sec-h">
+          <span class="material-symbols-outlined">lan</span>
+          <h3>Sức khỏe từng nguồn</h3>
+          <span class="sub">8 hệ thống có luồng đã đặc tả trong bộ SRS bản cuối</span>
+          <div class="right">
+            <span class="chip" id="hFilterChip" hidden>
+              <span class="material-symbols-outlined">filter_alt</span><span id="hFilterTx"></span>
+              <span class="x" onclick="clearHFilter()">×</span></span>
+            <button class="btn btn-sm btn-ghost" onclick="toast('Table Settings — ẩn/hiện và kéo thả thứ tự cột, lưu theo từng tài khoản')"
+                    data-pui="IamTableSettings (p-table columns)" data-src="[Thiết kế dùng chung] Customize bảng biểu">
+              <span class="material-symbols-outlined">tune</span>Table Settings</button>
+          </div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.4 Hàng 3] · [§2.1–2.2] 8 hệ thống · số liệu mẫu">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Hệ thống</th><th>Chiều</th><th>Kênh</th>
+            <th style="width:150px">Trạng thái</th><th>Lần gần nhất</th>
+            <th class="num">Bản tin</th><th style="width:150px">Thành công 7 ngày</th>
+            <th class="num">Phản hồi</th><th class="num">Chưa rõ chuyến</th><th style="width:50px"></th>
+          </tr></thead><tbody id="healthBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="healthBody"></div>
+      </div>
+
+      <!-- HÀNG 4 — hai khối phụ -->
+      <div class="chartrow half" style="margin-top:16px">
+
+        <div class="panel" data-pui="p-chart (doughnut) / SVG inline" data-src="[§4.4 Hàng 4a] · [BR-PF-31] lý do chưa ghép được">
+          <div class="sec-h">
+            <span class="material-symbols-outlined">rule</span>
+            <h3>Việc đang chờ xử lý</h3>
+            <span class="sub">theo lý do</span>
+            <div class="right"><button class="btn btn-sm btn-primary" onclick="go('m6')">
+              <span class="material-symbols-outlined">arrow_forward</span>Mở hàng đợi</button></div>
+          </div>
+          <div class="donutrow">
+            <svg id="rsnDonut" viewBox="0 0 200 200"></svg>
+            <div class="dlgd" id="rsnLgd"></div>
+          </div>
+          <div class="tw" style="max-height:186px">
+            <table><thead><tr><th>Phân hệ</th><th class="num">Đang chờ</th>
+              <th class="num">Quá 48 giờ</th><th>Chờ lâu nhất</th></tr></thead>
+              <tbody id="rsnBody"></tbody></table>
+          </div>
+        </div>
+
+        <div class="panel" data-pui="p-knob / SVG inline (gauge)" data-src="[§4.4 Hàng 4b] · [§5.13 giữ lại] độ phủ dữ liệu">
+          <div class="sec-h">
+            <span class="material-symbols-outlined">flight_takeoff</span>
+            <h3>Độ phủ dữ liệu</h3>
+            <span class="sub">nguồn ACARS · 7 ngày</span>
+            <div class="right"><button class="btn btn-sm btn-primary" onclick="go('m7')">
+              <span class="material-symbols-outlined">arrow_forward</span>Chi tiết</button></div>
+          </div>
+          <!-- viewBox phải cao tới 240: cung 270° với tâm y=130, bán kính 100 chạm tới
+               y≈219 ở hai chân, để 186 như ban đầu là cắt mất chân cung. -->
+          <div class="gaugewrap"><svg id="covGauge" viewBox="0 0 300 240"></svg></div>
+          <div class="sec" style="padding-top:6px">
+            <div class="note warn">
+              <span class="material-symbols-outlined">warning</span>
+              <div><b>5 / 32 tàu bay dưới ngưỡng 80%.</b> Luồng chạy thành công vẫn có thể thiếu dữ liệu
+              nếu tàu bay không gửi điện — đây là câu hỏi khác với "luồng có chạy không".</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:16px" data-src="[BR-AOPS-11] SRS Station Manager v0.1">
+        <span class="material-symbols-outlined">info</span>
+        <div><b>Rỗng và Lỗi là hai trạng thái tách bạch, không gộp.</b>
+        <i>Rỗng</i> = gọi thành công nhưng không có bản ghi nào. <i>Lỗi</i> = phiên gần nhất thất bại.
+        Các phân hệ khác trông vào Trục để biết nguồn đang rỗng hay đang hỏng, nên không được dùng
+        chung một thông báo — yêu cầu <b>BR-AOPS-11</b>.
+        <br>Trạng thái luôn hiển thị <b>biểu tượng kèm chữ</b>, không bao giờ chỉ bằng màu.</div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M2 — NGUỒN DỮ LIỆU VÀO  (chỉ xem + cấu hình tối thiểu)
+         §4.3 M2 · III.4.1 — thêm hệ thống mới là cấu hình Route/Plugin/Upstream
+         tại API Gateway do đội triển khai làm, KHÔNG phải màn tự phục vụ.
+         ================================================================== -->
+    <section class="screen" id="m2">
+      <div class="note" style="margin-bottom:14px" data-src="[III.4.1] đề xuất kỹ thuật VNAOCC v0.3">
+        <span class="material-symbols-outlined">lock</span>
+        <div><b>Không có nút Thêm mới / Xóa nguồn.</b> Hệ thống, kết nối và luồng do <b>đội dự án</b>
+        nạp sẵn qua cấu hình Route / Plugin / Upstream tại API Gateway. Người dùng chỉ
+        <b>bật/tắt, đặt lịch chạy và đặt ngưỡng cảnh báo</b>. Luồng mới phải qua đội dự án duyệt.</div>
+      </div>
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f2')"><span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')">
+              <span class="material-symbols-outlined">download</span>Export Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f2" data-pui="cmm-dynamic-form" data-src="[§4.3 M2] lọc theo kênh và trạng thái">
+          <div class="fld"><label>Tìm theo tên hệ thống</label>
+            <input class="inp" id="q2" placeholder="Nhập tên hệ thống" oninput="renderSrc()"></div>
+          <div class="fld narrow"><label>Kênh</label>
+            <select class="inp" id="ch2" onchange="renderSrc()"><option value="">Tất cả</option>
+              <option>Đồng bộ</option><option>API</option><option>SFTP</option><option>Email</option></select></div>
+          <div class="fld narrow"><label>Trạng thái</label>
+            <select class="inp" id="st2" onchange="renderSrc()"><option value="">Tất cả</option>
+              <option value="ok">Bình thường</option><option value="empty">Rỗng</option>
+              <option value="late">Trễ lịch</option><option value="err">Lỗi</option>
+              <option value="off">Đã tắt</option></select></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§2.1] 8 nguồn · cấu hình là dữ liệu mẫu">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Hệ thống</th><th>Kênh</th><th>Điểm kết nối</th>
+            <th>Lịch chạy</th><th style="width:150px">Trạng thái</th>
+            <th class="num">Ngưỡng lỗi</th><th class="mid" style="width:96px">Bật/Tắt</th>
+            <th style="width:50px"></th></tr></thead>
+            <tbody id="srcBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="srcBody"></div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M3 — CHI TIẾT NGUỒN + LỊCH SỬ PHIÊN   (cấp PHIÊN CHẠY)
+         §4.2 — chia màn theo cấp độ dữ liệu: phiên chạy ở M3, từng bản tin ở M8.
+         ================================================================== -->
+    <section class="screen" id="m3">
+      <div class="panel" style="margin-bottom:16px">
+        <div class="sec-h">
+          <span class="material-symbols-outlined">lan</span>
+          <h3 id="d3Name">Netline / Ops++</h3>
+          <span class="sub" id="d3Sub">Chiều Vào · kênh Đồng bộ</span>
+          <div class="right">
+            <select class="inp inp-sm" style="width:210px" id="d3Pick" onchange="pickSrc(this.value)"></select>
+            <button class="btn btn-sm btn-primary" onclick="openModal('mRerun')"
+                    data-pui="p-button" data-src="[§4.3 M3] chạy lại thủ công một phiên">
+              <span class="material-symbols-outlined">restart_alt</span>Chạy lại</button>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="frow" data-pui="p-fieldset (readonly)" data-src="[III.4.1] cấu hình do đội dự án nạp — màn chỉ xem">
+            <div class="fld"><label>Điểm kết nối</label>
+              <input class="inp" id="d3Ep" value="&lt;netline-db&gt;:1521" readonly></div>
+            <div class="fld"><label>Chu kỳ</label><input class="inp" id="d3Sched" value="5 phút/lần" readonly></div>
+            <div class="fld"><label>Phạm vi lấy</label><input class="inp" id="d3Scope" value="±3 ngày, ±30 ngày" readonly></div>
+          </div>
+          <div class="note" style="margin-top:14px" data-src="[SRS Flight Load Control v0.1] quy tắc lọc chuyến">
+            <span class="material-symbols-outlined">filter_alt</span>
+            <div id="d3Rule"><b>Quy tắc lọc khi đồng bộ.</b> Loại bỏ chuyến có hậu tố
+              <b>Leg_type = Y, Z, N</b>; chỉ lấy chuyến có <b>leg_state khác CNL và DEL</b>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="sec-h">
+          <span class="material-symbols-outlined">history</span>
+          <h3>Lịch sử phiên chạy</h3>
+          <span class="sub">một dòng = một lần đồng bộ hoặc một mẻ gửi</span>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§4.2] cấp phiên chạy · dữ liệu mẫu">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Bắt đầu (UTC)</th><th>Thời lượng</th>
+            <th style="width:150px">Kết quả</th><th class="num">Nhận được</th><th class="num">Lỗi</th>
+            <th>Ghi chú</th><th style="width:80px">Thao tác</th></tr></thead>
+            <tbody id="runBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="runBody"></div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M4 — LUỒNG GỬI RA   (chọn kênh gửi)
+         §4.3 M4 · luồng ra có trong SRS: Notification sang MO Plus, chuyển tiếp
+         điện ACARS qua email, kết xuất tệp cho PEP/PET.
+         ================================================================== -->
+    <section class="screen" id="m4">
+      <div class="note warn" style="margin-bottom:14px" data-src="[§5 câu hỏi 1] điểm cần làm rõ">
+        <span class="material-symbols-outlined">help</span>
+        <div><b>Danh sách luồng ra chưa đầy đủ — cần VNA xác nhận.</b> Bộ SRS bản cuối chỉ ghi rõ
+        <b>một</b> luồng ra (Notification sang MO Plus) cùng cột <i>Trạng thái Config gửi email</i>
+        trong bảng điện ACARS. Ba luồng dưới đây là phần đã có căn cứ; phần còn lại chờ bổ sung.</div>
+      </div>
+      <div class="panel">
+        <div class="sec-h">
+          <span class="material-symbols-outlined">output</span>
+          <h3>Luồng gửi ra</h3>
+          <span class="sub">luồng thiết kế sẵn · người dùng chọn kênh gửi và bật/tắt</span>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table, editable cell)" data-src="[§4.3 M4] chọn kênh SFTP/API/File/Email">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Luồng</th><th>Đích</th><th>Nội dung gửi</th>
+            <th style="width:168px">Kênh gửi</th><th style="width:150px">Bước duyệt</th>
+            <th class="mid" style="width:96px">Bật/Tắt</th><th style="width:50px"></th></tr></thead>
+            <tbody id="outBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="outBody"></div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M5 — MẪU NỘI DUNG EMAIL   (giữ từ §5.18 theo quyết định BA Lead)
+         Căn cứ giữ: email là kênh ra có thật — cột "Trạng thái Config gửi email"
+         (Y/N) theo từng mã điện trong Bóc tách điện ACARS.xlsx.
+         ================================================================== -->
+    <section class="screen" id="m5">
+      <div class="chartrow" style="margin-bottom:0">
+        <div class="panel" data-pui="cmm-dynamic-form (p-editor)" data-src="[§5.18 giữ lại] soạn tiêu đề + nội dung có biến thay thế">
+          <div class="sec-h">
+            <span class="material-symbols-outlined">edit_note</span>
+            <h3 id="tplName">Cảnh báo nguồn dữ liệu lỗi</h3>
+            <div class="right">
+              <button class="btn btn-sm btn-ghost" onclick="toast('Gửi thử — mô phỏng, không gửi thật','ok')">
+                <span class="material-symbols-outlined">send</span>Gửi thử</button>
+              <button class="btn btn-sm btn-primary" onclick="toast('Đã lưu mẫu (mô phỏng)','ok')">
+                <span class="material-symbols-outlined">save</span>Lưu</button>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="fld" style="margin-bottom:14px"><label>Tiêu đề<span class="req">*</span></label>
+              <input class="inp" id="tplSubj" value="[TOSS] Nguồn {{ten_nguon}} lỗi lần thứ {{so_lan}}"></div>
+            <div class="fld"><label>Nội dung<span class="req">*</span></label>
+              <textarea class="inp" id="tplBody" style="min-height:180px">Kính gửi {{dau_moi}},
+
+Hệ thống TOSS ghi nhận nguồn {{ten_nguon}} gặp lỗi khi đồng bộ.
+
+- Thời điểm (UTC): {{thoi_diem}}
+- Số lần thất bại liên tiếp: {{so_lan}}
+- Mã truy vết: {{ma_truy_vet}}
+
+Vui lòng kiểm tra và phản hồi.</textarea></div>
+            <div class="hint">Biến thay thế khả dụng:
+              <span class="chip teal">{{ten_nguon}}</span> <span class="chip teal">{{so_lan}}</span>
+              <span class="chip teal">{{ma_truy_vet}}</span> <span class="chip teal">{{dau_moi}}</span>
+              <span class="chip teal">{{thoi_diem}}</span></div>
+            <div class="sw-row" style="margin-top:14px">
+              <label class="sw"><input type="checkbox" checked><span></span></label>Kích hoạt mẫu này</div>
+          </div>
+        </div>
+        <div class="panel" data-pui="IamTable (p-listbox)" data-src="[§5.18] danh sách mẫu">
+          <div class="sec-h"><span class="material-symbols-outlined">list</span><h3>Danh sách mẫu</h3></div>
+          <div class="tw" style="border-top:0">
+            <table><tbody id="tplBodyList"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M6 — BẢN GHI CHƯA RÕ CHUYẾN   (trọng tâm)
+         Căn cứ: BR-PF-31 — SRS Operations-Analysis v0.1 §3.6. Màn DÙNG CHUNG
+         cho mọi phân hệ, Performance Factor có thẻ riêng.
+         ================================================================== -->
+    <section class="screen" id="m6">
+      <div class="panel">
+        <div class="tabs" data-pui="p-tabView (thẻ theo phân hệ)" data-src="[BR-PF-31] màn dùng chung, PF có thẻ riêng">
+          <button class="tab on" data-tab="" onclick="pickTab(this)">Tất cả <span class="cnt">37</span></button>
+          <button class="tab" data-tab="PF" onclick="pickTab(this)">Performance Factor <span class="cnt">21</span></button>
+          <button class="tab" data-tab="DOC" onclick="pickTab(this)">Tài liệu chuyến bay <span class="cnt">16</span></button>
+        </div>
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f6')"><span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')">
+              <span class="material-symbols-outlined">download</span>Export Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f6" data-pui="cmm-dynamic-form" data-src="[BR-PF-31] lọc theo nguồn, lý do, thời gian chờ">
+          <div class="fld narrow"><label>Nguồn</label>
+            <select class="inp" id="q6src" onchange="renderQueue()"><option value="">Tất cả</option>
+              <option>PF–PEP</option><option>PF–PET</option><option>PF–ATR</option>
+              <option>LS</option><option>PM</option><option>GD</option><option>FZFW</option></select></div>
+          <div class="fld"><label>Lý do</label>
+            <select class="inp" id="q6rsn" onchange="renderQueue()"><option value="">Tất cả</option>
+              <option>Không tìm thấy chuyến</option><option>Khớp nhiều chuyến</option>
+              <option>Thiếu mã sân bay</option><option>Sai lược đồ</option></select></div>
+          <div class="fld narrow"><label>Thời gian chờ</label>
+            <select class="inp" id="q6age" onchange="renderQueue()"><option value="">Tất cả</option>
+              <option value="48">Quá 48 giờ</option></select></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[BR-PF-31] hàng đợi bản ghi chưa ghép được · dữ liệu mẫu">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Nguồn</th><th>Bản ghi</th><th>Lý do</th>
+            <th class="num">Ứng viên</th><th style="width:186px">Ảnh hưởng tới hệ số</th>
+            <th>Chờ</th><th style="width:116px">Thao tác</th></tr></thead>
+            <tbody id="qBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="qBody"></div>
+      </div>
+
+      <div class="note" style="margin-top:14px" data-src="[Ops-Analysis §3.6] hợp đồng dữ liệu hai chiều">
+        <span class="material-symbols-outlined">swap_horiz</span>
+        <div><b>Hợp đồng dữ liệu đã có sẵn trong SRS Operations-Analysis.</b>
+        Phân hệ gốc <b>gửi sang</b>: nhánh, tệp nguồn, số hiệu tàu bay nếu có, ngày đo, giờ đo nếu có,
+        số hiệu chuyến, các chỉ số, lý do, danh sách chuyến nghi ngờ; nhánh ATR kèm cờ
+        <i>đang bị loại khỏi hệ số</i>. Trục <b>trả lại</b>: chuyến bay người dùng đã chọn.
+        <br>Nhánh <b>ATR</b> sau khi gán chuyến thì gán tàu bay và <b>tính lại kỳ</b>; nhánh PEP và PET
+        chỉ cập nhật liên kết, <b>không tính lại</b>.</div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M7 — ĐỘ PHỦ DỮ LIỆU   (giữ từ §5.13, gộp ACARS + QAR thành 1 màn)
+         ================================================================== -->
+    <section class="screen" id="m7">
+      <div class="note warn" style="margin-bottom:14px" data-src="[§5 câu hỏi 9] QAR chưa có nguồn">
+        <span class="material-symbols-outlined">help</span>
+        <div><b>Giá trị QAR trong bộ lọc đang tắt.</b> QAR <b>xuất hiện 0 lần</b> trong cả 11 tài liệu
+        SRS bản cuối, nên chưa xác định được dữ liệu QAR đến từ hệ thống nào và bằng kênh gì.
+        Bật lại khi VNA xác nhận nguồn.</div>
+      </div>
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f7')"><span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')">
+              <span class="material-symbols-outlined">download</span>Export Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f7" data-pui="cmm-dynamic-form" data-src="[§4.3 M7] bộ lọc chọn nguồn thay cho 2 màn riêng">
+          <div class="fld narrow"><label>Nguồn dữ liệu</label>
+            <select class="inp" id="c7src" onchange="renderCov()">
+              <option value="ACARS">ACARS</option>
+              <option value="QAR" disabled>QAR (chưa xác định nguồn)</option>
+            </select></div>
+          <div class="fld narrow"><label>Ngưỡng đạt</label>
+            <input class="inp" id="c7thr" type="number" value="80" min="0" max="100" oninput="renderCov()"></div>
+          <div class="fld narrow"><label>Trạng thái</label>
+            <select class="inp" id="c7st" onchange="renderCov()"><option value="">Tất cả</option>
+              <option value="ok">Đạt</option><option value="w">Cần theo dõi</option>
+              <option value="e">Dưới ngưỡng</option></select></div>
+          <div style="flex:1 1 100%"><div class="hint">
+            <b>Mẫu số đang tính theo bảng LEG đã lọc</b> (bỏ Leg_type Y/Z/N, bỏ leg_state CNL/DEL) —
+            cách đếm này cần chốt, xem câu hỏi 10 của tài liệu đánh giá.</div></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[§5.13 giữ lại] bảng theo từng tàu bay · dữ liệu mẫu">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Số hiệu tàu bay</th><th>Loại</th>
+            <th class="num">Chuyến khai thác</th><th class="num">Có dữ liệu</th><th class="num">Thiếu</th>
+            <th style="width:190px">Độ phủ</th><th style="width:158px">Trạng thái</th></tr></thead>
+            <tbody id="covBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="covBody"></div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M8 — NHẬT KÝ TÍCH HỢP   (CẤP TỪNG BẢN TIN, CẢ HAI CHIỀU)
+         §4.2 — màn "Nhật ký gửi" của bản nháp đầu đã gộp vào đây; thao tác
+         gửi lại là nút trên dòng bản tin chiều Ra.
+         Layout kế thừa quy chuẩn Change History (SRS Thiết kế dùng chung).
+         ================================================================== -->
+    <section class="screen" id="m8">
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'f8')"><span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')">
+              <span class="material-symbols-outlined">download</span>Export Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="f8" data-pui="cmm-dynamic-form" data-src="[§4.2] bộ lọc Chiều Vào/Ra — điểm khác bản nháp đầu">
+          <div class="fld narrow"><label>Chiều</label>
+            <select class="inp" id="l8dir" onchange="renderLog()"><option value="">Tất cả</option>
+              <option value="Vào">Vào</option><option value="Ra">Ra</option></select></div>
+          <div class="fld narrow"><label>Nguồn / đích</label>
+            <select class="inp" id="l8sys" onchange="renderLog()"><option value="">Tất cả</option></select></div>
+          <div class="fld narrow"><label>Kết quả</label>
+            <select class="inp" id="l8st" onchange="renderLog()"><option value="">Tất cả</option>
+              <option value="ok">Thành công</option><option value="err">Thất bại</option></select></div>
+          <div class="fld"><label>Tìm trong nội dung</label>
+            <input class="inp" id="l8q" placeholder="Số hiệu chuyến, mã điện, mã truy vết" oninput="renderLog()"></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[Thiết kế dùng chung] layout Change History · dữ liệu mẫu">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Thời điểm (UTC)</th><th style="width:78px">Chiều</th>
+            <th>Nguồn / đích</th><th>Loại bản tin</th><th>Khóa nhận dạng</th>
+            <th style="width:140px">Kết quả</th><th>Chi tiết</th><th style="width:92px">Thao tác</th></tr></thead>
+            <tbody id="logBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="logBody"></div>
+      </div>
+    </section>
+
+    </div><!-- /content -->
+
+    <!-- LEGEND — bản đồ component cho DEV, hiện khi bật chú thích -->
+    <div class="legend">
+      <div class="sec-h"><span class="material-symbols-outlined">label</span>
+        <h3>Bản đồ component cho DEV</h3>
+        <span class="sub">data-pui → component PrimeNG 21 / wrapper nội bộ ESB-FE</span></div>
+      <div class="tw" style="max-height:340px">
+        <table><thead><tr><th>data-pui</th><th>Dùng ở đâu</th><th>Ghi chú cho DEV</th></tr></thead>
+        <tbody>
+          <tr><td>IamSidebar (p-panelMenu)</td><td>Cây menu 8 mục</td>
+            <td>Phân hệ dùng chung vỏ TOSS; ẩn mục theo quyền như màn Home</td></tr>
+          <tr><td>p-breadcrumb</td><td>Thanh đường dẫn</td><td>Bên phải là Operating Date (UTC) + chấm nhịp luồng trực tiếp</td></tr>
+          <tr><td>cmm-dynamic-form (p-datepicker, p-select, p-multiselect)</td><td>Mọi khối bộ lọc</td>
+            <td>Datepicker trong bộ lọc mặc định = ngày hiện tại (quy chuẩn dùng chung)</td></tr>
+          <tr><td>p-card (KPI row · stat tile)</td><td>M1 hàng 1</td>
+            <td>Chữ số tỷ lệ cho thẻ số; không dùng tabular-nums ở cỡ lớn</td></tr>
+          <tr><td>p-chart (line) / SVG inline</td><td>M1 lưu lượng</td>
+            <td>MỘT trục y; 2 chuỗi cùng đơn vị; chú giải + nhãn ở điểm cuối</td></tr>
+          <tr><td>p-chart (horizontal bar) / SVG inline</td><td>M1 lỗi theo nguồn</td>
+            <td>Một màu cho mọi thanh; không tô đậm dần theo giá trị</td></tr>
+          <tr><td>p-chart (stacked bar) / SVG inline</td><td>M1 việc chờ xử lý</td>
+            <td>Khe 2px bằng màu nền giữa các đoạn, không vẽ viền quanh mark</td></tr>
+          <tr><td>p-progressBar (meter)</td><td>M1 + M7 độ phủ</td><td>Vạch ngưỡng 80% và 90% trên cùng một thang</td></tr>
+          <tr><td>IamTable (p-table)</td><td>Mọi bảng danh sách</td>
+            <td>Header dính; kẻ lưới ngang + dọc; phân trang NGOÀI vùng cuộn</td></tr>
+          <tr><td>IamTableSettings (p-table columns)</td><td>M1 bảng sức khỏe</td>
+            <td>Ẩn/hiện + kéo thả thứ tự cột, lưu theo từng tài khoản</td></tr>
+          <tr><td>IamBadgeStatus (p-tag)</td><td>Cột Trạng thái</td>
+            <td>5 giá trị; LUÔN biểu tượng + chữ; Rỗng ≠ Lỗi (BR-AOPS-11)</td></tr>
+          <tr><td>p-inputSwitch</td><td>M2, M4 cột Bật/Tắt</td><td>Dừng ngắn hạn dùng công tắc, không thêm trạng thái</td></tr>
+          <tr><td>p-tabView (thẻ theo phân hệ)</td><td>M6 hàng đợi</td><td>Màn dùng chung, PF có thẻ riêng (BR-PF-31)</td></tr>
+          <tr><td>DialogRegistry (p-dialog)</td><td>Chạy lại phiên</td><td>Đóng bằng Esc hoặc bấm nền</td></tr>
+          <tr><td>DialogRegistry (p-drawer)</td><td>M6-D gán chuyến</td><td>Trượt từ phải; mang hợp đồng trả ngược về phân hệ gốc</td></tr>
+          <tr><td>cmm-dynamic-form (p-editor)</td><td>M5 mẫu email</td><td>Biến thay thế dạng {{ten_bien}}</td></tr>
+          <tr><td>p-toast</td><td>Thông báo</td><td>Góc dưới bên phải, tự tắt sau 3 giây (quy chuẩn dùng chung)</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+</div><!-- /stage -->
+
+<!-- ===================== MODAL — CHẠY LẠI PHIÊN ===================== -->
+<div class="ovl" id="mRerun">
+  <div class="modal sm">
+    <div class="modal-h"><h2>Chạy lại phiên đồng bộ</h2>
+      <button class="x" onclick="closeModal('mRerun')"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="modal-b">
+      <div class="mcard" data-pui="cmm-dynamic-form" data-src="[§4.3 M3] chạy lại thủ công">
+        <div class="frow c1">
+          <div class="fld"><label>Khoảng thời gian lấy lại<span class="req">*</span></label>
+            <select class="inp"><option>Đúng khoảng của phiên đã chọn</option>
+              <option>24 giờ gần nhất</option><option>Tùy chọn</option></select></div>
+          <div class="fld"><label>Lý do chạy lại<span class="req">*</span></label>
+            <textarea class="inp" placeholder="Ghi lý do để lưu vào nhật ký thao tác"></textarea></div>
+        </div>
+        <div class="note" style="margin-top:12px">
+          <span class="material-symbols-outlined">info</span>
+          <div>Chống trùng hai tầng vẫn áp dụng khi chạy lại — bản ghi đã nhận sẽ không nhân đôi.</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('mRerun')">Hủy</button>
+      <button class="btn btn-primary" onclick="closeModal('mRerun');toast('Đã xếp hàng chạy lại (mô phỏng)','ok')">
+        <span class="material-symbols-outlined">restart_alt</span>Chạy lại</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ NGĂN KÉO M6-D — GÁN CHUYẾN / LÀM RÕ ============
+     Bấm một dòng ở M6 thì mở ngăn kéo này. Không chiếm một dòng menu riêng. -->
+<div class="drw-ovl" id="drwOvl" onclick="closeResolve()"></div>
+<div class="drw" id="drwResolve" data-pui="DialogRegistry (p-drawer)" data-src="[Ops-Analysis §3.6] M6-D gán chuyến">
+  <div class="drw-h">
+    <div class="t"><h2>Gán chuyến cho bản ghi</h2>
+      <button class="x" onclick="closeResolve()"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="st" id="rsTitle">—</div>
+  </div>
+  <div class="drw-b">
+    <dl class="dl">
+      <div class="row"><dt>Nguồn</dt><dd id="rsSrc">—</dd></div>
+      <div class="row"><dt>Tệp nguồn</dt><dd id="rsFile" class="mono">—</dd></div>
+      <div class="row"><dt>Lý do chưa ghép được</dt><dd id="rsRsn">—</dd></div>
+      <div class="row"><dt>Ảnh hưởng tới hệ số</dt><dd id="rsEff">—</dd></div>
+    </dl>
+    <h4 style="margin:18px 0 10px;font-size:14px">Chọn chuyến bay</h4>
+    <div id="rsCands"></div>
+    <div class="fld" style="margin-top:14px"><label>Ghi chú xử lý</label>
+      <textarea class="inp" placeholder="Ghi lại căn cứ chọn chuyến, lưu vào nhật ký thao tác"></textarea></div>
+  </div>
+  <div class="drw-f">
+    <button class="btn btn-ghost" onclick="closeResolve()">Hủy</button>
+    <button class="btn btn-primary" onclick="doResolve()">
+      <span class="material-symbols-outlined">check</span>Xác nhận gán chuyến</button>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ===========================================================================
+   DỮ LIỆU
+   Tên 8 hệ thống và các quy tắc nghiệp vụ: có dẫn nguồn (xem header comment).
+   Mọi con số: DỮ LIỆU MẪU, chỉ để minh họa bố cục.
+   Địa chỉ máy chủ được che sẵn — bản thiết kế mới không cần phơi endpoint thật.
+   =========================================================================== */
+const ST = {
+  ok   :{t:'Bình thường', c:'bdg-ok',   i:'check_circle'},
+  empty:{t:'Rỗng',        c:'bdg-warn', i:'inbox'},
+  late :{t:'Trễ lịch',    c:'bdg-warn', i:'schedule'},
+  err  :{t:'Lỗi',         c:'bdg-err',  i:'error'},
+  off  :{t:'Đã tắt',      c:'bdg-mute', i:'do_not_disturb_on'}
+};
+
+const SRC = [
+  {n:'Netline / Ops++', dir:'Vào',      ch:'Đồng bộ', st:'ok',    last:'2 phút trước',  abs:'23/09/2026 04:12',
+   msg:8420, ok7:99.4, resp:310, unm:0, ep:'<netline-db>:1521', sched:'5 phút/lần', on:true, thr:3,
+   scope:'±3 ngày, ±30 ngày',
+   rule:'<b>Quy tắc lọc khi đồng bộ.</b> Loại bỏ chuyến có hậu tố <b>Leg_type = Y, Z, N</b>; chỉ lấy chuyến có <b>leg_state khác CNL và DEL</b>.'},
+  {n:'MO Plus (EFF)',   dir:'Hai chiều',ch:'API',     st:'ok',    last:'6 phút trước',  abs:'23/09/2026 04:08',
+   msg:1860, ok7:98.1, resp:520, unm:0, ep:'<moplus-api>/api/v1', sched:'Theo sự kiện', on:true, thr:5,
+   scope:'Tài liệu, OFP, Flight Release',
+   rule:'<b>Hai chiều.</b> TOSS gửi Notification sang MO Plus; PIC Accept/Reject rồi đồng bộ ngược về cập nhật trạng thái. Trạng thái chờ là <b>AWAIT ACK</b>.'},
+  {n:'AMOS',            dir:'Vào',      ch:'Đồng bộ', st:'empty', last:'18 phút trước', abs:'23/09/2026 03:56',
+   msg:0,    ok7:96.7, resp:640, unm:0, ep:'<amos-db>:1521', sched:'15 phút/lần', on:true, thr:3,
+   scope:'MEL/CDL',
+   rule:'<b>Gọi thành công nhưng không có bản ghi nào.</b> Đây là trạng thái <i>Rỗng</i>, khác hẳn <i>Lỗi</i> — theo BR-AOPS-11.'},
+  {n:'LIDO',            dir:'Vào',      ch:'API',     st:'ok',    last:'4 phút trước',  abs:'23/09/2026 04:10',
+   msg:742,  ok7:99.0, resp:410, unm:0, ep:'<lido-api>/adapter', sched:'Theo sự kiện', on:true, thr:5,
+   scope:'ATC, NOTAM, WX quốc tế',
+   rule:'<b>OFP soạn tại LIDO</b> rồi release tại TOSS. Lưu lịch sử các điện thông báo thay đổi nội dung ATC.'},
+  {n:'ACARS',           dir:'Vào',      ch:'SFTP',    st:'err',   last:'52 phút trước', abs:'23/09/2026 03:22',
+   msg:1180, ok7:91.2, resp:0,   unm:21, ep:'<acars-sftp>:22', sched:'10 phút/lần', on:true, thr:3,
+   scope:'M49, M11, DFD',
+   rule:'<b>Mã điện.</b> M49 (chuyển pha bay), M11 (OUT), DFD (APM / REP002 theo loại tàu B787, A321, A350).'},
+  {n:'Amadeus',         dir:'Vào',      ch:'Email',   st:'late',  last:'2 giờ 14 phút trước', abs:'23/09/2026 02:00',
+   msg:96,   ok7:97.5, resp:0,   unm:11, ep:'tossclc@ · toss.occ@', sched:'Theo thư đến', on:true, thr:3,
+   scope:'LS, PM, FZFW',
+   rule:'<b>Nhận diện bằng tiêu đề thư.</b> LS về hòm <b>tossclc@</b> (hòm chỉ chứa LS nên không cần nhận diện); PM và FZFW về hòm <b>toss.occ@</b>, PM nhận diện bằng tiêu đề chứa chữ <b>AMS</b>.'},
+  {n:'VMS (VIAGS)',     dir:'Vào',      ch:'API',     st:'ok',    last:'9 phút trước',  abs:'23/09/2026 04:05',
+   msg:314,  ok7:99.6, resp:280, unm:5,  ep:'POST /api/v1/flight-documents', sched:'Theo sự kiện', on:true, thr:5,
+   scope:'PM, GD',
+   rule:'<b>VMS gọi vào TOSS.</b> Mapping bằng <b>FLT NO + EDD</b> với chuyến đã đồng bộ từ NetLine. PM từ VMS chỉ áp dụng sân bay HUB: <b>HAN, DAD, SGN</b>.'},
+  {n:'AVES',            dir:'Vào',      ch:'Đồng bộ', st:'off',   last:'3 ngày trước',  abs:'20/09/2026 01:00',
+   msg:0,    ok7:0,    resp:0,   unm:0,  ep:'<aves-api>:8080', sched:'Hằng ngày 01:00', on:false, thr:3,
+   scope:'Phi công, tiếp viên',
+   rule:'<b>Đang tắt theo lựa chọn của người dùng.</b> Dừng ngắn hạn dùng công tắc Bật/Tắt, không thêm trạng thái mới.'}
+];
+
+/* lưu lượng 24 giờ — dữ liệu mẫu, 2 chuỗi cùng đơn vị "số bản tin" */
+const FLOW_IN  = [382,341,298,264,231,209,226,288,401,522,613,688,712,735,758,742,701,664,612,548,501,466,428,395];
+const FLOW_OUT = [ 41, 36, 31, 27, 24, 22, 26, 34, 52, 68, 79, 86, 91, 94, 97, 93, 88, 81, 74, 66, 60, 55, 49, 44];
+
+/* Màu 4 hạng mục — đã chạy validate_palette.js: 6/6 PASS, ΔE mù màu deutan 13.8.
+   Cố ý KHÔNG dùng hệ đỏ/cam vì đó là màu trạng thái (lỗi / cảnh báo) trên cùng màn này. */
+const REASONS = [
+  {t:'Không tìm thấy chuyến', v:16, c:'#0090B3'},
+  {t:'Khớp nhiều chuyến',     v:12, c:'#5925DC'},
+  {t:'Thiếu mã sân bay',      v: 6, c:'#0E9384'},
+  {t:'Sai lược đồ',           v: 3, c:'#A21CAF'}
+];
+
+const BYMOD = [
+  {m:'Performance Factor', w:21, o:4, old:'3 ngày 6 giờ'},
+  {m:'Tài liệu chuyến bay', w:16, o:2, old:'1 ngày 18 giờ'}
+];
+
+const QUEUE = [
+  {g:'PF', src:'PF–ATR', key:'VN-A6xx · 21/09 · VN255', rsn:'Không tìm thấy chuyến', cand:0, eff:'e', age:'3 ngày 6 giờ', h:78,
+   file:'ATR_20260921.csv'},
+  {g:'PF', src:'PF–PET', key:'VN-A886 · 22/09 · VN142',  rsn:'Khớp nhiều chuyến',     cand:2, eff:'y', age:'1 ngày 10 giờ', h:34,
+   file:'PET_20260922.txt'},
+  {g:'PF', src:'PF–PEP', key:'VN-A513 · 22/09 · VN11',   rsn:'Thiếu mã sân bay',      cand:2, eff:'y', age:'22 giờ', h:22,
+   file:'PEP_20260922.xlsx'},
+  {g:'PF', src:'PF–PET', key:'VN-A878 · 22/09 · VN250',  rsn:'Không tìm thấy chuyến', cand:0, eff:'y', age:'19 giờ', h:19,
+   file:'PET_20260922.txt'},
+  {g:'PF', src:'PF–ATR', key:'(chưa rõ tàu) · 22/09 · VN1621', rsn:'Không tìm thấy chuyến', cand:0, eff:'e', age:'16 giờ', h:16,
+   file:'ATR_20260922.csv'},
+  {g:'DOC',src:'LS',    key:'VN1237 / 23JUN / HANPQC',  rsn:'Không tìm thấy chuyến', cand:0, eff:'n', age:'1 ngày 18 giờ', h:42,
+   file:'Thư từ tossclc@'},
+  {g:'DOC',src:'PM',    key:'VN604 / 2026-07-09',       rsn:'Khớp nhiều chuyến',     cand:3, eff:'n', age:'14 giờ', h:14,
+   file:'Thư từ toss.occ@ (AMS)'},
+  {g:'DOC',src:'GD',    key:'VN1188 / 2026-09-22',      rsn:'Không tìm thấy chuyến', cand:0, eff:'n', age:'9 giờ', h:9,
+   file:'VMS · POST /api/v1/flight-documents'},
+  {g:'DOC',src:'FZFW',  key:'VN1188 / 14JUL / SGNHPH',  rsn:'Sai lược đồ',           cand:0, eff:'n', age:'6 giờ', h:6,
+   file:'Thư từ toss.occ@'},
+  {g:'PF', src:'PF–PEP', key:'VN-A869 · 23/09 · VN255',  rsn:'Khớp nhiều chuyến',     cand:2, eff:'y', age:'4 giờ', h:4,
+   file:'PEP_20260923.xlsx'}
+];
+const EFF = {y:{t:'Đã tính vào hệ số',c:'bdg-ok',i:'check_circle'},
+             e:{t:'Chưa tính, đang giữ lại',c:'bdg-err',i:'pause_circle'},
+             n:{t:'Không áp dụng',c:'bdg-mute',i:'remove'}};
+
+const OUT = [
+  {n:'Thông báo tài liệu', dst:'MO Plus (EFF)', body:'Notification để PIC xác nhận tài liệu',
+   ch:'API', appr:false, on:true, src:'SRS Flight Load Control v0.1'},
+  {n:'Chuyển tiếp điện ACARS', dst:'Hòm thư cấu hình', body:'Các mã điện bật cờ gửi email',
+   ch:'Email', appr:false, on:true, src:'Bóc tách điện ACARS.xlsx — cột Trạng thái Config gửi email (Y/N)'},
+  {n:'Kết xuất điện văn hiệu năng', dst:'Người dùng tải về', body:'Tệp đưa sang PEP / PET xử lý',
+   ch:'File', appr:false, on:true, src:'SRS Operations-Analysis v0.1 §4'}
+];
+
+const TPL = ['Cảnh báo nguồn dữ liệu lỗi','Cảnh báo nguồn rỗng quá ngưỡng',
+             'Nhắc bản ghi chờ xử lý quá 48 giờ','Chuyển tiếp điện ACARS'];
+
+const COV = [
+  {r:'VN-A886',t:'B787',f:42,d:42},{r:'VN-A878',t:'B787',f:38,d:37},
+  {r:'VN-A879',t:'B787',f:40,d:39},{r:'VN-A874',t:'B787',f:36,d:31},
+  {r:'VN-A868',t:'B787',f:34,d:25},{r:'VN-A623',t:'A321',f:52,d:50},
+  {r:'VN-A513',t:'A321',f:48,d:44},{r:'VN-A898',t:'A350',f:30,d:29},
+  {r:'VN-A864',t:'A350',f:28,d:19},{r:'VN-B221',t:'ATR72',f:46,d:31},
+  {r:'VN-B225',t:'ATR72',f:44,d:26},{r:'VN-A621',t:'A321',f:50,d:47}
+];
+
+const LOG = [
+  {ts:'23/09/2026 04:12',dir:'Vào',sys:'Netline / Ops++',typ:'Đồng bộ LEG',key:'842 bản ghi',st:'ok',d:'Cập nhật 842, thêm mới 16'},
+  {ts:'23/09/2026 04:10',dir:'Vào',sys:'LIDO',typ:'Điện ATC',key:'VN254 / 23SEP',st:'ok',d:'Đã gắn vào OFP'},
+  {ts:'23/09/2026 04:08',dir:'Ra', sys:'MO Plus (EFF)',typ:'Notification',key:'VN1237 / 23SEP · REV 2',st:'ok',d:'AWAIT ACK'},
+  {ts:'23/09/2026 04:05',dir:'Vào',sys:'VMS (VIAGS)',typ:'Tài liệu GD',key:'VN604 / 2026-09-23',st:'ok',d:'Mapping FLT NO + EDD'},
+  {ts:'23/09/2026 03:58',dir:'Ra', sys:'Hòm thư cấu hình',typ:'Chuyển tiếp ACARS',key:'DFD · VN-A878',st:'err',d:'Máy chủ thư từ chối — thử lại 2/5'},
+  {ts:'23/09/2026 03:56',dir:'Vào',sys:'AMOS',typ:'Đồng bộ MEL/CDL',key:'0 bản ghi',st:'ok',d:'Gọi thành công, không có bản ghi (Rỗng)'},
+  {ts:'23/09/2026 03:44',dir:'Vào',sys:'Amadeus',typ:'Thư LS',key:'VN1237 / 23JUN / HANPQC',st:'err',d:'Không khớp chuyến — đã chuyển hàng đợi'},
+  {ts:'23/09/2026 03:22',dir:'Vào',sys:'ACARS',typ:'Điện M49',key:'VN0254 · TATO',st:'err',d:'Không kết nối được SFTP'},
+  {ts:'23/09/2026 03:18',dir:'Vào',sys:'ACARS',typ:'Điện M11',key:'VN0334 · OUT',st:'ok',d:'Đã bóc tách 12 trường'},
+  {ts:'23/09/2026 03:02',dir:'Ra', sys:'MO Plus (EFF)',typ:'Notification',key:'VN250 / 23SEP · REV 1',st:'ok',d:'PIC đã Accept'},
+  {ts:'23/09/2026 02:48',dir:'Vào',sys:'Amadeus',typ:'Điện FZFW',key:'VN1188 / 14JUL / SGNHPH',st:'ok',d:'Bóc 8 vị trí cắt'},
+  {ts:'23/09/2026 02:31',dir:'Vào',sys:'Netline / Ops++',typ:'Đồng bộ LEG',key:'795 bản ghi',st:'ok',d:'Loại 34 chuyến CNL/DEL'}
+];
+
+/* =========================== TIỆN ÍCH CHUNG =========================== */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nf=n=>Number(n).toLocaleString('vi-VN');
+const CRUMBS={m1:'Tổng quan giám sát',m2:'Nguồn dữ liệu vào',m3:'Chi tiết & lịch sử phiên',
+  m4:'Luồng gửi ra',m5:'Mẫu nội dung email',m6:'Bản ghi chưa rõ chuyến',
+  m7:'Độ phủ dữ liệu',m8:'Nhật ký tích hợp'};
+
+function go(id){
+  $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  $$('.side-item').forEach(i=>i.classList.toggle('active',i.dataset.go===id));
+  $('#crumbCur').textContent=CRUMBS[id]||'';
+  $('.content').scrollTop=0;
+}
+$$('.side-item').forEach(i=>i.onclick=()=>go(i.dataset.go));
+function toggleSide(){const s=$('#sidebar');s.classList.toggle('collapsed');
+  $('#sideIco').textContent=s.classList.contains('collapsed')?'chevron_right':'chevron_left';}
+function toggleFilter(btn,id){const f=document.getElementById(id);
+  f.classList.toggle('hidden');btn.classList.toggle('closed');}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+$$('.ovl').forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove('open')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){
+  $$('.ovl.open').forEach(o=>o.classList.remove('open'));closeResolve();}});
+
+function toast(msg,kind){
+  const ico={ok:'check_circle',err:'error'}[kind]||'info';
+  const el=document.createElement('div');
+  el.className='toast'+(kind?' '+kind:'');
+  el.innerHTML='<span class="material-symbols-outlined">'+ico+'</span><div>'+esc(msg)+'</div>';
+  $('#toasts').appendChild(el);setTimeout(()=>el.remove(),3800);
+}
+function badge(k){const s=ST[k];
+  return '<span class="bdg '+s.c+'"><span class="material-symbols-outlined">'+s.i+'</span>'+s.t+'</span>';}
+
+/* ====================== PHÂN TRANG DÙNG CHUNG ========================
+   Thanh phân trang nằm NGOÀI khung cuộn của bảng nên không bị đẩy khuất.
+   Mặc định 10 bản ghi/trang, tùy chọn 10/25/50 — quy chuẩn dùng chung. */
+const PG={}; let _ofs=0;
+function pg(key,rows,label){
+  const st=PG[key]||(PG[key]={page:1,size:10,label:label});
+  st.label=label; st.total=rows.length;
+  st.pages=Math.max(1,Math.ceil(rows.length/st.size));
+  if(st.page>st.pages)st.page=st.pages;
+  if(st.page<1)st.page=1;
+  st.from=(st.page-1)*st.size; _ofs=st.from;
+  drawPager(key);
+  return rows.slice(st.from,st.from+st.size);
+}
+function pgGo(key,p){const st=PG[key];if(!st)return;st.page=Math.min(Math.max(1,p),st.pages);redraw();}
+function pgSize(key,n){const st=PG[key];if(!st)return;st.size=+n;st.page=1;redraw();}
+function drawPager(key){
+  const bar=document.querySelector('.pgbar[data-pg="'+key+'"]'); if(!bar)return;
+  const st=PG[key],P=st.pages,cur=st.page;
+  let a=Math.max(1,cur-2),b=Math.min(P,a+4); a=Math.max(1,b-4);
+  let nums='';
+  for(let i=a;i<=b;i++)
+    nums+='<button class="pg-btn '+(i===cur?'on':'')+'" onclick="pgGo(\''+key+'\','+i+')">'+i+'</button>';
+  const f=st.total?st.from+1:0, t=Math.min(st.from+st.size,st.total);
+  bar.innerHTML=
+    '<span class="total">Tổng: <b>'+nf(st.total)+'</b> '+st.label+'</span>'+
+    '<span class="range">Hiển thị '+f+'–'+t+'</span>'+
+    '<div class="pg-right"><span class="lb">Hiển thị</span>'+
+    '<select class="inp inp-sm" style="width:118px" onchange="pgSize(\''+key+'\',this.value)">'+
+    [10,25,50].map(n=>'<option value="'+n+'"'+(n===st.size?' selected':'')+'>'+n+' bản ghi</option>').join('')+
+    '</select>'+
+    '<button class="pg-btn" '+(cur===1?'disabled':'')+' onclick="pgGo(\''+key+'\',1)" title="Trang đầu">'+
+      '<span class="material-symbols-outlined">keyboard_double_arrow_left</span></button>'+
+    '<button class="pg-btn" '+(cur===1?'disabled':'')+' onclick="pgGo(\''+key+'\','+(cur-1)+')" title="Trang trước">'+
+      '<span class="material-symbols-outlined">chevron_left</span></button>'+nums+
+    '<button class="pg-btn" '+(cur===P?'disabled':'')+' onclick="pgGo(\''+key+'\','+(cur+1)+')" title="Trang sau">'+
+      '<span class="material-symbols-outlined">chevron_right</span></button>'+
+    '<button class="pg-btn" '+(cur===P?'disabled':'')+' onclick="pgGo(\''+key+'\','+P+')" title="Trang cuối">'+
+      '<span class="material-symbols-outlined">keyboard_double_arrow_right</span></button></div>';
+}
+function redraw(){renderHealth();renderSrc();renderRuns();renderOut();renderQueue();renderCov();renderLog();}
+
+/* ============================ BIỂU ĐỒ =============================== */
+/* Quy tắc áp dụng ở đây:
+   · MỘT trục y — hai chuỗi cùng đơn vị, không bao giờ hai thang đo.
+   · Màu đi theo thực thể: Vào luôn là cat1, Ra luôn là cat2, lọc không đổi màu.
+   · Chú giải luôn hiện khi có từ 2 chuỗi; nhãn trực tiếp CHỈ ở điểm cuối.
+   · Lưới nét mảnh LIỀN, không nét đứt. */
+const CAT1='#0090B3', CAT2='#5925DC';
+
+function sparkline(id,data,color){
+  const el=document.getElementById(id); if(!el)return;
+  const w=160,h=el.getAttribute('height')|0,p=2;
+  const mx=Math.max(...data),mn=Math.min(...data),rg=(mx-mn)||1;
+  const pts=data.map((v,i)=>{
+    const x=p+i*(w-2*p)/(data.length-1);
+    const y=h-p-((v-mn)/rg)*(h-2*p);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  el.innerHTML='<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2" '+
+               'stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>';
+}
+
+function drawFlow(){
+  const dir=$('#fDir').value;
+  const showIn = dir!=='Ra', showOut = dir!=='Vào';
+  const series=[];
+  if(showIn)  series.push({k:'Vào', d:FLOW_IN,  c:CAT1});
+  if(showOut) series.push({k:'Ra',  d:FLOW_OUT, c:CAT2});
+
+  /* chú giải: chỉ hiện khi có từ 2 chuỗi — một chuỗi thì tiêu đề đã nói rõ rồi */
+  $('#flowLgd').innerHTML = series.length>1
+    ? series.map(s=>'<i><b style="background:'+s.c+'"></b>Chiều '+s.k+'</i>').join('')
+      +'<i style="color:var(--tx-mute)">Số bản tin · một trục đo duy nhất</i>'
+    : '<i style="color:var(--tx-mute)">Chiều '+series[0].k+' · số bản tin</i>';
+
+  const W=760,H=236,L=48,R=64,T=14,B=30;
+  const n=FLOW_IN.length;
+  const max=Math.max(...series.flatMap(s=>s.d))*1.12;
+  const X=i=>L+i*(W-L-R)/(n-1);
+  const Y=v=>H-B-(v/max)*(H-T-B);
+
+  let g='';
+  /* lưới ngang: nét mảnh LIỀN, một sắc độ so với nền */
+  for(let k=0;k<=4;k++){
+    const v=max*k/4, y=Y(v);
+    g+='<line x1="'+L+'" y1="'+y.toFixed(1)+'" x2="'+(W-R)+'" y2="'+y.toFixed(1)+
+       '" stroke="#E4E7EC" stroke-width="1"/>';
+    g+='<text x="'+(L-9)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end" font-size="10" '+
+       'fill="#98A2B3" style="font-variant-numeric:tabular-nums">'+Math.round(v)+'</text>';
+  }
+  /* trục giờ, nhãn 4 giờ một lần */
+  for(let i=0;i<n;i+=4){
+    g+='<text x="'+X(i).toFixed(1)+'" y="'+(H-10)+'" text-anchor="middle" font-size="10" fill="#98A2B3">'+
+       String(i).padStart(2,'0')+':00</text>';
+  }
+  /* các chuỗi */
+  series.forEach(s=>{
+    const pts=s.d.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ');
+    if(series.length===1){
+      /* một chuỗi ⇒ biểu đồ vùng */
+      g+='<polygon points="'+L+','+(H-B)+' '+pts+' '+(W-R)+','+(H-B)+'" fill="'+s.c+'" opacity=".10"/>';
+    }
+    g+='<polyline points="'+pts+'" fill="none" stroke="'+s.c+'" stroke-width="2" '+
+       'stroke-linecap="round" stroke-linejoin="round"/>';
+    /* nhãn trực tiếp CHỈ ở điểm cuối — không ghi số trên mọi điểm */
+    const lx=X(n-1),ly=Y(s.d[n-1]);
+    g+='<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="4" fill="'+s.c+
+       '" stroke="#fff" stroke-width="2"/>';
+    g+='<text x="'+(lx+9)+'" y="'+(ly+4).toFixed(1)+'" font-size="11" font-weight="700" fill="'+s.c+'">'+
+       nf(s.d[n-1])+'</text>';
+  });
+  g+='<line class="xh" x1="0" y1="'+T+'" x2="0" y2="'+(H-B)+'" stroke="#98A2B3" stroke-width="1" opacity="0"/>';
+  g+='<rect id="flowHit" x="'+L+'" y="'+T+'" width="'+(W-L-R)+'" height="'+(H-T-B)+'" fill="transparent"/>';
+  $('#flowSvg').innerHTML=g;
+
+  /* lớp di chuột: đường dóng dọc + chú thích chung cho mọi chuỗi tại cùng mốc */
+  const svg=$('#flowSvg'), tip=$('#flowTip'), xh=svg.querySelector('.xh');
+  svg.onmousemove=e=>{
+    const r=svg.getBoundingClientRect();
+    const vx=(e.clientX-r.left)/r.width*W;
+    if(vx<L||vx>W-R){xh.setAttribute('opacity','0');tip.classList.remove('on');return;}
+    let i=Math.round((vx-L)/((W-L-R)/(n-1)));
+    i=Math.max(0,Math.min(n-1,i));
+    const px=X(i);
+    xh.setAttribute('x1',px);xh.setAttribute('x2',px);xh.setAttribute('opacity','.45');
+    tip.classList.add('on');
+    tip.innerHTML='<div class="tt">'+String(i).padStart(2,'0')+':00 UTC</div>'+
+      series.map(s=>'<div class="r"><b style="background:'+s.c+'"></b>Chiều '+s.k+
+                    '<span>'+nf(s.d[i])+'</span></div>').join('');
+    const left=px/W*r.width;
+    tip.style.left=Math.min(Math.max(left-66,4),r.width-146)+'px';
+    tip.style.top='12px';
+  };
+  svg.onmouseleave=()=>{xh.setAttribute('opacity','0');tip.classList.remove('on');};
+
+  /* bản bảng tương đương — mọi biểu đồ đều phải có, vừa để tiếp cận vừa để xuất Excel */
+  let rows='';
+  for(let i=0;i<n;i++){
+    rows+='<tr><td>'+String(i).padStart(2,'0')+':00</td>'+
+      (showIn?'<td class="num">'+nf(FLOW_IN[i])+'</td>':'')+
+      (showOut?'<td class="num">'+nf(FLOW_OUT[i])+'</td>':'')+'</tr>';
+  }
+  $('#flowTbl').innerHTML='<div class="tw" style="max-height:262px"><table><thead><tr><th>Giờ (UTC)</th>'+
+    (showIn?'<th class="num">Vào</th>':'')+(showOut?'<th class="num">Ra</th>':'')+
+    '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  $('#flowSub').textContent=({'24':'24 giờ gần nhất','7':'7 ngày','30':'30 ngày'})[$('#fRange').value]+' · số bản tin';
+}
+
+function drawErrBars(){
+  const rows=SRC.map(s=>({n:s.n,v:Math.round((100-s.ok7)*s.msg/100)}))
+                .filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
+  const max=Math.max(...rows.map(r=>r.v),1);
+  /* MỘT màu cho mọi thanh — độ dài thanh đã mang thông tin, không tô đậm dần */
+  $('#errBars').innerHTML = rows.length
+    ? rows.map(r=>'<div class="hb" onclick="setHFilter(\''+esc(r.n)+'\')" title="Bấm để lọc bảng sức khỏe">'+
+        '<span class="hb-l">'+esc(r.n)+'</span>'+
+        '<span class="hb-track"><span class="hb-t" style="width:'+(r.v/max*100).toFixed(1)+'%"></span></span>'+
+        '<span class="hb-v">'+nf(r.v)+'</span></div>').join('')
+    : '<div class="empty-row">Không có lỗi trong kỳ.</div>';
+  $('#errTbl').innerHTML='<div class="tw"><table><thead><tr><th>Hệ thống</th>'+
+    '<th class="num">Số bản tin lỗi</th></tr></thead><tbody>'+
+    rows.map(r=>'<tr><td>'+esc(r.n)+'</td><td class="num">'+nf(r.v)+'</td></tr>').join('')+
+    '</tbody></table></div>';
+}
+
+/* VÀNH KHUYÊN — phần–tổng thể, 4 hạng mục (dưới mức 6 nên đọc được).
+   Mỗi cung cách nhau một khe nhỏ bằng màu nền, KHÔNG vẽ viền quanh cung.
+   Con số của từng hạng mục ghi thẳng ở chú giải nên không phải rê chuột mới đọc được. */
+function drawReasons(){
+  const tot=REASONS.reduce((a,b)=>a+b.v,0);
+  const R=68, SW=26, C=2*Math.PI*R, GAP=3;
+  let off=0, arcs='';
+  REASONS.forEach(r=>{
+    const len=r.v/tot*C;
+    arcs+='<circle cx="100" cy="100" r="'+R+'" fill="none" stroke="'+r.c+'" stroke-width="'+SW+'" '+
+          'stroke-dasharray="'+Math.max(len-GAP,1).toFixed(2)+' '+(C-Math.max(len-GAP,1)).toFixed(2)+'" '+
+          'stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 100 100)"><title>'+
+          esc(r.t)+': '+r.v+'</title></circle>';
+    off+=len;
+  });
+  $('#rsnDonut').innerHTML=arcs+
+    '<text x="100" y="96" text-anchor="middle" font-size="34" font-weight="700" fill="#101828">'+tot+'</text>'+
+    '<text x="100" y="118" text-anchor="middle" font-size="11" fill="#667085">bản ghi chờ</text>';
+  $('#rsnLgd').innerHTML=REASONS.map(r=>
+    '<i><b style="background:'+r.c+'"></b><em>'+esc(r.t)+'</em>'+
+    '<u>'+r.v+'</u><s>'+(r.v/tot*100).toFixed(0)+'%</s></i>').join('');
+  $('#rsnBody').innerHTML=BYMOD.map(m=>
+    '<tr><td class="strong">'+esc(m.m)+'</td><td class="num">'+m.w+'</td>'+
+    '<td class="num"><b style="color:var(--err-tx)">'+m.o+'</b></td><td>'+esc(m.old)+'</td></tr>').join('');
+}
+
+/* ĐỒNG HỒ ĐO dạng cung 270° — KHÔNG dùng bánh tròn hai lát.
+   Lý do: đây là MỘT tỷ lệ so với ngưỡng, và cung giữ được hai vạch 80/90
+   để đọc ra ba mức Đạt / Cần theo dõi / Dưới ngưỡng. Bánh tròn mất hết phần đó. */
+function polar(cx,cy,r,deg){const a=(deg-90)*Math.PI/180;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+function arcPath(cx,cy,r,a0,a1){
+  const p0=polar(cx,cy,r,a0), p1=polar(cx,cy,r,a1);
+  const large=(a1-a0)>180?1:0;
+  return 'M'+p0[0].toFixed(2)+' '+p0[1].toFixed(2)+' A'+r+' '+r+' 0 '+large+' 1 '+p1[0].toFixed(2)+' '+p1[1].toFixed(2);
+}
+function drawGauge(pct){
+  const CX=150, CY=130, R=100, SW=22, A0=-135, SPAN=270;
+  const ang=v=>A0+SPAN*v/100;
+  const col = pct>=90 ? '#16B364' : (pct>=80 ? '#F79009' : '#F04438');
+  let g='<path d="'+arcPath(CX,CY,R,A0,A0+SPAN)+'" fill="none" stroke="#F2F4F7" '+
+        'stroke-width="'+SW+'" stroke-linecap="round"/>';
+  g+='<path d="'+arcPath(CX,CY,R,A0,ang(pct))+'" fill="none" stroke="'+col+'" '+
+     'stroke-width="'+SW+'" stroke-linecap="round"/>';
+  /* vạch ngưỡng 80 và 90 — nét liền mảnh, có nhãn */
+  [80,90].forEach(t=>{
+    const a=ang(t), i=polar(CX,CY,R-SW/2-2,a), o=polar(CX,CY,R+SW/2+2,a), l=polar(CX,CY,R+SW/2+15,a);
+    g+='<line x1="'+i[0].toFixed(2)+'" y1="'+i[1].toFixed(2)+'" x2="'+o[0].toFixed(2)+'" y2="'+o[1].toFixed(2)+
+       '" stroke="#667085" stroke-width="2"/>';
+    g+='<text x="'+l[0].toFixed(2)+'" y="'+(l[1]+4).toFixed(2)+'" text-anchor="middle" font-size="10" '+
+       'font-weight="600" fill="#98A2B3">'+t+'%</text>';
+  });
+  const e0=polar(CX,CY,R+SW/2+15,A0), e1=polar(CX,CY,R+SW/2+15,A0+SPAN);
+  g+='<text x="'+e0[0].toFixed(2)+'" y="'+(e0[1]+4).toFixed(2)+'" text-anchor="middle" font-size="10" fill="#98A2B3">0%</text>';
+  g+='<text x="'+e1[0].toFixed(2)+'" y="'+(e1[1]+4).toFixed(2)+'" text-anchor="middle" font-size="10" fill="#98A2B3">100%</text>';
+  g+='<text x="'+CX+'" y="'+(CY-4)+'" text-anchor="middle" font-size="40" font-weight="700" fill="#101828">'+
+     pct.toFixed(1).replace('.',',')+'%</text>';
+  g+='<text x="'+CX+'" y="'+(CY+20)+'" text-anchor="middle" font-size="11" fill="#667085">chuyến khai thác có dữ liệu</text>';
+  $('#covGauge').innerHTML=g;
+}
+
+function swapView(k,btn){
+  const c=document.getElementById(k+'Chart'), t=document.getElementById(k+'Tbl');
+  const on=t.classList.toggle('on'); c.classList.toggle('off',on);
+  btn.innerHTML='<span class="material-symbols-outlined">'+(on?'show_chart':'table_rows')+'</span>'+
+                (on?'Xem biểu đồ':(k==='err'?'Bảng':'Xem dạng bảng'));
+}
+
+/* ======================= M1 — BẢNG SỨC KHỎE ========================= */
+let hFilter='', hOnlyErr=false;
+function setHFilter(n){hFilter=n;hOnlyErr=false;showChip('Hệ thống: '+n);renderHealth();}
+function filterErr(){hOnlyErr=true;hFilter='';showChip('Chỉ nguồn đang lỗi');renderHealth();}
+function clearHFilter(){hFilter='';hOnlyErr=false;$('#hFilterChip').hidden=true;renderHealth();}
+function showChip(t){$('#hFilterTx').textContent=t;$('#hFilterChip').hidden=false;}
+
+function renderHealth(){
+  const dir=$('#fDir')?$('#fDir').value:'', sys=$('#fSys')?$('#fSys').value:'';
+  let rows=SRC.filter(s=>
+    (!dir||s.dir===dir||s.dir==='Hai chiều') && (!sys||s.n===sys) &&
+    (!hFilter||s.n===hFilter) && (!hOnlyErr||s.st==='err'));
+  const body=$('#healthBody'); if(!body)return;
+  const page=pg('healthBody',rows,'nguồn');
+  body.innerHTML=page.length?page.map((s,i)=>{
+    const bar=s.ok7>=99?'':(s.ok7>=95?'w':'e');
+    return '<tr'+(s.st==='off'?' class="dim"':'')+'>'+
+      '<td class="num">'+(_ofs+i+1)+'</td>'+
+      '<td><span class="strong">'+esc(s.n)+'</span><span class="sub">'+esc(s.scope)+'</span></td>'+
+      '<td>'+esc(s.dir)+'</td><td><span class="chip">'+esc(s.ch)+'</span></td>'+
+      '<td>'+badge(s.st)+'</td>'+
+      '<td>'+esc(s.last)+'<span class="sub">'+esc(s.abs)+' UTC</span></td>'+
+      '<td class="num">'+nf(s.msg)+'</td>'+
+      '<td><div class="covbar"><span class="mini"><i class="'+bar+'" style="width:'+s.ok7+'%"></i></span>'+
+        '<b>'+(s.ok7?s.ok7.toFixed(1)+'%':'—')+'</b></div></td>'+
+      '<td class="num">'+(s.resp?s.resp+' ms':'—')+'</td>'+
+      '<td class="num">'+(s.unm?'<b style="color:var(--err-tx)">'+s.unm+'</b>':'0')+'</td>'+
+      '<td><button class="ico-btn" title="Mở chi tiết nguồn" onclick="openSrc(\''+esc(s.n)+'\')">'+
+        '<span class="material-symbols-outlined">chevron_right</span></button></td></tr>';
+  }).join('') : '<tr><td colspan="11"><div class="empty-row">No data available.</div></td></tr>';
+}
+
+/* ===================== M2 — NGUỒN DỮ LIỆU VÀO ======================= */
+function renderSrc(){
+  const q=($('#q2')?$('#q2').value:'').toLowerCase();
+  const ch=$('#ch2')?$('#ch2').value:'', st=$('#st2')?$('#st2').value:'';
+  const rows=SRC.filter(s=>(!q||s.n.toLowerCase().includes(q))&&(!ch||s.ch===ch)&&(!st||s.st===st));
+  const body=$('#srcBody'); if(!body)return;
+  const page=pg('srcBody',rows,'nguồn');
+  body.innerHTML=page.length?page.map((s,i)=>
+    '<tr'+(s.on?'':' class="dim"')+'><td class="num">'+(_ofs+i+1)+'</td>'+
+    '<td class="strong">'+esc(s.n)+'</td><td><span class="chip">'+esc(s.ch)+'</span></td>'+
+    '<td class="mono">'+esc(s.ep)+'</td><td>'+esc(s.sched)+'</td>'+
+    '<td>'+badge(s.st)+'</td><td class="num">'+s.thr+' lần</td>'+
+    '<td class="mid"><label class="sw"><input type="checkbox"'+(s.on?' checked':'')+
+      ' onchange="toggleSrc(\''+esc(s.n)+'\',this.checked)"><span></span></label></td>'+
+    '<td><button class="ico-btn" onclick="openSrc(\''+esc(s.n)+'\')" title="Chi tiết">'+
+      '<span class="material-symbols-outlined">chevron_right</span></button></td></tr>').join('')
+    : '<tr><td colspan="9"><div class="empty-row">No data available.</div></td></tr>';
+}
+function toggleSrc(n,v){
+  const s=SRC.find(x=>x.n===n); if(!s)return;
+  s.on=v; s.st=v?'ok':'off';
+  toast(v?('Đã bật nguồn '+n+' (mô phỏng)'):('Đã tắt nguồn '+n+' (mô phỏng)'),'ok');
+  renderSrc();renderHealth();
+}
+
+/* ============ M3 — CHI TIẾT NGUỒN + LỊCH SỬ PHIÊN CHẠY ============== */
+let curSrc=SRC[0];
+const RUNS=[
+  {t:'23/09/2026 04:12',d:'2,4 giây',r:'ok', got:842,e:0,  n:'Cập nhật 842, thêm mới 16'},
+  {t:'23/09/2026 04:07',d:'2,1 giây',r:'ok', got:836,e:0,  n:'—'},
+  {t:'23/09/2026 04:02',d:'2,6 giây',r:'ok', got:851,e:0,  n:'—'},
+  {t:'23/09/2026 03:57',d:'0,4 giây',r:'empty',got:0,e:0,  n:'Gọi thành công, không có bản ghi'},
+  {t:'23/09/2026 03:52',d:'31,0 giây',r:'err',got:0,e:1,   n:'Hết thời gian chờ kết nối'},
+  {t:'23/09/2026 03:47',d:'2,2 giây',r:'ok', got:829,e:0,  n:'—'},
+  {t:'23/09/2026 03:42',d:'2,3 giây',r:'ok', got:833,e:0,  n:'—'},
+  {t:'23/09/2026 03:37',d:'2,0 giây',r:'ok', got:818,e:0,  n:'—'}
+];
+function openSrc(n){const s=SRC.find(x=>x.n===n); if(s)curSrc=s; go('m3'); fillSrc();}
+function pickSrc(n){const s=SRC.find(x=>x.n===n); if(s)curSrc=s; fillSrc();}
+function fillSrc(){
+  const s=curSrc;
+  $('#d3Name').textContent=s.n;
+  $('#d3Sub').textContent='Chiều '+s.dir+' · kênh '+s.ch;
+  $('#d3Ep').value=s.ep; $('#d3Sched').value=s.sched; $('#d3Scope').value=s.scope;
+  $('#d3Rule').innerHTML=s.rule;
+  $('#d3Pick').value=s.n;
+  renderRuns();
+}
+function renderRuns(){
+  const body=$('#runBody'); if(!body)return;
+  const page=pg('runBody',RUNS,'phiên');
+  body.innerHTML=page.map((r,i)=>
+    '<tr><td class="num">'+(_ofs+i+1)+'</td><td>'+esc(r.t)+'</td><td>'+esc(r.d)+'</td>'+
+    '<td>'+badge(r.r)+'</td><td class="num">'+nf(r.got)+'</td>'+
+    '<td class="num">'+(r.e?'<b style="color:var(--err-tx)">'+r.e+'</b>':'0')+'</td>'+
+    '<td class="wrap">'+esc(r.n)+'</td>'+
+    '<td><button class="ico-btn" onclick="openModal(\'mRerun\')" title="Chạy lại phiên này">'+
+      '<span class="material-symbols-outlined">restart_alt</span></button></td></tr>').join('');
+}
+
+/* ======================= M4 — LUỒNG GỬI RA ========================= */
+function renderOut(){
+  const body=$('#outBody'); if(!body)return;
+  const page=pg('outBody',OUT,'luồng');
+  body.innerHTML=page.map((o,i)=>
+    '<tr'+(o.on?'':' class="dim"')+'><td class="num">'+(_ofs+i+1)+'</td>'+
+    '<td><span class="strong">'+esc(o.n)+'</span><span class="sub">Căn cứ: '+esc(o.src)+'</span></td>'+
+    '<td>'+esc(o.dst)+'</td><td class="wrap">'+esc(o.body)+'</td>'+
+    '<td><select class="inp inp-sm" onchange="setCh('+i+',this.value)">'+
+      ['SFTP','API','File','Email'].map(c=>'<option'+(c===o.ch?' selected':'')+'>'+c+'</option>').join('')+
+      '</select></td>'+
+    '<td><label class="sw-row"><label class="sw"><input type="checkbox"'+(o.appr?' checked':'')+
+      ' onchange="toast(\'Bước duyệt trước khi gửi — mô phỏng\')"><span></span></label>Bắt buộc duyệt</label></td>'+
+    '<td class="mid"><label class="sw"><input type="checkbox"'+(o.on?' checked':'')+
+      ' onchange="toast(\'Đã đổi trạng thái luồng (mô phỏng)\',\'ok\')"><span></span></label></td>'+
+    '<td><button class="ico-btn" onclick="go(\'m8\');$(\'#l8dir\').value=\'Ra\';renderLog()" title="Xem nhật ký gửi">'+
+      '<span class="material-symbols-outlined">receipt_long</span></button></td></tr>').join('');
+}
+function setCh(i,v){OUT[i].ch=v;toast('Đã đổi kênh gửi sang '+v+' (mô phỏng)','ok');}
+
+/* ======================= M5 — MẪU EMAIL ============================ */
+function renderTpl(){
+  $('#tplBodyList').innerHTML=TPL.map((t,i)=>
+    '<tr'+(i===0?' style="background:var(--teal-soft)"':'')+'>'+
+    '<td style="cursor:pointer" onclick="$(\'#tplName\').textContent=\''+esc(t)+'\';toast(\'Đã mở mẫu: '+esc(t)+'\')">'+
+    '<span class="strong">'+esc(t)+'</span>'+
+    '<span class="sub">'+(i===3?'Gắn với luồng Chuyển tiếp điện ACARS':'Cảnh báo vận hành')+'</span></td></tr>').join('');
+}
+
+/* ============ M6 — BẢN GHI CHƯA RÕ CHUYẾN + NGĂN KÉO ============== */
+let qTab='';
+function pickTab(b){$$('.tab').forEach(t=>t.classList.remove('on'));b.classList.add('on');
+  qTab=b.dataset.tab;renderQueue();}
+function renderQueue(){
+  const s=$('#q6src')?$('#q6src').value:'', r=$('#q6rsn')?$('#q6rsn').value:'';
+  const a=$('#q6age')?$('#q6age').value:'';
+  const rows=QUEUE.filter(q=>(!qTab||q.g===qTab)&&(!s||q.src===s)&&(!r||q.rsn===r)&&(!a||q.h>48));
+  const body=$('#qBody'); if(!body)return;
+  const page=pg('qBody',rows,'bản ghi');
+  body.innerHTML=page.length?page.map((q,i)=>{
+    const e=EFF[q.eff];
+    return '<tr><td class="num">'+(_ofs+i+1)+'</td>'+
+      '<td><span class="chip teal">'+esc(q.src)+'</span></td>'+
+      '<td class="strong mono">'+esc(q.key)+'</td><td>'+esc(q.rsn)+'</td>'+
+      '<td class="num">'+(q.cand||'—')+'</td>'+
+      '<td><span class="bdg '+e.c+'"><span class="material-symbols-outlined">'+e.i+'</span>'+e.t+'</span></td>'+
+      '<td>'+(q.h>48?'<b style="color:var(--err-tx)">'+esc(q.age)+'</b>':esc(q.age))+'</td>'+
+      '<td><button class="btn btn-sm btn-primary" onclick="openResolve('+QUEUE.indexOf(q)+')">'+
+        '<span class="material-symbols-outlined">link</span>Gán chuyến</button></td></tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty-row">No data available.</div></td></tr>';
+}
+const CANDS=[
+  {f:'VN255',r:'VN-A869',leg:'VVNB → VVTS',t:'21/09/2026 08:15 → 10:20 UTC',w:'Gần nhất · lệch 12 phút'},
+  {f:'VN255',r:'VN-A869',leg:'VVNB → VVTS',t:'21/09/2026 14:05 → 16:10 UTC',w:'Ứng viên gần nhì · cách 5 giờ 50 phút'},
+  {f:'VN256',r:'VN-A869',leg:'VVTS → VVNB',t:'21/09/2026 17:30 → 19:35 UTC',w:'Khác số hiệu chuyến'}
+];
+let rsIdx=-1, rsPick=-1;
+function openResolve(i){
+  rsIdx=i; rsPick=-1;
+  const q=QUEUE[i], e=EFF[q.eff];
+  $('#rsTitle').textContent=q.key;
+  $('#rsSrc').textContent=q.src;
+  $('#rsFile').textContent=q.file;
+  $('#rsRsn').textContent=q.rsn;
+  $('#rsEff').innerHTML='<span class="bdg '+e.c+'"><span class="material-symbols-outlined">'+e.i+'</span>'+e.t+'</span>'+
+    (q.eff==='e'?'<div class="hint">Nhánh ATR: sau khi gán chuyến sẽ gán tàu bay và <b>tính lại kỳ</b>.</div>':'')+
+    (q.eff==='y'?'<div class="hint">Nhánh PEP/PET: chỉ cập nhật liên kết chuyến bay, <b>không tính lại</b>.</div>':'');
+  const list = q.cand>0 ? CANDS.slice(0,q.cand) : [];
+  $('#rsCands').innerHTML = list.length
+    ? list.map((c,k)=>'<div class="cand" onclick="pickCand('+k+')" id="cd'+k+'">'+
+        '<span class="rb"></span><span class="cm"><span class="cn">'+esc(c.f)+' · '+esc(c.r)+'</span>'+
+        '<span class="cs">'+esc(c.leg)+' · '+esc(c.t)+'<br>'+esc(c.w)+'</span></span></div>').join('')
+    : '<div class="note warn"><span class="material-symbols-outlined">search_off</span><div>'+
+      '<b>Không có ứng viên nào trong phạm vi ±2 ngày.</b> Cần tra cứu thủ công rồi nhập số hiệu chuyến.'+
+      '</div></div><div class="fld" style="margin-top:12px"><label>Nhập số hiệu chuyến</label>'+
+      '<input class="inp" placeholder="Ví dụ: VN255 / 21-09-2026"></div>';
+  $('#drwOvl').classList.add('open'); $('#drwResolve').classList.add('open');
+}
+function pickCand(k){rsPick=k;$$('.cand').forEach((c,i)=>c.classList.toggle('pick',i===k));}
+function closeResolve(){$('#drwOvl').classList.remove('open');$('#drwResolve').classList.remove('open');}
+function doResolve(){
+  if(rsIdx<0)return;
+  const q=QUEUE[rsIdx];
+  if(q.cand>0&&rsPick<0){toast('Chọn một chuyến bay trước khi xác nhận','err');return;}
+  QUEUE.splice(rsIdx,1);
+  closeResolve();
+  toast(q.eff==='e'
+    ? 'Đã gán chuyến, gán tàu bay và xếp hàng tính lại kỳ (mô phỏng)'
+    : 'Đã gán chuyến, cập nhật liên kết (mô phỏng)','ok');
+  renderQueue();
+}
+
+/* ======================= M7 — ĐỘ PHỦ DỮ LIỆU ======================= */
+function renderCov(){
+  const thr=+($('#c7thr')?$('#c7thr').value:80)||80;
+  const st=$('#c7st')?$('#c7st').value:'';
+  const rows=COV.map(c=>{
+    const p=c.f?c.d/c.f*100:0;
+    const k=p>=90?'ok':(p>=thr?'w':'e');
+    return Object.assign({},c,{p:p,k:k});
+  }).filter(c=>!st||c.k===st);
+  const body=$('#covBody'); if(!body)return;
+  const page=pg('covBody',rows,'tàu bay');
+  const LB={ok:{t:'Đạt',c:'bdg-ok',i:'check_circle'},
+            w:{t:'Cần theo dõi',c:'bdg-warn',i:'visibility'},
+            e:{t:'Dưới ngưỡng',c:'bdg-err',i:'trending_down'}};
+  body.innerHTML=page.length?page.map((c,i)=>{
+    const l=LB[c.k];
+    return '<tr><td class="num">'+(_ofs+i+1)+'</td><td class="strong mono">'+esc(c.r)+'</td>'+
+      '<td><span class="chip">'+esc(c.t)+'</span></td>'+
+      '<td class="num">'+c.f+'</td><td class="num">'+c.d+'</td>'+
+      '<td class="num">'+(c.f-c.d)+'</td>'+
+      '<td><div class="covbar"><span class="mini"><i class="'+(c.k==='ok'?'':c.k)+
+        '" style="width:'+c.p.toFixed(1)+'%"></i></span><b>'+c.p.toFixed(1)+'%</b></div></td>'+
+      '<td><span class="bdg '+l.c+'"><span class="material-symbols-outlined">'+l.i+'</span>'+l.t+'</span></td></tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty-row">No data available.</div></td></tr>';
+}
+
+/* ====================== M8 — NHẬT KÝ TÍCH HỢP ====================== */
+function renderLog(){
+  const d=$('#l8dir')?$('#l8dir').value:'', s=$('#l8sys')?$('#l8sys').value:'';
+  const st=$('#l8st')?$('#l8st').value:'', q=($('#l8q')?$('#l8q').value:'').toLowerCase();
+  const rows=LOG.filter(l=>(!d||l.dir===d)&&(!s||l.sys===s)&&(!st||l.st===st)&&
+    (!q||(l.key+' '+l.typ+' '+l.d).toLowerCase().includes(q)));
+  const body=$('#logBody'); if(!body)return;
+  const page=pg('logBody',rows,'bản tin');
+  body.innerHTML=page.length?page.map((l,i)=>
+    '<tr><td class="num">'+(_ofs+i+1)+'</td><td>'+esc(l.ts)+'</td>'+
+    '<td><span class="chip'+(l.dir==='Ra'?'':' teal')+'">'+esc(l.dir)+'</span></td>'+
+    '<td class="strong">'+esc(l.sys)+'</td><td>'+esc(l.typ)+'</td>'+
+    '<td class="mono">'+esc(l.key)+'</td>'+
+    '<td>'+(l.st==='ok'
+      ? '<span class="bdg bdg-ok"><span class="material-symbols-outlined">check_circle</span>Thành công</span>'
+      : '<span class="bdg bdg-err"><span class="material-symbols-outlined">error</span>Thất bại</span>')+'</td>'+
+    '<td class="wrap">'+esc(l.d)+'</td>'+
+    '<td>'+(l.st==='err'&&l.dir==='Ra'
+      ? '<button class="btn btn-sm btn-ghost" onclick="toast(\'Đã xếp hàng gửi lại (mô phỏng)\',\'ok\')">'+
+        '<span class="material-symbols-outlined">send</span>Gửi lại</button>'
+      : '<button class="ico-btn" onclick="toast(\'Mở nội dung bản tin — mặc định KHÔNG lưu nội dung\')" title="Xem chi tiết">'+
+        '<span class="material-symbols-outlined">visibility</span></button>')+'</td></tr>').join('')
+    : '<tr><td colspan="9"><div class="empty-row">No data available.</div></td></tr>';
+}
+
+/* ============================ KHỞI TẠO ============================= */
+function setDir(v){$('#fDir').value=v;refreshAll();toast('Đã lọc Chiều = '+v);}
+function resetF0(){$('#fRange').value='24';$('#fDir').value='';$('#fSys').value='';clearHFilter();refreshAll();}
+function refreshAll(){drawFlow();drawErrBars();renderHealth();}
+
+function fillSelects(){
+  const opts=SRC.map(s=>'<option>'+esc(s.n)+'</option>').join('');
+  $('#fSys').innerHTML='<option value="">Tất cả 8 hệ thống</option>'+opts;
+  $('#d3Pick').innerHTML=opts;
+  $('#l8sys').innerHTML='<option value="">Tất cả</option>'+opts+
+    '<option>Hòm thư cấu hình</option>';
+}
+
+/* đánh số mọi vùng có data-pui theo thứ tự tài liệu */
+function initAnn(){
+  $$('[data-pui]').forEach((el,i)=>{
+    if(getComputedStyle(el).position==='static')el.style.position='relative';
+    const t=document.createElement('span');
+    t.className='annt';
+    t.innerHTML='<span class="n">'+(i+1)+'</span><span class="full">'+esc(el.dataset.pui)+'</span>';
+    el.appendChild(t);
+  });
+}
+function toggleAnn(){
+  const on=document.body.classList.toggle('ann');
+  $('#annLbl').textContent=on?'Ẩn chú thích component':'Hiện chú thích component cho DEV';
+}
+function tick(){
+  const d=new Date();
+  $('#clock').textContent=[d.getUTCHours(),d.getUTCMinutes(),d.getUTCSeconds()]
+    .map(n=>String(n).padStart(2,'0')).join(':');
+}
+setInterval(tick,1000);tick();
+
+fillSelects();
+sparkline('spkHero',[97.8,98.4,98.1,99.0,98.6,99.3,99.2],'#0090B3');
+sparkline('spkIn',[9840,10120,11050,10780,11960,12210,12480],'#0090B3');
+sparkline('spkOut',[1310,1288,1252,1240,1266,1228,1203],'#5925DC');
+drawFlow();drawErrBars();drawReasons();drawGauge(87.4);
+renderHealth();renderSrc();fillSrc();renderOut();renderTpl();renderQueue();renderCov();renderLog();
+initAnn();
+
+/* điều hướng bằng hash: ...html#m6 mở thẳng hàng đợi */
+function fromHash(){
+  const id=(location.hash||'').replace('#','');
+  if(CRUMBS[id]){go(id);return;}
+  if(id==='m6d'){go('m6');openResolve(0);}
+}
+window.addEventListener('hashchange',fromHash);
+fromHash();
+</script>
+</body>
+</html>
