@@ -1,13 +1,24 @@
 <!DOCTYPE html>
 <!--
-  MOCKUP v0.1 — TOSS / DATA SOURCE MONITORING (Giám sát nguồn dữ liệu)
+  MOCKUP v0.2 — TOSS / DATA SOURCE MONITORING (Giám sát nguồn dữ liệu)
   ============================================================================
   BA owner: Viet Anh · Dựng: 23/09/2026
   Thay thế bản Integration Hub 27 màn (integration-hub-mockup.html) sau phản hồi
   "overkill" của BA Lead ngày 22/09/2026.
 
   CLAUDE.md §0 — chỉ vẽ element có nguồn, không suy diễn:
-    · Cấu trúc 8 mục menu / 4 nhóm        → DANH-GIA-SRS-FINAL-VA-KE-HOACH-THIET-KE-LAI-TRUC v0.3 §4.1
+    · Cấu trúc 11 mục menu / 5 nhóm       → DANH-GIA-SRS-FINAL-VA-KE-HOACH-THIET-KE-LAI-TRUC v0.5 §7.4
+      (bản 8 mục trước đó bị anh Đặng Văn Hiệp bác ngày 24/09 vì thiếu phần khai báo)
+    · Bóc tách nguồn vào theo Mail/SFTP/DB/API · kết nối sống chết · bật tắt
+                                           → anh Hiệp 24/09 · TOSS-061 "quản lý qua giao diện trực quan"
+    · Cụm cổng công bố: Client · Phương thức xác thực · Dịch vụ · Gán dịch vụ · Token tự gen
+                                           → anh Hiệp 24/09 · TOSS-058 (throttling) · TOSS-059 (IP validation)
+                                             TOSS-062 (vòng đời API) · TOSS-108 · TOSS-109
+    · Danh mục 9 dịch vụ công bố + cột Đáp ứng
+                                           → [VNA.TOSS]-YCKT.xlsx sheet YCKT V3 dòng 137–144 + TOSS-109
+                                             (chỉ dòng 141, 142 và TOSS-109 có dấu Đáp ứng)
+    · Chỉ dùng API Key tĩnh, không làm OAuth2/JWT đợt này
+                                           → chốt với anh Hiệp 25/09
     · Bố cục màn M1 (5 hàng, dạng biểu đồ) → cùng tài liệu §4.4
     · 5 giá trị trạng thái, tách Rỗng/Lỗi  → BR-AOPS-11, SRS Station Manager v0.1
     · Hàng đợi bản ghi chưa rõ chuyến      → BR-PF-31, SRS Operations-Analysis v0.1 §3.6
@@ -49,7 +60,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TOSS — Data Source Monitoring (mockup v0.1)</title>
+<title>TOSS — Data Source Monitoring (mockup v0.2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -481,7 +492,7 @@ body.ann .legend{display:block}
 
 <div class="devbar">
   <span class="material-symbols-outlined" style="font-size:16px">draft</span>
-  <span><b>MOCKUP v0.1</b> — TOSS › Data Source Monitoring (Giám sát nguồn dữ liệu) · 8 mục menu / 4 nhóm</span>
+  <span><b>MOCKUP v0.2</b> — TOSS › Data Source Monitoring (Giám sát nguồn dữ liệu) · 11 mục menu / 5 nhóm</span>
   <span class="tag d">Tên 8 hệ thống + quy tắc = có dẫn nguồn</span>
   <span class="tag">Mọi số liệu = dữ liệu mẫu · địa chỉ máy chủ đã che</span>
   <button class="btn btn-sm btn-ghost" style="height:26px;font-size:11px" onclick="toggleAnn()">
@@ -517,11 +528,15 @@ body.ann .legend{display:block}
       <div class="side-item" data-go="m3"><span class="material-symbols-outlined">history</span>
         <span class="si-label">Chi tiết &amp; lịch sử phiên</span></div>
 
-      <div class="side-cap">Đầu ra</div>
+      <div class="side-cap">Đầu ra — cổng công bố</div>
+      <div class="side-item" data-go="mcli"><span class="material-symbols-outlined">badge</span>
+        <span class="si-label">Client</span><span class="pip">5</span></div>
+      <div class="side-item" data-go="mauth"><span class="material-symbols-outlined">key</span>
+        <span class="si-label">Phương thức xác thực</span><span class="pip">1</span></div>
+      <div class="side-item" data-go="msvc"><span class="material-symbols-outlined">api</span>
+        <span class="si-label">Dịch vụ công bố</span><span class="pip">9</span></div>
       <div class="side-item" data-go="m4"><span class="material-symbols-outlined">output</span>
         <span class="si-label">Luồng gửi ra</span><span class="pip">3</span></div>
-      <div class="side-item" data-go="m5"><span class="material-symbols-outlined">mail</span>
-        <span class="si-label">Mẫu nội dung email</span><span class="pip">4</span></div>
 
       <div class="side-cap">Xử lý ngoại lệ</div>
       <div class="side-item" data-go="m6"><span class="material-symbols-outlined">rule</span>
@@ -532,6 +547,8 @@ body.ann .legend{display:block}
         <span class="si-label">Độ phủ dữ liệu</span></div>
       <div class="side-item" data-go="m8"><span class="material-symbols-outlined">receipt_long</span>
         <span class="si-label">Nhật ký tích hợp</span></div>
+      <div class="side-item" data-go="m5"><span class="material-symbols-outlined">mail</span>
+        <span class="si-label">Mẫu nội dung email</span><span class="pip">4</span></div>
     </div>
 
     <div class="side-foot">
@@ -793,7 +810,7 @@ body.ann .legend{display:block}
             <input class="inp" id="q2" placeholder="Nhập tên hệ thống" oninput="renderSrc()"></div>
           <div class="fld narrow"><label>Kênh</label>
             <select class="inp" id="ch2" onchange="renderSrc()"><option value="">Tất cả</option>
-              <option>Đồng bộ</option><option>API</option><option>SFTP</option><option>Email</option></select></div>
+              <option>Mail</option><option>SFTP</option><option>DB</option><option>API</option><option>Web</option></select></div>
           <div class="fld narrow"><label>Trạng thái</label>
             <select class="inp" id="st2" onchange="renderSrc()"><option value="">Tất cả</option>
               <option value="ok">Bình thường</option><option value="empty">Rỗng</option>
@@ -821,7 +838,7 @@ body.ann .legend{display:block}
         <div class="sec-h">
           <span class="material-symbols-outlined">lan</span>
           <h3 id="d3Name">Netline / Ops++</h3>
-          <span class="sub" id="d3Sub">Chiều Vào · kênh Đồng bộ</span>
+          <span class="sub" id="d3Sub">Chiều Vào · kênh DB</span>
           <div class="right">
             <select class="inp inp-sm" style="width:210px" id="d3Pick" onchange="pickSrc(this.value)"></select>
             <button class="btn btn-sm btn-primary" onclick="openModal('mRerun')"
@@ -862,7 +879,127 @@ body.ann .legend{display:block}
     </section>
 
     <!-- ==================================================================
-         M4 — LUỒNG GỬI RA   (chọn kênh gửi)
+         M4 — CLIENT  (bên kết nối tới TOSS để lấy dữ liệu)
+         Căn cứ: anh Hiệp 24/09 — "Khai báo client ... Client chính là hệ thống đó
+         là 1 thực thể cần kết nối tới" · TOSS-059 (IP validation) · TOSS-058
+         (throttling) · YCKT dòng 142 "Có xác thực/phân quyền cho tài khoản lấy được".
+         ================================================================== -->
+    <section class="screen" id="mcli">
+      <div class="note" style="margin-bottom:14px" data-src="[YCKT dòng 142] · [TOSS-059] · [TOSS-058]">
+        <span class="material-symbols-outlined">badge</span>
+        <div><b>Client là hệ thống đối tác cần gọi vào TOSS để lấy dữ liệu.</b>
+        Mỗi client được khai báo một lần, gán dải IP được phép gọi (TOSS-059 — IP validation),
+        giới hạn số lần gọi mỗi phút (TOSS-058 — throttling), rồi tick những dịch vụ nó được phép gọi.
+        Token cấp cho client, <b>không</b> cấp cho từng dịch vụ.</div>
+      </div>
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'fcli')"><span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-primary" onclick="toast('Khai báo client mới — mô phỏng')"
+                    data-pui="p-button" data-src="[Anh Hiệp 24/09] Khai báo client">
+              <span class="material-symbols-outlined">add</span>Khai báo client</button>
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')">
+              <span class="material-symbols-outlined">download</span>Export Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="fcli" data-pui="cmm-dynamic-form" data-src="[§7.4 M4] lọc client">
+          <div class="fld"><label>Tìm theo tên client</label>
+            <input class="inp" id="qcli" placeholder="Nhập tên hệ thống đối tác" oninput="renderCli()"></div>
+          <div class="fld narrow"><label>Trạng thái</label>
+            <select class="inp" id="stcli" onchange="renderCli()"><option value="">Tất cả</option>
+              <option value="on">Đang hiệu lực</option><option value="off">Đã khoá</option>
+              <option value="exp">Token sắp hết hạn</option></select></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[Anh Hiệp 24/09] danh sách client · dữ liệu mẫu">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Client</th><th>Đơn vị chủ quản</th>
+            <th>Xác thực</th><th>Token</th><th>Hết hạn</th>
+            <th class="num">Dịch vụ</th><th>Dải IP cho phép</th><th class="num">Giới hạn</th>
+            <th class="mid" style="width:86px">Hiệu lực</th><th style="width:76px">Thao tác</th>
+          </tr></thead><tbody id="cliBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="cliBody"></div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M5 — PHƯƠNG THỨC XÁC THỰC
+         Căn cứ: anh Hiệp 24/09 "Khai báo phương thức xác thực" · TOSS-059.
+         CHỐT 25/09: đợt này CHỈ làm API Key tĩnh. OAuth2/JWT để dành.
+         ================================================================== -->
+    <section class="screen" id="mauth">
+      <div class="note" style="margin-bottom:14px" data-src="[Chốt 25/09] chỉ dùng API Key tĩnh">
+        <span class="material-symbols-outlined">key</span>
+        <div><b>Đợt này chỉ dùng một phương thức: API Key tĩnh.</b>
+        TOSS-059 có nêu cả OAuth2 và JWT, nhưng đã chốt để dành cho đối tác bên ngoài khi phát sinh.
+        API Key tĩnh <b>thu hồi được tức thì</b> — hợp với các hệ thống nội bộ VNA.
+        Danh mục này dùng chung cho cả chiều vào và chiều ra, nên đổi một bản ghi là mọi nơi dùng nó đều đổi theo.</div>
+      </div>
+      <div class="panel">
+        <div class="sec-h">
+          <span class="material-symbols-outlined">key</span>
+          <h3>Phương thức xác thực</h3>
+          <span class="sub">danh mục dùng chung hai chiều</span>
+          <div class="right"><button class="btn btn-sm btn-primary" onclick="toast('Thêm phương thức — ngoài phạm vi đợt này')">
+            <span class="material-symbols-outlined">add</span>Thêm</button></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[TOSS-059] · [Chốt 25/09]">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Phương thức</th><th>Áp dụng cho</th>
+            <th>Cách gửi kèm</th><th>Cách lưu trong TOSS</th><th>Thu hồi</th>
+            <th class="num">Đang dùng</th><th style="width:150px">Trạng thái</th></tr></thead>
+            <tbody id="authBody"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M6 — DỊCH VỤ CÔNG BỐ
+         Danh mục lấy nguyên từ [VNA.TOSS]-YCKT.xlsx sheet YCKT V3 dòng 137–144,
+         cộng API lịch bay theo TOSS-109. Cột "Đáp ứng" giữ nguyên dấu của YCKT.
+         Vòng đời dịch vụ theo TOSS-062 (versioning · bảo trì · ngừng API).
+         ================================================================== -->
+    <section class="screen" id="msvc">
+      <div class="note warn" style="margin-bottom:14px" data-src="[YCKT V3 dòng 137–144] cột Đáp ứng">
+        <span class="material-symbols-outlined">fact_check</span>
+        <div><b>Chỉ 3 dịch vụ có dấu Đáp ứng trong YCKT.</b> Cột <i>Đáp ứng</i> dưới đây giữ nguyên dấu
+        của bảng YCKT: <b>API giao tiếp MO Plus</b> (dòng 141), <b>API gói tài liệu chuyến bay</b> (dòng 142)
+        và <b>API cung cấp lịch bay</b> (TOSS-109). Sáu dịch vụ còn lại đã khảo sát nhưng
+        <b>chưa đánh dấu Đáp ứng</b> — cần VNA xác nhận trước khi đưa vào phạm vi nghiệm thu.</div>
+      </div>
+      <div class="panel">
+        <div class="toolbar">
+          <button class="filter-toggle" onclick="toggleFilter(this,'fsvc')"><span class="material-symbols-outlined">filter_list</span>Bộ lọc
+            <span class="material-symbols-outlined caret">expand_less</span></button>
+          <div class="tb-right">
+            <button class="btn btn-amber" onclick="toast('Kết xuất Excel — dữ liệu mẫu')">
+              <span class="material-symbols-outlined">download</span>Export Excel</button>
+          </div>
+        </div>
+        <div class="filters" id="fsvc" data-pui="cmm-dynamic-form" data-src="[TOSS-062] lọc theo vòng đời">
+          <div class="fld narrow"><label>Phạm vi</label>
+            <select class="inp" id="qsvcdap" onchange="renderSvc()"><option value="">Tất cả</option>
+              <option value="1">Đã có dấu Đáp ứng</option><option value="0">Chưa đánh dấu</option></select></div>
+          <div class="fld narrow"><label>Vòng đời</label>
+            <select class="inp" id="qsvclc" onchange="renderSvc()"><option value="">Tất cả</option>
+              <option>Đang khai thác</option><option>Đang thiết lập</option><option>Sắp ngừng</option></select></div>
+        </div>
+        <div class="tw" data-pui="IamTable (p-table)" data-src="[YCKT V3 dòng 137–144] · [TOSS-109] · [TOSS-062]">
+          <table><thead><tr>
+            <th style="width:40px">No</th><th>Dịch vụ</th><th>Trả về gì</th>
+            <th>Đường dẫn</th><th class="mid">Phương thức</th><th class="mid">Bản</th>
+            <th class="mid">Đáp ứng</th><th style="width:150px">Vòng đời</th>
+            <th class="num">Client dùng</th><th style="width:50px"></th></tr></thead>
+            <tbody id="svcBody"></tbody></table>
+        </div>
+        <div class="pgbar" data-pg="svcBody"></div>
+      </div>
+    </section>
+
+    <!-- ==================================================================
+         M7 — LUỒNG GỬI RA   (chọn kênh gửi)
          §4.3 M4 · luồng ra có trong SRS: Notification sang MO Plus, chuyển tiếp
          điện ACARS qua email, kết xuất tệp cho PEP/PET.
          ================================================================== -->
@@ -1111,6 +1248,14 @@ Vui lòng kiểm tra và phản hồi.</textarea></div>
           <tr><td>p-tabView (thẻ theo phân hệ)</td><td>M6 hàng đợi</td><td>Màn dùng chung, PF có thẻ riêng (BR-PF-31)</td></tr>
           <tr><td>DialogRegistry (p-dialog)</td><td>Chạy lại phiên</td><td>Đóng bằng Esc hoặc bấm nền</td></tr>
           <tr><td>DialogRegistry (p-drawer)</td><td>M6-D gán chuyến</td><td>Trượt từ phải; mang hợp đồng trả ngược về phân hệ gốc</td></tr>
+          <tr><td>cmm-dynamic-form (bộ trường đổi theo loại kênh)</td><td>M2 popup cấu hình kết nối</td>
+            <td>MỘT popup đa hình cho 5 loại Mail/SFTP/DB/API/Web — thay cho 6 loại × 6 màn của UBCK</td></tr>
+          <tr><td>p-button (Kiểm tra kết nối)</td><td>M2 popup cấu hình</td>
+            <td>Thử kết nối ngay trên form, trả lời "sống hay chết" không cần chờ phiên kế tiếp</td></tr>
+          <tr><td>DialogRegistry (p-drawer + p-tabView)</td><td>Chi tiết Client</td>
+            <td>Ba thẻ tách bạch: Thông tin · Xác thực · Dịch vụ được gán — đúng "cho khai báo từng phần"</td></tr>
+          <tr><td>p-inputGroup (readonly + copy)</td><td>Popup token vừa sinh</td>
+            <td>Chuỗi hiện ĐÚNG MỘT LẦN; hệ thống chỉ lưu bản băm. Không có đường xem lại</td></tr>
           <tr><td>cmm-dynamic-form (p-editor)</td><td>M5 mẫu email</td><td>Biến thay thế dạng {{ten_bien}}</td></tr>
           <tr><td>p-toast</td><td>Thông báo</td><td>Góc dưới bên phải, tự tắt sau 3 giây (quy chuẩn dùng chung)</td></tr>
         </tbody></table>
@@ -1149,6 +1294,84 @@ Vui lòng kiểm tra và phản hồi.</textarea></div>
   </div>
 </div>
 
+<!-- ============ MODAL — CẤU HÌNH KẾT NỐI (ĐA HÌNH) ============
+     Một popup duy nhất, ĐỔI BỘ TRƯỜNG theo loại kênh Mail / SFTP / DB / API / Web.
+     Thay cho cách của UBCK là làm 6 loại × 6 màn = 36 chức năng.
+     Căn cứ: anh Hiệp 24/09 "Cấu hình SFTP · Cấu hình API" · TOSS-061 "quản lý qua
+     giao diện trực quan" · TOSS-058 "cấu hình chính sách linh hoạt". -->
+<div class="ovl" id="mConn">
+  <div class="modal">
+    <div class="modal-h"><h2 id="cnTitle">Cấu hình kết nối</h2>
+      <button class="x" onclick="closeModal('mConn')"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="modal-b">
+      <div class="mcard" data-pui="cmm-dynamic-form (bộ trường đổi theo loại kênh)" data-src="[Anh Hiệp 24/09] Cấu hình SFTP · Cấu hình API">
+        <h4>Thông tin chung</h4>
+        <div class="frow">
+          <div class="fld"><label>Hệ thống</label><input class="inp" id="cnSys" readonly></div>
+          <div class="fld"><label>Loại kênh<span class="req">*</span></label>
+            <select class="inp" id="cnType" onchange="drawConnFields()">
+              <option>Mail</option><option>SFTP</option><option>DB</option><option>API</option><option>Web</option>
+            </select></div>
+          <div class="fld"><label>Phương thức xác thực</label>
+            <select class="inp" id="cnAuth"><option>API Key tĩnh</option></select></div>
+        </div>
+      </div>
+      <div class="mcard">
+        <h4 id="cnFieldsTitle">Thông số kết nối</h4>
+        <div class="frow" id="cnFields"></div>
+        <div class="hint" style="margin-top:12px">Địa chỉ máy chủ trên mockup đã được che
+          (<span class="mono">&lt;netline-db&gt;:1521</span>). Bản thật hiển thị giá trị đầy đủ theo quyền.</div>
+      </div>
+      <div class="mcard">
+        <h4>Kiểm tra kết nối</h4>
+        <p class="hint" style="margin:0 0 12px">Thử kết nối ngay trên form trước khi lưu — trả lời câu hỏi
+          <b>"sống hay chết"</b> mà không phải chờ tới phiên chạy kế tiếp.</p>
+        <button class="btn btn-ghost" onclick="testConn()" data-pui="p-button" data-src="[Anh Hiệp 24/09] xem thông tin kết nối sống chết">
+          <span class="material-symbols-outlined">network_check</span>Kiểm tra kết nối</button>
+        <div id="cnResult" style="margin-top:12px"></div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('mConn')">Hủy</button>
+      <button class="btn btn-primary" onclick="closeModal('mConn');toast('Đã lưu cấu hình kết nối (mô phỏng)','ok')">
+        <span class="material-symbols-outlined">save</span>Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL — SINH TOKEN CHO CLIENT ============
+     Token hiển thị ĐÚNG MỘT LẦN. TOSS chỉ lưu bản băm, không lưu chuỗi gốc —
+     nguyên tắc "ghi được, không đọc lại" đã chốt 09/09. -->
+<div class="ovl" id="mToken">
+  <div class="modal sm">
+    <div class="modal-h"><h2>Token vừa sinh</h2>
+      <button class="x" onclick="closeModal('mToken')"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="modal-b">
+      <div class="note warn">
+        <span class="material-symbols-outlined">warning</span>
+        <div><b>Chuỗi dưới đây chỉ hiển thị một lần duy nhất.</b> Sao chép và gửi cho đầu mối kỹ thuật
+        của hệ thống đối tác qua kênh an toàn. Đóng cửa sổ này là không xem lại được —
+        hệ thống chỉ lưu bản băm, giống cách lưu mật khẩu.</div>
+      </div>
+      <div class="mcard" data-pui="p-inputGroup (readonly + copy)" data-src="[Anh Hiệp 24/09] token mã hoá có thể tự gen">
+        <div class="fld"><label>Token</label>
+          <div style="display:flex;gap:9px">
+            <input class="inp mono" id="tkVal" readonly style="flex:1">
+            <button class="btn btn-ghost" onclick="toast('Đã sao chép (mô phỏng)','ok')">
+              <span class="material-symbols-outlined">content_copy</span>Sao chép</button>
+          </div></div>
+        <div class="frow c2" style="margin-top:14px">
+          <div class="fld"><label>Hết hạn</label><input class="inp" id="tkExp" readonly></div>
+          <div class="fld"><label>Dấu nhận dạng lưu lại</label><input class="inp mono" id="tkFp" readonly></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-primary" onclick="closeModal('mToken')">Tôi đã lưu token</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ NGĂN KÉO M6-D — GÁN CHUYẾN / LÀM RÕ ============
      Bấm một dòng ở M6 thì mở ngăn kéo này. Không chiếm một dòng menu riêng. -->
 <div class="drw-ovl" id="drwOvl" onclick="closeResolve()"></div>
@@ -1177,6 +1400,79 @@ Vui lòng kiểm tra và phản hồi.</textarea></div>
   </div>
 </div>
 
+<!-- ============ NGĂN KÉO — CHI TIẾT CLIENT (3 thẻ) ============
+     "Cho khai báo từng phần" — anh Hiệp 24/09. Ba phần tách bạch:
+     Thông tin · Xác thực · Dịch vụ được gán (kèm token). -->
+<div class="drw-ovl" id="cliOvl" onclick="closeCli()"></div>
+<div class="drw" id="drwCli" style="width:560px" data-pui="DialogRegistry (p-drawer + p-tabView)" data-src="[Anh Hiệp 24/09] khai báo từng phần">
+  <div class="drw-h">
+    <div class="t"><h2 id="cdName">—</h2>
+      <button class="x" onclick="closeCli()"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="st" id="cdSub">—</div>
+    <div class="tabs" style="padding:14px 0 0">
+      <button class="tab on" data-ct="info" onclick="pickCliTab(this)">Thông tin</button>
+      <button class="tab" data-ct="auth" onclick="pickCliTab(this)">Xác thực</button>
+      <button class="tab" data-ct="svc" onclick="pickCliTab(this)">Dịch vụ được gán</button>
+    </div>
+  </div>
+  <div class="drw-b">
+
+    <div class="ctab" id="ct-info">
+      <dl class="dl">
+        <div class="row"><dt>Tên client</dt><dd id="cdN2">—</dd></div>
+        <div class="row"><dt>Đơn vị chủ quản</dt><dd id="cdOwn">—</dd></div>
+        <div class="row"><dt>Đầu mối kỹ thuật</dt><dd id="cdCon" class="norm">—</dd></div>
+      </dl>
+      <div class="frow c2" style="margin-top:16px">
+        <div class="fld"><label>Dải IP được phép gọi<span class="req">*</span></label>
+          <input class="inp mono" id="cdIp" value=""></div>
+        <div class="fld"><label>Giới hạn gọi (lần/phút)<span class="req">*</span></label>
+          <input class="inp" id="cdRate" type="number" value="60"></div>
+      </div>
+      <div class="hint">Dải IP là lớp chặn thứ ba ở Gateway — căn cứ <b>TOSS-059</b> (IP validation).
+        Giới hạn gọi là chính sách throttling của <b>TOSS-058</b>.</div>
+      <div class="sw-row" style="margin-top:16px">
+        <label class="sw"><input type="checkbox" id="cdOn" checked><span></span></label>Client đang hiệu lực</div>
+    </div>
+
+    <div class="ctab" id="ct-auth" hidden>
+      <dl class="dl">
+        <div class="row"><dt>Phương thức xác thực</dt><dd>API Key tĩnh</dd></div>
+        <div class="row"><dt>Cách gửi kèm</dt><dd class="norm">Đính vào tiêu đề mỗi lần gọi:
+          <span class="mono">X-API-Key: &lt;token&gt;</span></dd></div>
+        <div class="row"><dt>Token hiện tại</dt><dd class="mono" id="cdTok">—</dd></div>
+        <div class="row"><dt>Ngày cấp</dt><dd id="cdIss">—</dd></div>
+        <div class="row"><dt>Hết hạn</dt><dd id="cdExp">—</dd></div>
+        <div class="row"><dt>Lần gọi gần nhất</dt><dd id="cdLast" class="norm">—</dd></div>
+      </dl>
+      <div class="note" style="margin-top:16px">
+        <span class="material-symbols-outlined">lock</span>
+        <div><b>Không xem lại được chuỗi gốc.</b> TOSS chỉ lưu bản băm, giống cách lưu mật khẩu.
+        Màn hình chỉ hiện bốn ký tự đầu để đối chiếu. Đối tác làm mất thì <b>sinh lại</b>, không tra lại được.</div>
+      </div>
+      <div class="acts" style="margin-top:16px;gap:9px">
+        <button class="btn btn-ghost" onclick="genToken()" data-pui="p-button" data-src="[Anh Hiệp 24/09] token có thể tự gen">
+          <span class="material-symbols-outlined">autorenew</span>Sinh lại token</button>
+        <button class="btn btn-ghost" style="color:var(--err-tx);border-color:#FECDCA"
+                onclick="toast('Đã thu hồi token — client bị chặn ngay ở lớp 1 (mô phỏng)','err')">
+          <span class="material-symbols-outlined">block</span>Thu hồi</button>
+      </div>
+    </div>
+
+    <div class="ctab" id="ct-svc" hidden>
+      <p class="hint" style="margin:0 0 12px">Tick dịch vụ mà client này được phép gọi.
+        Bỏ tick là Gateway chặn ngay ở <b>lớp 4</b>, không cần sửa code.</p>
+      <div id="cdSvcList"></div>
+    </div>
+
+  </div>
+  <div class="drw-f">
+    <button class="btn btn-ghost" onclick="closeCli()">Đóng</button>
+    <button class="btn btn-primary" onclick="closeCli();toast('Đã lưu cấu hình client (mô phỏng)','ok')">
+      <span class="material-symbols-outlined">save</span>Lưu</button>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toasts"></div>
 
 <script>
@@ -1194,8 +1490,19 @@ const ST = {
   off  :{t:'Đã tắt',      c:'bdg-mute', i:'do_not_disturb_on'}
 };
 
+/* Loại kênh — theo đúng anh Hiệp 24/09: "Mail, SFTP, DB, API,...".
+   Nhãn "Đồng bộ" của bản trước là SAI: Netline và AMOS đều là kết nối CSDL Oracle.
+   Mỗi loại có một bộ trường cấu hình riêng ⇒ popup đa hình ở M2. */
+const CH = {
+  'Mail':{i:'mail',  f:['Máy chủ thư','Cổng','Hòm thư','Giao thức','Thư mục theo dõi','Quy tắc nhận diện tiêu đề']},
+  'SFTP':{i:'folder_shared', f:['Máy chủ','Cổng','Tài khoản','Thư mục nguồn','Mẫu tên tệp','Xoá tệp sau khi đọc']},
+  'DB'  :{i:'database', f:['Loại CSDL','Chuỗi kết nối','Tài khoản','Bảng / khung nhìn','Cột mốc thời gian']},
+  'API' :{i:'api',   f:['Kiểu','Đường dẫn gốc','Phương thức','Đường dẫn dịch vụ','Kiểu xác thực']},
+  'Web' :{i:'travel_explore', f:['Địa chỉ trang','Chu kỳ quét','Bộ chọn nội dung']}
+};
+
 const SRC = [
-  {n:'Netline / Ops++', dir:'Vào',      ch:'Đồng bộ', st:'ok',    last:'2 phút trước',  abs:'23/09/2026 04:12',
+  {n:'Netline / Ops++', dir:'Vào',      ch:'DB',      st:'ok',    last:'2 phút trước',  abs:'23/09/2026 04:12',
    msg:8420, ok7:99.4, resp:310, unm:0, ep:'<netline-db>:1521', sched:'5 phút/lần', on:true, thr:3,
    scope:'±3 ngày, ±30 ngày',
    rule:'<b>Quy tắc lọc khi đồng bộ.</b> Loại bỏ chuyến có hậu tố <b>Leg_type = Y, Z, N</b>; chỉ lấy chuyến có <b>leg_state khác CNL và DEL</b>.'},
@@ -1203,7 +1510,7 @@ const SRC = [
    msg:1860, ok7:98.1, resp:520, unm:0, ep:'<moplus-api>/api/v1', sched:'Theo sự kiện', on:true, thr:5,
    scope:'Tài liệu, OFP, Flight Release',
    rule:'<b>Hai chiều.</b> TOSS gửi Notification sang MO Plus; PIC Accept/Reject rồi đồng bộ ngược về cập nhật trạng thái. Trạng thái chờ là <b>AWAIT ACK</b>.'},
-  {n:'AMOS',            dir:'Vào',      ch:'Đồng bộ', st:'empty', last:'18 phút trước', abs:'23/09/2026 03:56',
+  {n:'AMOS',            dir:'Vào',      ch:'DB',      st:'empty', last:'18 phút trước', abs:'23/09/2026 03:56',
    msg:0,    ok7:96.7, resp:640, unm:0, ep:'<amos-db>:1521', sched:'15 phút/lần', on:true, thr:3,
    scope:'MEL/CDL',
    rule:'<b>Gọi thành công nhưng không có bản ghi nào.</b> Đây là trạng thái <i>Rỗng</i>, khác hẳn <i>Lỗi</i> — theo BR-AOPS-11.'},
@@ -1215,7 +1522,7 @@ const SRC = [
    msg:1180, ok7:91.2, resp:0,   unm:21, ep:'<acars-sftp>:22', sched:'10 phút/lần', on:true, thr:3,
    scope:'M49, M11, DFD',
    rule:'<b>Mã điện.</b> M49 (chuyển pha bay), M11 (OUT), DFD (APM / REP002 theo loại tàu B787, A321, A350).'},
-  {n:'Amadeus',         dir:'Vào',      ch:'Email',   st:'late',  last:'2 giờ 14 phút trước', abs:'23/09/2026 02:00',
+  {n:'Amadeus',         dir:'Vào',      ch:'Mail',    st:'late',  last:'2 giờ 14 phút trước', abs:'23/09/2026 02:00',
    msg:96,   ok7:97.5, resp:0,   unm:11, ep:'tossclc@ · toss.occ@', sched:'Theo thư đến', on:true, thr:3,
    scope:'LS, PM, FZFW',
    rule:'<b>Nhận diện bằng tiêu đề thư.</b> LS về hòm <b>tossclc@</b> (hòm chỉ chứa LS nên không cần nhận diện); PM và FZFW về hòm <b>toss.occ@</b>, PM nhận diện bằng tiêu đề chứa chữ <b>AMS</b>.'},
@@ -1223,7 +1530,7 @@ const SRC = [
    msg:314,  ok7:99.6, resp:280, unm:5,  ep:'POST /api/v1/flight-documents', sched:'Theo sự kiện', on:true, thr:5,
    scope:'PM, GD',
    rule:'<b>VMS gọi vào TOSS.</b> Mapping bằng <b>FLT NO + EDD</b> với chuyến đã đồng bộ từ NetLine. PM từ VMS chỉ áp dụng sân bay HUB: <b>HAN, DAD, SGN</b>.'},
-  {n:'AVES',            dir:'Vào',      ch:'Đồng bộ', st:'off',   last:'3 ngày trước',  abs:'20/09/2026 01:00',
+  {n:'AVES',            dir:'Vào',      ch:'API',     st:'off',   last:'3 ngày trước',  abs:'20/09/2026 01:00',
    msg:0,    ok7:0,    resp:0,   unm:0,  ep:'<aves-api>:8080', sched:'Hằng ngày 01:00', on:false, thr:3,
    scope:'Phi công, tiếp viên',
    rule:'<b>Đang tắt theo lựa chọn của người dùng.</b> Dừng ngắn hạn dùng công tắc Bật/Tắt, không thêm trạng thái mới.'}
@@ -1285,6 +1592,59 @@ const OUT = [
 const TPL = ['Cảnh báo nguồn dữ liệu lỗi','Cảnh báo nguồn rỗng quá ngưỡng',
              'Nhắc bản ghi chờ xử lý quá 48 giờ','Chuyển tiếp điện ACARS'];
 
+/* ===================== CỔNG CÔNG BỐ (M4·M5·M6) =====================
+   DỊCH VỤ: lấy nguyên từ [VNA.TOSS]-YCKT.xlsx · sheet YCKT V3 · dòng 137–144,
+   cộng API lịch bay theo TOSS-109. Cột "dap" giữ nguyên dấu Đáp ứng của YCKT —
+   KHÔNG tự gán. Vòng đời theo TOSS-062. */
+const SVC = [
+  {r:'TOSS-109', n:'API cung cấp lịch bay', ret:'Lịch bay và dữ liệu khai thác cho hệ thống khác',
+   path:'/api/v1/flight-schedule', m:'GET', v:'v1', dap:1, lc:'Đang khai thác', use:3},
+  {r:'dòng 141', n:'API giao tiếp MO Plus', ret:'Gửi trạng thái Dispatch Release · Flight Release · Confirm Document',
+   path:'/api/v1/moplus/status', m:'POST', v:'v1', dap:1, lc:'Đang khai thác', use:1},
+  {r:'dòng 142', n:'API cung cấp gói tài liệu chuyến bay', ret:'Gói tài liệu bản cuối của mỗi chuyến, có tham số chọn loại tài liệu',
+   path:'/api/v1/flight-documents/package', m:'GET', v:'v1', dap:1, lc:'Đang khai thác', use:2},
+  {r:'dòng 137', n:'API báo cáo FOS', ret:'Theo leg_no hoặc (AC Reg, DEP, ARR, FLT date, FLTN)',
+   path:'/api/v1/fos-report', m:'GET', v:'v1', dap:0, lc:'Đang thiết lập', use:0},
+  {r:'dòng 138', n:'API Fuel · Weight · Time từ MO Plus', ret:'Bảng Fuel Analysis KHB — giá trị OFP và giá trị correct',
+   path:'/api/v1/fuel-weight-time', m:'GET', v:'v1', dap:0, lc:'Đang thiết lập', use:0},
+  {r:'dòng 139', n:'API thời tiết sân bay cho Quản trị EFB', ret:'Tham số: Sân bay · From Date · To Date',
+   path:'/api/v1/airport-weather', m:'GET', v:'v1', dap:0, lc:'Đang thiết lập', use:0},
+  {r:'dòng 140', n:'Aircraft API', ret:'Vào AC Registration — trả thuộc tính tàu bay và PF mới nhất đang áp dụng',
+   path:'/api/v1/aircraft/{acReg}', m:'GET', v:'v1', dap:0, lc:'Đang thiết lập', use:0},
+  {r:'dòng 143', n:'API đẩy tài liệu Library vào Draft', ret:'Theo từng phân hệ tài liệu',
+   path:'/api/v1/library/draft', m:'POST', v:'v1', dap:0, lc:'Đang thiết lập', use:0},
+  {r:'dòng 144', n:'API đẩy tài liệu Notices vào Draft', ret:'Tài liệu Notices',
+   path:'/api/v1/notices/draft', m:'POST', v:'v1', dap:0, lc:'Đang thiết lập', use:0}
+];
+
+/* CLIENT: hệ thống đối tác gọi VÀO TOSS. Dữ liệu mẫu, tên hệ thống lấy từ sheet Tích hợp. */
+const CLI = [
+  {n:'Cargo Spot', own:'Ban Hàng hoá', con:'Nguyễn Văn A · a.nguyen@vietnamairlines.com',
+   tok:'tok_7f3a', iss:'02/09/2026', exp:'01/12/2026', ip:'10.x.x.0/24', rate:60, on:true,
+   svc:['API cung cấp lịch bay'], last:'23/09/2026 04:02 · 1.284 lần'},
+  {n:'MO Plus', own:'Ban Khai thác bay', con:'Trần Thị B · b.tran@vietnamairlines.com',
+   tok:'tok_2c91', iss:'15/08/2026', exp:'13/11/2026', ip:'10.x.x.0/24', rate:300, on:true,
+   svc:['API giao tiếp MO Plus','API cung cấp gói tài liệu chuyến bay'], last:'23/09/2026 04:08 · 18.402 lần'},
+  {n:'Quản trị EFB', own:'Ban Kỹ thuật', con:'Lê Văn C · c.le@vietnamairlines.com',
+   tok:'tok_9b45', iss:'01/09/2026', exp:'30/09/2026', ip:'10.x.x.0/24', rate:30, on:true,
+   svc:['API cung cấp gói tài liệu chuyến bay'], last:'22/09/2026 21:14 · 96 lần'},
+  {n:'NetZero', own:'Ban Môi trường', con:'(chưa có đầu mối)',
+   tok:'tok_4d20', iss:'10/09/2026', exp:'09/12/2026', ip:'(chưa khai báo)', rate:10, on:false,
+   svc:[], last:'chưa gọi lần nào'},
+  {n:'SPECTRA', own:'Ban CĐS', con:'Phạm Thị D · d.pham@vietnamairlines.com',
+   tok:'tok_e17c', iss:'20/09/2026', exp:'19/12/2026', ip:'10.x.x.0/24', rate:60,  on:true,
+   svc:['API cung cấp lịch bay'], last:'23/09/2026 01:30 · 412 lần'}
+];
+
+/* PHƯƠNG THỨC XÁC THỰC — chốt 25/09: đợt này CHỈ API Key tĩnh. */
+const AUTH = [
+  {n:'API Key tĩnh', ap:'Client gọi vào TOSS', how:'Tiêu đề X-API-Key trên mỗi lần gọi',
+   store:'Chỉ lưu bản băm, không lưu chuỗi gốc', rev:'Tức thì', use:5, st:'ok'},
+  {n:'OAuth2 / JWT', ap:'Đối tác ngoài, phân quyền theo người dùng cuối',
+   how:'Tiêu đề Authorization: Bearer', store:'Kiểm chữ ký, không lưu token',
+   rev:'Khó — phải nuôi danh sách đen', use:0, st:'off'}
+];
+
 const COV = [
   {r:'VN-A886',t:'B787',f:42,d:42},{r:'VN-A878',t:'B787',f:38,d:37},
   {r:'VN-A879',t:'B787',f:40,d:39},{r:'VN-A874',t:'B787',f:36,d:31},
@@ -1314,8 +1674,9 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nf=n=>Number(n).toLocaleString('vi-VN');
 const CRUMBS={m1:'Tổng quan giám sát',m2:'Nguồn dữ liệu vào',m3:'Chi tiết & lịch sử phiên',
-  m4:'Luồng gửi ra',m5:'Mẫu nội dung email',m6:'Bản ghi chưa rõ chuyến',
-  m7:'Độ phủ dữ liệu',m8:'Nhật ký tích hợp'};
+  mcli:'Client',mauth:'Phương thức xác thực',msvc:'Dịch vụ công bố',
+  m4:'Luồng gửi ra',m6:'Bản ghi chưa rõ chuyến',
+  m7:'Độ phủ dữ liệu',m8:'Nhật ký tích hợp',m5:'Mẫu nội dung email'};
 
 function go(id){
   $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
@@ -1332,7 +1693,7 @@ function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 $$('.ovl').forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove('open')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){
-  $$('.ovl.open').forEach(o=>o.classList.remove('open'));closeResolve();}});
+  $$('.ovl.open').forEach(o=>o.classList.remove('open'));closeResolve();closeCli();}});
 
 function toast(msg,kind){
   const ico={ok:'check_circle',err:'error'}[kind]||'info';
@@ -1384,7 +1745,7 @@ function drawPager(key){
     '<button class="pg-btn" '+(cur===P?'disabled':'')+' onclick="pgGo(\''+key+'\','+P+')" title="Trang cuối">'+
       '<span class="material-symbols-outlined">keyboard_double_arrow_right</span></button></div>';
 }
-function redraw(){renderHealth();renderSrc();renderRuns();renderOut();renderQueue();renderCov();renderLog();}
+function redraw(){renderHealth();renderSrc();renderRuns();renderCli();renderSvc();renderOut();renderQueue();renderCov();renderLog();}
 
 /* ============================ BIỂU ĐỒ =============================== */
 /* Quy tắc áp dụng ở đây:
@@ -1623,8 +1984,12 @@ function renderSrc(){
     '<td>'+badge(s.st)+'</td><td class="num">'+s.thr+' lần</td>'+
     '<td class="mid"><label class="sw"><input type="checkbox"'+(s.on?' checked':'')+
       ' onchange="toggleSrc(\''+esc(s.n)+'\',this.checked)"><span></span></label></td>'+
-    '<td><button class="ico-btn" onclick="openSrc(\''+esc(s.n)+'\')" title="Chi tiết">'+
-      '<span class="material-symbols-outlined">chevron_right</span></button></td></tr>').join('')
+    '<td><div class="acts">'+
+      '<button class="ico-btn" onclick="openConn(\''+esc(s.n)+'\')" title="Cấu hình kết nối">'+
+        '<span class="material-symbols-outlined">tune</span></button>'+
+      '<button class="ico-btn" onclick="openSrc(\''+esc(s.n)+'\')" title="Chi tiết &amp; lịch sử phiên">'+
+        '<span class="material-symbols-outlined">chevron_right</span></button>'+
+      '</div></td></tr>').join('')
     : '<tr><td colspan="9"><div class="empty-row">No data available.</div></td></tr>';
 }
 function toggleSrc(n,v){
@@ -1669,7 +2034,150 @@ function renderRuns(){
       '<span class="material-symbols-outlined">restart_alt</span></button></td></tr>').join('');
 }
 
-/* ======================= M4 — LUỒNG GỬI RA ========================= */
+/* ================ CẤU HÌNH KẾT NỐI ĐA HÌNH (M2) ==================
+   Một popup, bộ trường đổi theo loại kênh — thay cho 6 loại × 6 màn của UBCK. */
+let connSrc=null;
+function openConn(n){
+  connSrc=SRC.find(x=>x.n===n); if(!connSrc)return;
+  $('#cnTitle').textContent='Cấu hình kết nối — '+connSrc.n;
+  $('#cnSys').value=connSrc.n;
+  $('#cnType').value=connSrc.ch;
+  $('#cnResult').innerHTML='';
+  drawConnFields();
+  openModal('mConn');
+}
+function drawConnFields(){
+  const ty=$('#cnType').value, def=CH[ty];
+  $('#cnFieldsTitle').textContent='Thông số kết nối — '+ty;
+  const ep=connSrc?connSrc.ep:'';
+  $('#cnFields').innerHTML=def.f.map((f,i)=>
+    '<div class="fld"><label>'+esc(f)+(i===0?'<span class="req">*</span>':'')+'</label>'+
+    '<input class="inp'+(i===0?' mono':'')+'" value="'+(i===0?esc(ep):'')+'" placeholder="'+esc(f)+'"></div>').join('');
+}
+function testConn(){
+  const box=$('#cnResult');
+  box.innerHTML='<div class="note"><span class="material-symbols-outlined">sync</span>'+
+                '<div>Đang thử kết nối…</div></div>';
+  setTimeout(()=>{
+    const bad = connSrc && connSrc.st==='err';
+    box.innerHTML = bad
+      ? '<div class="note err" style="background:var(--err-bg);border-color:#FECDCA;color:var(--err-tx)">'+
+        '<span class="material-symbols-outlined">error</span><div><b>Không kết nối được.</b><br>'+
+        'Hết thời gian chờ sau 30 giây — máy chủ không phản hồi.<br>'+
+        '<span style="font-size:11px;opacity:.8">Kết quả mô phỏng, mockup không gọi hệ thống thật.</span></div></div>'
+      : '<div class="note" style="background:var(--ok-bg);border-color:#ABEFC6;color:var(--ok-tx)">'+
+        '<span class="material-symbols-outlined">check_circle</span><div><b>Kết nối thành công.</b><br>'+
+        'Bắt tay 42 ms · thông tin xác thực được chấp nhận.<br>'+
+        '<span style="font-size:11px;opacity:.8">Kết quả mô phỏng, mockup không gọi hệ thống thật.</span></div></div>';
+  },850);
+}
+
+/* ================== M4 — CLIENT (cổng công bố) ==================== */
+function renderCli(){
+  const q=($('#qcli')?$('#qcli').value:'').toLowerCase();
+  const st=$('#stcli')?$('#stcli').value:'';
+  const rows=CLI.filter(c=>(!q||c.n.toLowerCase().includes(q))&&
+    (!st|| (st==='on'&&c.on) || (st==='off'&&!c.on) || (st==='exp'&&c.exp.startsWith('30/09'))));
+  const body=$('#cliBody'); if(!body)return;
+  const page=pg('cliBody',rows,'client');
+  body.innerHTML=page.length?page.map((c,i)=>{
+    const soon=c.exp.startsWith('30/09');
+    return '<tr'+(c.on?'':' class="dim"')+'><td class="num">'+(_ofs+i+1)+'</td>'+
+      '<td><span class="strong">'+esc(c.n)+'</span><span class="sub">'+esc(c.con)+'</span></td>'+
+      '<td>'+esc(c.own)+'</td>'+
+      '<td><span class="chip">API Key tĩnh</span></td>'+
+      '<td class="mono">'+esc(c.tok)+'••••</td>'+
+      '<td>'+(soon?'<b style="color:var(--warn-tx)">'+esc(c.exp)+'</b>':esc(c.exp))+'</td>'+
+      '<td class="num">'+(c.svc.length||'—')+'</td>'+
+      '<td class="mono">'+esc(c.ip)+'</td>'+
+      '<td class="num">'+c.rate+'/phút</td>'+
+      '<td class="mid"><label class="sw"><input type="checkbox"'+(c.on?' checked':'')+
+        ' onchange="toast(\'Đã đổi hiệu lực client (mô phỏng)\',\'ok\')"><span></span></label></td>'+
+      '<td><button class="ico-btn" onclick="openCli('+CLI.indexOf(c)+')" title="Khai báo từng phần">'+
+        '<span class="material-symbols-outlined">chevron_right</span></button></td></tr>';
+  }).join('') : '<tr><td colspan="11"><div class="empty-row">No data available.</div></td></tr>';
+}
+let cliIdx=-1;
+function openCli(i){
+  cliIdx=i; const c=CLI[i];
+  $('#cdName').textContent=c.n;
+  $('#cdSub').textContent=c.own+' · '+(c.on?'đang hiệu lực':'đã khoá');
+  $('#cdN2').textContent=c.n; $('#cdOwn').textContent=c.own; $('#cdCon').textContent=c.con;
+  $('#cdIp').value=c.ip; $('#cdRate').value=c.rate; $('#cdOn').checked=c.on;
+  $('#cdTok').textContent=c.tok+'••••••••';
+  $('#cdIss').textContent=c.iss; $('#cdExp').textContent=c.exp; $('#cdLast').textContent=c.last;
+  $('#cdSvcList').innerHTML=SVC.map(s=>{
+    const on=c.svc.includes(s.n);
+    return '<div class="cand'+(on?' pick':'')+'" onclick="togSvc(this)">'+
+      '<span class="rb" style="border-radius:4px"></span>'+
+      '<span class="cm"><span class="cn">'+esc(s.n)+'</span>'+
+      '<span class="cs">'+esc(s.path)+' · '+esc(s.m)+
+      (s.dap?' · <b style="color:var(--ok-tx)">đã Đáp ứng</b>':' · <b style="color:var(--warn-tx)">chưa đánh dấu</b>')+
+      '</span></span></div>';
+  }).join('');
+  pickCliTab(document.querySelector('#drwCli .tab'));
+  $('#cliOvl').classList.add('open'); $('#drwCli').classList.add('open');
+}
+function togSvc(el){el.classList.toggle('pick');}
+function closeCli(){$('#cliOvl').classList.remove('open');$('#drwCli').classList.remove('open');}
+function pickCliTab(b){
+  document.querySelectorAll('#drwCli .tab').forEach(t=>t.classList.remove('on'));
+  b.classList.add('on');
+  ['info','auth','svc'].forEach(k=>{document.getElementById('ct-'+k).hidden=(k!==b.dataset.ct);});
+}
+/* Sinh token — chuỗi hiện ĐÚNG MỘT LẦN, hệ thống chỉ giữ bản băm */
+function genToken(){
+  const abc='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let s=''; for(let i=0;i<40;i++) s+=abc[Math.floor(Math.random()*abc.length)];
+  const tok='tosskey_'+s;
+  const d=new Date(); d.setDate(d.getDate()+90);
+  $('#tkVal').value=tok;
+  $('#tkExp').value=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()+' (90 ngày)';
+  $('#tkFp').value=tok.slice(0,12)+'••••••••';
+  openModal('mToken');
+}
+
+/* ================ M5 — PHƯƠNG THỨC XÁC THỰC ====================== */
+function renderAuth(){
+  const body=$('#authBody'); if(!body)return;
+  body.innerHTML=AUTH.map((a,i)=>
+    '<tr'+(a.st==='ok'?'':' class="dim"')+'><td class="num">'+(i+1)+'</td>'+
+    '<td class="strong">'+esc(a.n)+'</td><td class="wrap">'+esc(a.ap)+'</td>'+
+    '<td class="mono">'+esc(a.how)+'</td><td class="wrap">'+esc(a.store)+'</td>'+
+    '<td>'+esc(a.rev)+'</td><td class="num">'+(a.use||'—')+'</td>'+
+    '<td>'+(a.st==='ok'
+      ? '<span class="bdg bdg-ok"><span class="material-symbols-outlined">check_circle</span>Đang dùng</span>'
+      : '<span class="bdg bdg-mute"><span class="material-symbols-outlined">schedule</span>Để dành</span>')+
+    '</td></tr>').join('');
+}
+
+/* ================== M6 — DỊCH VỤ CÔNG BỐ ========================= */
+function renderSvc(){
+  const d=$('#qsvcdap')?$('#qsvcdap').value:'', lc=$('#qsvclc')?$('#qsvclc').value:'';
+  const rows=SVC.filter(s=>(d===''||String(s.dap)===d)&&(!lc||s.lc===lc));
+  const body=$('#svcBody'); if(!body)return;
+  const page=pg('svcBody',rows,'dịch vụ');
+  const LC={'Đang khai thác':{c:'bdg-ok',i:'check_circle'},
+            'Đang thiết lập':{c:'bdg-warn',i:'build_circle'},
+            'Sắp ngừng':{c:'bdg-err',i:'do_not_disturb_on'}};
+  body.innerHTML=page.length?page.map((s,i)=>{
+    const l=LC[s.lc];
+    return '<tr><td class="num">'+(_ofs+i+1)+'</td>'+
+      '<td><span class="strong">'+esc(s.n)+'</span><span class="sub">Căn cứ: '+esc(s.r)+'</span></td>'+
+      '<td class="wrap">'+esc(s.ret)+'</td>'+
+      '<td class="mono">'+esc(s.path)+'</td><td class="mid"><span class="chip">'+esc(s.m)+'</span></td>'+
+      '<td class="mid">'+esc(s.v)+'</td>'+
+      '<td class="mid">'+(s.dap
+        ? '<span class="bdg bdg-ok nodot"><span class="material-symbols-outlined">verified</span>Có</span>'
+        : '<span class="bdg bdg-warn nodot"><span class="material-symbols-outlined">help</span>Chưa</span>')+'</td>'+
+      '<td><span class="bdg '+l.c+'"><span class="material-symbols-outlined">'+l.i+'</span>'+esc(s.lc)+'</span></td>'+
+      '<td class="num">'+(s.use||'—')+'</td>'+
+      '<td><button class="ico-btn" onclick="go(\'mcli\')" title="Xem client đang dùng">'+
+        '<span class="material-symbols-outlined">group</span></button></td></tr>';
+  }).join('') : '<tr><td colspan="10"><div class="empty-row">No data available.</div></td></tr>';
+}
+
+/* ======================= M7 — LUỒNG GỬI RA ========================= */
 function renderOut(){
   const body=$('#outBody'); if(!body)return;
   const page=pg('outBody',OUT,'luồng');
@@ -1851,7 +2359,7 @@ sparkline('spkHero',[97.8,98.4,98.1,99.0,98.6,99.3,99.2],'#0090B3');
 sparkline('spkIn',[9840,10120,11050,10780,11960,12210,12480],'#0090B3');
 sparkline('spkOut',[1310,1288,1252,1240,1266,1228,1203],'#5925DC');
 drawFlow();drawErrBars();drawReasons();drawGauge(87.4);
-renderHealth();renderSrc();fillSrc();renderOut();renderTpl();renderQueue();renderCov();renderLog();
+renderHealth();renderSrc();fillSrc();renderCli();renderAuth();renderSvc();renderOut();renderTpl();renderQueue();renderCov();renderLog();
 initAnn();
 
 /* điều hướng bằng hash: ...html#m6 mở thẳng hàng đợi */
@@ -1859,6 +2367,9 @@ function fromHash(){
   const id=(location.hash||'').replace('#','');
   if(CRUMBS[id]){go(id);return;}
   if(id==='m6d'){go('m6');openResolve(0);}
+  if(id==='client'){go('mcli');openCli(0);}
+  if(id==='token'){go('mcli');openCli(0);pickCliTab(document.querySelector('#drwCli .tab[data-ct=auth]'));}
+  if(id==='conn'){go('m2');openConn('ACARS');}
 }
 window.addEventListener('hashchange',fromHash);
 fromHash();
