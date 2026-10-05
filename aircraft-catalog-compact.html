@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<!--
+  MOCKUP v0.1 — TOSS / DATA MAINTENANCE › AIRCRAFT › AIRCRAFT CATALOG — BẢN COMPACT (tối ưu không gian)
+
+  QUY TẮC CLAUDE.md §0: mockup này CHỈ sắp xếp lại bố cục/mật độ của màn Aircraft Catalog đã có.
+  Không thêm nghiệp vụ mới. Mọi cột, nhãn, tab, mục menu lấy từ ảnh màn hình dev (05/10/2026) và ảnh Figma
+  màn Aircraft do người dùng cung cấp. Cột "Status" và các giá trị Category 1-5 là DỮ LIỆU MẪU, đã gắn cờ.
+
+  NGUỒN
+    [Ảnh dev]    screenshot môi trường dev, màn Aircraft Catalog (1919x993) và màn DSP Monitoring
+    [Ảnh Figma]  giao diện Figma màn Aircraft (sidebar mở, 15 dòng đầu)
+    [Đánh giá]   phiên đánh giá 05/10/2026: khách góp ý "chưa tối ưu không gian hiển thị, còn thừa nhiều khoảng trống"
+    Ngôn ngữ thiết kế: cyan/teal accent, tab pill, nút Export Excel cam, nền mây, chân sidebar có avatar + đổi sáng/tối
+    (lấy từ mockup Performance Factor v0.23 và các ảnh trên)
+
+  SỐ LIỆU: toàn bộ 153 dòng là DỮ LIỆU MẪU. 15 loại tàu lấy theo ảnh Figma (Taxi FF, APU FF, Fuel Cap, Water Cap, Cargo).
+  Số hiệu đăng ký, ICAO/IATA, BOW, MRW, Status là giá trị mẫu để minh hoạ, KHÔNG phải số liệu nghiệp vụ.
+
+  BỐ CỤC/MÀU/KÍCH THƯỚC LÀ ĐỀ XUẤT CẦN BA + UI DUYỆT. Xem ngăn "Ghi chú thiết kế" ở thanh trên cùng.
+-->
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOSS Aircraft Catalog Compact (Mockup v0.1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Ghi chú offline: nếu mạng nội bộ chặn Google Fonts, icon sẽ hiện thành chữ. Khi đó nhúng font Inter và
+     Material Symbols Outlined vào máy hoặc thay bằng SVG inline. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:#05070c;color:#e5e9ee;overflow:hidden;
+    display:flex;flex-direction:column}
+  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle;
+    user-select:none;font-size:18px;line-height:1}
+  button{font-family:inherit}
+
+  /* ===================== THANH MOCKUP (ngoài ứng dụng, không bị scale) ===================== */
+  .devbar{flex:none;display:flex;align-items:center;gap:8px;padding:6px 12px;background:#000;color:#94a3b8;
+    font-size:12px;flex-wrap:wrap;z-index:900}
+  .devbar b{color:#fff}
+  .devbar .grp{display:inline-flex;gap:3px;background:#12161d;border-radius:8px;padding:3px}
+  .devbar .grp button{border:none;background:transparent;color:#94a3b8;font-size:11.5px;font-weight:600;
+    padding:4px 10px;border-radius:6px;cursor:pointer}
+  .devbar .grp button.on{background:#0e8ea8;color:#fff}
+  .devbar select{background:#12161d;color:#cbd5e1;border:1px solid #232a35;border-radius:6px;font-size:11.5px;padding:3px 6px}
+  .devbar .tag{background:rgba(217,150,40,.16);color:#e0a53a;padding:3px 10px;border-radius:99px;font-size:10.5px;font-weight:700}
+  .devbar .meter{margin-left:auto;color:#cbd5e1}
+  .devbar .meter b{color:#38d4ee;font-size:13px}
+  .devbar .meter s{color:#7b8794}
+  .devbtn{border:1px solid #2a3340;background:#12161d;color:#cbd5e1;border-radius:7px;padding:4px 10px;font-size:11.5px;
+    font-weight:600;cursor:pointer}
+  .devbtn:hover{border-color:#0e8ea8;color:#fff}
+
+  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#0b0e13;overflow:hidden}
+  .vpbox{position:relative;overflow:hidden;flex:none;box-shadow:0 0 0 1px #232a35,0 20px 60px rgba(0,0,0,.6)}
+  .vp{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden}
+
+  /* ===================== TOKEN: SÁNG (mặc định) / TỐI ===================== */
+  .app{
+    --primary:#0b8aa6; --primary-hover:#087590; --primary-soft:rgba(11,138,166,.12); --on-primary:#fff;
+    --orange:#f59a23; --orange-hover:#e08712;
+    --text:#0f1d27; --text-2:#34464f; --muted:#6b7d89;
+    --surface:#ffffff; --surface-2:#f2f6f9; --surface-3:#e8eef3;
+    --border:#e2e9ee; --border-2:#cdd8e0;
+    --ctl-bg:#ffffff; --ctl-border:#cfd9e1;
+    --side-bg:rgba(255,255,255,.62); --side-border:rgba(255,255,255,.7);
+    --side-active:linear-gradient(90deg,#0a7a92,#0b9db6);
+    --tab-bg:#ffffff; --tab-border:#dbe4ea; --tab-text:#1f2f39;
+    --row-hover:#eaf5f8; --shadow:0 1px 2px rgba(20,50,70,.08),0 6px 18px rgba(20,50,70,.10);
+    --success:#128a5a; --danger:#d03a3a; --warn:#b97a00;
+    --bg-img:
+      radial-gradient(ellipse 38% 16% at 10% 82%,rgba(255,255,255,.62),transparent 70%),
+      radial-gradient(ellipse 34% 14% at 72% 92%,rgba(255,255,255,.55),transparent 70%),
+      radial-gradient(ellipse 28% 11% at 42% 14%,rgba(255,255,255,.42),transparent 70%),
+      linear-gradient(180deg,#b6cddd 0%,#cde0ec 45%,#e2edf4 100%);
+  }
+  .app[data-theme=dark]{
+    --primary:oklch(66% 0.105 213); --primary-hover:oklch(59% 0.105 213); --primary-soft:oklch(27% 0.055 213);
+    --text:oklch(93% 0.01 250); --text-2:oklch(80% 0.01 250); --muted:oklch(70% 0.01 250);
+    --surface:oklch(19% 0.012 250); --surface-2:oklch(23% 0.016 250); --surface-3:oklch(28% 0.02 250);
+    --border:oklch(26% 0.02 250); --border-2:oklch(32% 0.02 250);
+    --ctl-bg:oklch(23% 0.016 250); --ctl-border:oklch(32% 0.02 250);
+    --side-bg:oklch(18% 0.01 250); --side-border:oklch(24% 0.02 250);
+    --side-active:linear-gradient(90deg,oklch(40% 0.07 213),oklch(48% 0.09 213));
+    --tab-bg:oklch(23% 0.016 250); --tab-border:oklch(30% 0.02 250); --tab-text:oklch(86% 0.01 250);
+    --row-hover:oklch(27% 0.04 213); --shadow:0 4px 12px rgba(0,0,0,.45);
+    --success:oklch(70% 0.15 150); --danger:oklch(66% 0.18 25); --warn:oklch(78% 0.15 80);
+    --bg-img:linear-gradient(180deg,oklch(15% 0.012 250),oklch(12% 0.01 250));
+  }
+
+  /* ===================== ỨNG DỤNG ===================== */
+  .app{display:flex;width:100%;height:100%;font-size:12.5px;color:var(--text);background:var(--bg-img);
+    container-type:inline-size;--row-h:28px;--head-h:30px}
+  .app.std{--row-h:40px;--head-h:36px}
+
+  /* ---- Sidebar thu gọn 52px (đề xuất, dev hiện 76px) ---- */
+  .sidebar{width:52px;flex:none;background:var(--side-bg);border-right:1px solid var(--side-border);
+    backdrop-filter:blur(8px);display:flex;flex-direction:column;position:relative;z-index:20;
+    transition:width .2s ease}
+  .sidebar.open{width:196px}
+  .s-logo{height:42px;flex:none;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px;
+    overflow:hidden}
+  .s-logo .lt{display:none;font-weight:700;font-size:13px;color:#a8863c;letter-spacing:.01em;white-space:nowrap}
+  .sidebar.open .s-logo{justify-content:flex-start}
+  .sidebar.open .s-logo .lt{display:inline}
+  .s-menu{flex:1;min-height:0;padding:2px 6px;display:flex;flex-direction:column;gap:1px}
+  .sidebar.open .s-menu{overflow-y:auto;overflow-x:hidden}
+  .mi{position:relative;height:32px;flex:none;display:flex;align-items:center;gap:10px;padding:0 9px;border-radius:8px;
+    color:var(--text-2);cursor:pointer;white-space:nowrap;font-weight:500;font-size:12.5px}
+  .mi .material-symbols-outlined{font-size:19px;flex:none}
+  .mi .mi-l{display:none}
+  .sidebar.open .mi .mi-l{display:inline}
+  .mi:hover{background:var(--surface-3)}
+  .mi.active{background:var(--side-active);color:#fff;font-weight:600}
+  .mi.sep{margin-top:6px}
+  .mi.sep::before{content:'';position:absolute;left:4px;right:4px;top:-4px;border-top:1px solid var(--border-2)}
+  /* Tooltip tên menu khi sidebar thu gọn (thay cho việc phải nhớ icon) */
+  .sidebar:not(.open) .mi:hover::after{content:attr(data-tip);position:absolute;left:calc(100% + 8px);top:50%;
+    transform:translateY(-50%);background:#16212a;color:#fff;font-size:11.5px;font-weight:600;padding:5px 9px;
+    border-radius:6px;white-space:nowrap;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:none}
+  .s-foot{flex:none;padding:6px 6px 10px;display:flex;flex-direction:column;gap:6px;align-items:stretch}
+  .s-foot .mi{height:30px}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary);
+    display:grid;place-items:center;font-weight:700;font-size:11px;position:relative;flex:none}
+  .avatar::after{content:'';position:absolute;right:0;bottom:0;width:8px;height:8px;border-radius:50%;
+    background:#22c55e;border:2px solid var(--surface)}
+  .s-user{display:flex;align-items:center;gap:8px;padding:0 5px}
+  .s-user .un{display:none;font-size:12px;font-weight:700;line-height:1.2}
+  .s-user .ur{display:none;font-size:10px;color:var(--muted)}
+  .sidebar.open .s-user .un,.sidebar.open .s-user .ur{display:block}
+
+  /* ---- Khu chính ---- */
+  .main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+  /* Header: chỉ tab (cao 30px) + cụm thao tác bên phải. KHÔNG breadcrumb. */
+  .topbar{flex:none;display:flex;align-items:center;gap:8px;padding:6px 8px;position:relative;z-index:30}
+  .dtabs{display:flex;gap:5px;min-width:0;overflow-x:auto;scrollbar-width:none}
+  .dtabs::-webkit-scrollbar{display:none}
+  .dtab{flex:none;height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--tab-border);background:var(--tab-bg);
+    color:var(--tab-text);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+    white-space:nowrap}
+  .dtab .material-symbols-outlined{font-size:17px}
+  .dtab:hover{border-color:var(--primary)}
+  .dtab.active{background:var(--primary);border-color:var(--primary);color:#fff}
+  .top-actions{margin-left:auto;display:flex;align-items:center;gap:6px;flex:none}
+  .btn{height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--ctl-border);background:var(--ctl-bg);color:var(--text-2);
+    font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+  .btn:hover{border-color:var(--primary);color:var(--text)}
+  .btn .material-symbols-outlined{font-size:17px}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-hover)}
+  .btn.orange{background:var(--orange);border-color:var(--orange);color:#fff}
+  .btn.orange:hover{background:var(--orange-hover)}
+  .btn.link{border-color:transparent;background:transparent;color:var(--muted);padding:0 8px}
+  .btn .badge{min-width:17px;height:17px;border-radius:99px;background:var(--primary);color:#fff;font-size:10px;font-weight:700;
+    display:none;align-items:center;justify-content:center;padding:0 5px}
+  .btn .badge.on{display:inline-flex}
+  .btn .arrow{transition:transform .2s;font-size:17px}
+  .btn[aria-expanded=false] .arrow{transform:rotate(180deg)}
+  @container (max-width:1500px){ .top-actions .lbl{display:none} .top-actions .btn{padding:0 8px} }
+  @container (max-width:1500px){ .top-actions #btnExport{padding:0 8px} }
+
+  /* ---- Một khung duy nhất (bỏ thẻ lồng thẻ), lề ngoài 8px ---- */
+  .panel{flex:0 1 auto;min-height:0;margin:0 8px 8px;background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;position:relative}
+  .filters{flex:none;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;border-bottom:1px solid var(--border);
+    position:relative;z-index:15}
+  .filters.hidden{display:none}
+  .fld{position:relative;flex:1 1 150px;min-width:130px;max-width:230px}
+  .fld input,.fld select{width:100%;height:32px;border:1px solid var(--ctl-border);background:var(--ctl-bg);color:var(--text);
+    border-radius:8px;padding:0 10px;font-family:inherit;font-size:12.5px;outline:none;appearance:none;-webkit-appearance:none}
+  .fld select{padding-right:28px;cursor:pointer}
+  .fld.sel::after{content:'expand_more';font-family:'Material Symbols Outlined';font-size:18px;position:absolute;right:6px;top:7px;
+    color:var(--muted);pointer-events:none}
+  .fld input::placeholder{color:var(--muted)}
+  .fld input:focus,.fld select:focus{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft)}
+  .fld select.empty{color:var(--muted)}
+  .filters .sp{flex:1 1 0}
+  /* Popover "More filters" */
+  .more{position:relative}
+  .pop{display:none;position:absolute;z-index:40;background:var(--surface);border:1px solid var(--border-2);border-radius:10px;
+    box-shadow:0 12px 32px rgba(10,30,45,.25);padding:10px}
+  .pop.show{display:block}
+  .pop h4{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:8px;font-weight:700}
+  .pop-more{top:calc(100% + 6px);left:0;width:380px}
+  .pop-more .g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pop-more .fld{max-width:none;min-width:0}
+  .pop-foot{display:flex;justify-content:flex-end;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+  .pop-ts{top:calc(100% + 6px);right:0;width:250px;max-height:420px;overflow:auto}
+  .pop-ts label.ck{display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:12.5px;color:var(--text-2);cursor:pointer}
+  .pop-ts label.ck.dis{opacity:.55;cursor:default}
+  .pop-ts input{accent-color:var(--primary)}
+  .seg{display:inline-flex;background:var(--surface-3);border-radius:8px;padding:3px;gap:3px;margin-bottom:10px;width:100%}
+  .seg button{flex:1;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:600;padding:5px 8px;
+    border-radius:6px;cursor:pointer}
+  .seg button.on{background:var(--primary);color:#fff}
+
+  /* Chip bộ lọc đang áp dụng */
+  .chips{flex:none;display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:5px 8px;border-bottom:1px solid var(--border);
+    background:var(--surface-2)}
+  .chips[hidden]{display:none}
+  .chip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 4px 0 9px;border-radius:99px;
+    background:var(--primary-soft);color:var(--primary);font-size:11.5px;font-weight:600}
+  .chip b{font-weight:500;color:var(--text-2)}
+  .chip button{border:none;background:none;color:inherit;display:grid;place-items:center;cursor:pointer;border-radius:50%;
+    width:16px;height:16px}
+  .chip button:hover{background:rgba(0,0,0,.1)}
+  .chip button .material-symbols-outlined{font-size:14px}
+
+  /* ---- Bảng: dòng 28px, header 30px, kẻ ngang, cột tự khớp, freeze 2 cột, header sticky ---- */
+  .tablewrap{flex:0 1 auto;min-height:0;display:flex;flex-direction:column}
+  .scroller{flex:0 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+  table{border-collapse:separate;border-spacing:0;font-size:12.5px;width:100%;white-space:nowrap}
+  th{position:sticky;top:0;z-index:3;height:var(--head-h);padding:0 8px;text-align:left;font-weight:700;font-size:12px;
+    background:var(--surface-2);color:var(--text);border-bottom:1px solid var(--border-2)}
+  td{height:var(--row-h);padding:0 8px;border-bottom:1px solid var(--border);color:var(--text);background:var(--surface)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  td.dim{color:var(--muted)}
+  tbody tr:hover td{background:var(--row-hover)}
+  tbody tr:last-child td{border-bottom:none}
+  .fx{position:sticky;z-index:2}
+  th.fx{z-index:4}
+  .fx1{left:0;width:44px;min-width:44px;max-width:44px;text-align:right}
+  .fx2{left:44px;font-weight:600}
+  .fx2{box-shadow:inset -1px 0 0 var(--border-2)}
+  .app.scrolled-x .fx2{box-shadow:inset -1px 0 0 var(--border-2),6px 0 8px -6px rgba(0,0,0,.25)}
+  .pill{display:inline-flex;align-items:center;height:19px;padding:0 8px;border-radius:99px;font-size:11px;font-weight:700;
+    border:1px solid currentColor;background:transparent}
+  .pill.a{color:var(--success)} .pill.i{color:var(--muted)}
+  .empty-row td{height:80px;text-align:center;color:var(--muted);background:var(--surface)}
+
+  /* ---- Phân trang: 1 thanh 36px, ngay dưới bảng, nằm NGOÀI vùng cuộn ---- */
+  .pager{flex:none;height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;border-top:1px solid var(--border-2);
+    font-size:12px;color:var(--muted);background:var(--surface);border-radius:0 0 10px 10px}
+  .pager b{color:var(--text)}
+  .pg-r{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .pg-size{height:26px;border:1px solid var(--ctl-border);background:var(--ctl-bg);color:var(--text-2);border-radius:7px;
+    font-size:12px;padding:0 6px;font-family:inherit;cursor:pointer}
+  .pgb{min-width:26px;height:26px;padding:0 6px;border-radius:7px;border:none;background:transparent;color:var(--text-2);
+    font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .pgb:hover:not(:disabled):not(.on){background:var(--surface-3)}
+  .pgb.on{background:var(--primary);color:#fff}
+  .pgb:disabled{opacity:.3;cursor:default}
+  .pgb .material-symbols-outlined{font-size:17px}
+
+  .toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:#16212a;color:#fff;padding:7px 14px;
+    border-radius:99px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:200}
+  .toast.show{opacity:1}
+
+  /* ===================== NGĂN GHI CHÚ THIẾT KẾ (không bị scale) ===================== */
+  .drawer{position:fixed;right:0;top:0;bottom:0;width:min(560px,96vw);background:#0f141b;color:#cbd5e1;z-index:1000;
+    transform:translateX(102%);transition:transform .22s;overflow:auto;padding:16px 18px 40px;border-left:1px solid #232a35;
+    font-size:12.5px;line-height:1.55}
+  .drawer.show{transform:none}
+  .drawer h2{font-size:15px;color:#fff;margin-bottom:4px}
+  .drawer h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#38d4ee;margin:18px 0 8px}
+  .drawer table{font-size:11.5px;width:100%;white-space:normal;border-collapse:collapse}
+  .drawer th,.drawer td{position:static;height:auto;padding:5px 7px;border:1px solid #232a35;background:transparent;color:#cbd5e1;
+    text-align:left;vertical-align:top}
+  .drawer th{background:#171e27;color:#fff;font-size:11px}
+  .drawer .x{position:absolute;right:12px;top:12px}
+  .drawer ul{padding-left:18px}
+  .drawer code{background:#171e27;padding:1px 5px;border-radius:4px;font-size:11px;color:#9fe0ee}
+  .drawer .warn{border-left:3px solid #e0a53a;background:rgba(224,165,58,.1);padding:8px 10px;border-radius:6px;margin:8px 0}
+</style>
+</head>
+<body>
+
+<div class="devbar">
+  <span class="material-symbols-outlined" style="font-size:16px">draft</span>
+  <span><b>MOCKUP v0.1</b> Aircraft Catalog, bản COMPACT</span>
+  <span class="tag">DỮ LIỆU MẪU · BỐ CỤC CẦN DUYỆT</span>
+  <span class="grp" id="sizeGrp" title="Giả lập kích thước màn hình khách">
+    <button data-s="1366x768">Laptop 1366×768</button>
+    <button data-s="1920x1080" class="on">Desktop 1920×1080</button>
+    <button data-s="3840x2160">TV 3840×2160</button>
+    <button data-s="fit">Vừa cửa sổ</button>
+  </span>
+  <label>Cỡ giao diện
+    <select id="scaleSel">
+      <option value="auto" selected>Tự động</option>
+      <option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option>
+    </select></label>
+  <span class="meter" id="meter"></span>
+  <button class="devbtn" id="btnNotes"><span class="material-symbols-outlined" style="font-size:14px">info</span> Ghi chú thiết kế</button>
+</div>
+
+<div class="stage" id="stage">
+ <div class="vpbox" id="vpbox">
+  <div class="vp" id="vp">
+   <div class="app" id="app" data-theme="light" data-pui="Layout TOSS (esb-layout) · gói ESB-FE"
+        data-src="[Ảnh dev + Figma] khung chung: sidebar + header tab + vùng nội dung">
+
+    <!-- ===================== SIDEBAR (thu gọn 52px) ===================== -->
+    <nav class="sidebar" id="sidebar" data-pui="p-panelMenu (menu dọc, thu gọn)"
+         data-src="[Ảnh Figma] danh sách menu Data Maintenance · [Đánh giá] 76px xuống 52px, tooltip tên menu">
+      <div class="s-logo">
+        <svg viewBox="0 0 200 150" width="30" height="22" fill="#C9A24D" style="flex:none" aria-label="Vietnam Airlines"><path d="M100,10 C101.5,45 118,70 148,82 C125,81 107,70 100,50 C93,70 75,81 52,82 C82,70 98.5,45 100,10 Z"/><path d="M100,60 C110,95 152,110 190,102 C150,107 118,92 100,74 C82,92 50,107 10,102 C48,110 90,95 100,60 Z"/></svg>
+        <span class="lt">Vietnam Airlines</span>
+      </div>
+      <div class="s-menu" id="menu"></div>
+      <div class="s-foot">
+        <div class="mi" id="sbToggle" data-tip="Mở rộng menu"><span class="material-symbols-outlined" id="sbIcon">chevron_right</span><span class="mi-l">Hide</span></div>
+        <div class="mi" id="themeBtn" data-tip="Đổi sáng / tối"><span class="material-symbols-outlined" id="themeIcon">dark_mode</span><span class="mi-l">Dark mode</span></div>
+        <div class="s-user"><span class="avatar">AD</span><div><div class="un">Admin</div><div class="ur">admin@viettel.com</div></div></div>
+      </div>
+    </nav>
+
+    <!-- ===================== MAIN ===================== -->
+    <div class="main">
+      <header class="topbar" data-pui="esb-tabs (p-tabs) + p-button"
+              data-src="[Ảnh dev] 6 tab của phân hệ Aircraft · [Đánh giá] gộp Filter/Refresh/Export lên hàng tab, bỏ breadcrumb">
+        <div class="dtabs" id="dtabs">
+          <button class="dtab active"><span class="material-symbols-outlined">list_alt</span>Aircraft Catalog</button>
+          <button class="dtab"><span class="material-symbols-outlined">event_note</span>AOG/MNT Schedule</button>
+          <button class="dtab"><span class="material-symbols-outlined">account_tree</span>AOG/MNT Code</button>
+          <button class="dtab"><span class="material-symbols-outlined">rule</span>MEL/CDL</button>
+          <button class="dtab"><span class="material-symbols-outlined">monitoring</span>Performance Factor</button>
+          <button class="dtab"><span class="material-symbols-outlined">error</span>APU INOP</button>
+        </div>
+        <div class="top-actions">
+          <button class="btn" id="btnFilter" aria-expanded="true" title="Show / hide filter"
+                  data-pui="p-button (toggle)" data-src="[Ảnh dev] nút Filter thu/mở">
+            <span class="material-symbols-outlined">filter_alt</span><span class="lbl">Filter</span>
+            <span class="badge" id="fBadge">0</span><span class="material-symbols-outlined arrow">expand_less</span></button>
+          <button class="btn" id="btnRefresh" title="Refresh" data-pui="p-button" data-src="[Ảnh dev] Refresh">
+            <span class="material-symbols-outlined">refresh</span><span class="lbl">Refresh</span></button>
+          <div style="position:relative">
+            <button class="btn" id="btnTS" title="Table Setting"
+                    data-pui="p-popover + p-checkbox + p-selectbutton"
+                    data-src="[Ảnh dev, màn DSP Monitoring] nút Table Setting · [Đánh giá] thêm chọn mật độ">
+              <span class="material-symbols-outlined">view_column</span><span class="lbl">Table Setting</span></button>
+            <div class="pop pop-ts" id="popTS">
+              <h4>Density</h4>
+              <div class="seg" id="densSeg"><button data-d="compact" class="on">Compact</button><button data-d="std">Standard</button></div>
+              <h4>Columns</h4>
+              <div id="colList"></div>
+              <div class="pop-foot"><button class="btn" id="tsReset">Reset</button></div>
+            </div>
+          </div>
+          <button class="btn orange" id="btnExport" title="Export Excel" data-pui="p-button (severity custom)"
+                  data-src="[Ảnh dev + Figma] Export Excel nền cam">
+            <span class="material-symbols-outlined">file_download</span><span class="lbl">Export Excel</span></button>
+        </div>
+      </header>
+
+      <section class="panel" id="panel">
+        <!-- Hàng lọc: 1 hàng, lưới đều. Category 1-5 nằm trong "More filters". -->
+        <div class="filters" id="filters" data-pui="IamSearchInput + p-select + p-popover"
+             data-src="[Ảnh dev] 9 điều kiện lọc: AC Registration, AC Type, AC Subtype, Category 1-5, Status · [Đánh giá] lọc 2 tầng">
+          <div class="fld"><input id="fReg" placeholder="Search by AC Registration" autocomplete="off"
+               data-pui="IamSearchInput (pInputText)" data-src="[Ảnh dev] Search by AC Registration"></div>
+          <div class="fld sel"><select id="fType" class="empty" data-pui="p-select" data-src="[Ảnh dev] AC Type"></select></div>
+          <div class="fld sel"><select id="fSub" class="empty" data-pui="p-select (filter)" data-src="[Ảnh dev] Search by AC Subtype"></select></div>
+          <div class="fld sel"><select id="fStatus" class="empty" data-pui="p-select" data-src="[Ảnh dev] Status"></select></div>
+          <div class="more">
+            <button class="btn" id="btnMore"><span class="material-symbols-outlined">tune</span>More filters
+              <span class="badge" id="mBadge">0</span></button>
+            <div class="pop pop-more" id="popMore" data-pui="p-popover + p-select ×5"
+                 data-src="[Ảnh dev] Category 1 đến Category 5. Giá trị trong ô chọn là MẪU, chưa có nguồn">
+              <h4>Category</h4>
+              <div class="g" id="catGrid"></div>
+              <div class="pop-foot"><button class="btn" id="moreClear">Clear</button><button class="btn primary" id="moreApply">Apply</button></div>
+            </div>
+          </div>
+          <button class="btn primary" id="btnSearch" data-pui="p-button" data-src="[Ảnh dev] Search">
+            <span class="material-symbols-outlined">search</span>Search</button>
+          <button class="btn link" id="btnClear" data-pui="p-button [text]" data-src="[Ảnh dev] Clear Filter">
+            <span class="material-symbols-outlined">filter_alt_off</span>Clear Filter</button>
+        </div>
+        <div class="chips" id="chips" hidden data-pui="p-chip [removable]" data-src="[Đánh giá] chip bộ lọc đang áp dụng"></div>
+
+        <div class="tablewrap" id="tw">
+          <div class="scroller" id="sc">
+            <table id="tbl" data-pui="IamTable (p-table) [frozenColumns] [scrollable]"
+                   data-src="[Ảnh dev + Figma] 12 cột dữ liệu · cột Status là MẪU, vị trí cần xác nhận">
+              <thead id="thead"></thead><tbody id="tbody"></tbody>
+            </table>
+          </div>
+          <div class="pager" id="pager" data-pui="p-paginator (trong IamTable)"
+               data-src="[Ảnh dev] Total, Show N Records, số trang · [Đánh giá] gộp 1 thanh 36px, nằm ngoài vùng cuộn"></div>
+        </div>
+      </section>
+      <div class="toast" id="toast"></div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- ===================== GHI CHÚ THIẾT KẾ ===================== -->
+<aside class="drawer" id="drawer">
+  <button class="devbtn x" id="btnNotesX">Đóng</button>
+  <h2>Ghi chú thiết kế — Aircraft Catalog Compact v0.1</h2>
+  <div class="warn">Bố cục, kích thước, màu là <b>đề xuất cần BA và UI duyệt</b>. Số liệu là <b>dữ liệu mẫu</b>. Mockup chỉ sắp xếp lại màn đã có, không thêm nghiệp vụ.</div>
+
+  <h3>9 thay đổi so với bản dev</h3>
+  <table>
+    <tr><th>#</th><th>Thay đổi</th><th>Dev (đo từ ảnh 1919×993)</th><th>Mockup</th></tr>
+    <tr><td>1</td><td>Bỏ breadcrumb Home › Aircraft</td><td>~45px</td><td>0px</td></tr>
+    <tr><td>2</td><td>Filter, Refresh, Export, Table Setting lên hàng tab</td><td>Hàng riêng ~40px</td><td>Chung hàng tab</td></tr>
+    <tr><td>3</td><td>Lọc 2 tầng: 4 ô chính + More filters (Category 1-5) + chip</td><td>2 hàng, ô 46px, lưới lệch, trống ~630px bên phải</td><td>1 hàng, ô 32px</td></tr>
+    <tr><td>4</td><td>Làm phẳng, 1 khung, lề ngoài 8px</td><td>Lề ~24px mỗi bên, khung lồng khung</td><td>8px, 1 khung</td></tr>
+    <tr><td>5</td><td>Sidebar thu gọn 52px, tooltip, nút mở không đè logo</td><td>76px</td><td>52px</td></tr>
+    <tr><td>6</td><td>Dòng 28px, header 30px, kẻ ngang, cột tự khớp, freeze 2 cột, header sticky, cuộn trong</td><td>Dòng 48px, header 38px, cột 140-160px, bị cắt ở cột MRW</td><td>28 / 30px, vừa nội dung</td></tr>
+    <tr><td>7</td><td>Phân trang 1 thanh 36px ngay dưới bảng</td><td>Khối ~55px dính đáy màn</td><td>36px, sát cuối danh sách</td></tr>
+    <tr><td>8</td><td>Tab cao 30px</td><td>~36px</td><td>30px</td></tr>
+    <tr><td>9</td><td>Table Setting: ẩn/hiện cột + mật độ Compact/Standard (mặc định Compact)</td><td>Không có</td><td>Có</td></tr>
+  </table>
+  <p style="margin-top:8px">Số "Dòng thấy được" trên thanh trên cùng được đo trực tiếp từ bảng. Số của bản dev cũ là ước tính theo công thức <code>(chiều cao − 418px) / 48px</code>, rút ra từ ảnh dev (418px = phần đầu trang + phân trang cố định).</p>
+
+  <h3>Hiển thị theo loại màn hình</h3>
+  <ul>
+    <li>Nút <b>Laptop / Desktop / TV</b> giả lập đúng độ phân giải rồi thu vừa cửa sổ. Dùng để so số dòng thấy được.</li>
+    <li>Trên <b>TV treo tường</b> (≥ 2400px): cỡ giao diện tự phóng 150% hoặc 200% để chữ đọc được từ xa, số dòng vẫn như màn 1920×1080. Có thể chỉnh tay ở ô "Cỡ giao diện".</li>
+    <li>Trên <b>laptop</b> (≤ 1250px): nhãn nút ở hàng tab rút thành icon.</li>
+    <li>Màn thấp: chuyển <b>Compact</b> để thấy nhiều dòng; chuyển <b>Standard</b> (dòng 40px) cho màn lớn muốn thoáng.</li>
+  </ul>
+
+  <h3>Việc cần người quyết định (chưa có nguồn)</h3>
+  <ul>
+    <li><b>Kẻ vạch dọc giữa các cột:</b> mockup bỏ theo đề xuất giảm nhiễu. Quyết định P-26 của mockup Performance Factor đang kẻ cả hai chiều. Designer cần xác nhận áp dụng cho toàn hệ thống.</li>
+    <li><b>Cột Status:</b> ảnh dev có bộ lọc Status nhưng không thấy cột. Mockup thêm cuối bảng làm mẫu; cần xác nhận vị trí.</li>
+    <li><b>Giá trị Category 1-5</b> và giá trị lọc AC Type/AC Subtype là mẫu; danh mục thật do hệ thống cấp.</li>
+    <li><b>Đơn vị MRW:</b> ảnh dev chỉ ghi "MRW", chưa rõ đơn vị. Mockup giữ nguyên nhãn.</li>
+    <li><b>Breadcrumb:</b> chỉ bỏ ở màn danh sách. Màn chi tiết cấp 3 trở lên cần quyết định có giữ nút quay lại hay không.</li>
+    <li><b>Sidebar:</b> chưa làm chế độ rê chuột để mở dạng phủ (overlay), chỉ có nút bật/tắt.</li>
+  </ul>
+
+  <h3>Chú thích component (DEV)</h3>
+  <table>
+    <tr><th>data-pui</th><th>Component</th></tr>
+    <tr><td>Layout TOSS (esb-layout)</td><td>Khung chung sidebar + header (ESB-FE)</td></tr>
+    <tr><td>p-panelMenu</td><td>Menu dọc, trạng thái thu gọn</td></tr>
+    <tr><td>esb-tabs (p-tabs)</td><td>Tab phân hệ Aircraft (rule #44)</td></tr>
+    <tr><td>p-button</td><td>Filter, Refresh, Export Excel, Search, Clear Filter</td></tr>
+    <tr><td>p-popover</td><td>Table Setting, More filters</td></tr>
+    <tr><td>p-checkbox, p-selectbutton</td><td>Ẩn/hiện cột, chọn mật độ</td></tr>
+    <tr><td>IamSearchInput (pInputText)</td><td>Ô Search by AC Registration (rule #31)</td></tr>
+    <tr><td>p-select</td><td>AC Type, AC Subtype, Status, Category 1-5 (rule #38)</td></tr>
+    <tr><td>p-chip [removable]</td><td>Chip bộ lọc đang áp dụng</td></tr>
+    <tr><td>IamTable (p-table)</td><td>Bảng danh sách, frozenColumns 2 cột, scrollable header sticky (rule #19)</td></tr>
+    <tr><td>p-paginator</td><td>Thanh phân trang trong IamTable</td></tr>
+    <tr><td>IamBadgeStatus</td><td>Cột Status (rule #29, #43). Mockup vẽ dạng viền rỗng</td></tr>
+    <tr><td>(custom / cần bổ sung)</td><td>Tooltip tên menu khi sidebar thu gọn: dùng <code>pTooltip</code>. Chọn mật độ Compact/Standard: chưa có trong IamTable, cần bổ sung</td></tr>
+  </table>
+</aside>
+
+<script>
+/* ===================== DỮ LIỆU MẪU ===================== */
+// 15 loại tàu theo ảnh Figma (Taxi FF, APU FF, Fuel Cap, Water Cap, Cargo). Còn lại là mẫu.
+const BASE=[
+ ['A320','A320NEO','A20N','32N','Airbus A320 NEO',1200,150,18145,150,7380,42600,79000],
+ ['A321','A321CEO','A321','321','Airbus A321 CEO',1500,200,23700,200,5500,48500,93900],
+ ['A321','A321NEO','A21N','32Q','Airbus A321 NEO',1500,200,27200,200,6000,50100,97000],
+ ['A350','A350','A359','359','Airbus A350-900',2200,250,111000,500,25000,142400,280000],
+ ['B787','B787-9','B789','789','Boeing 787-9',2000,220,101300,400,20000,128850,254000],
+ ['B787','B787-10','B78X','78J','Boeing 787-10',2100,220,101300,450,23000,135500,254000],
+ ['ATR','ATR72','AT76','AT7','ATR 72-500',300,80,6370,80,3000,13500,23000],
+ ['A321','A321SL','A321','321','Airbus A321 Sharklet',1500,200,23700,200,5500,48500,93900],
+ ['A320','A320CEO','A320','320','Airbus A320 CEO',1200,150,18145,150,7380,42100,78000],
+ ['A330','A330-200','A332','332','Airbus A330-200',2000,250,97530,400,27000,120600,242000],
+ ['B777','B777-200','B772','772','Boeing 777-200ER',2500,300,117350,500,31000,138100,297550],
+ ['A321','A321F','A321','321','Airbus A321 Freighter',1500,200,26720,100,27000,50300,93900],
+ ['E190','E190','E190','E90','Embraer E190',800,120,13986,100,3200,28000,51800],
+ ['A350','A350-1000','A35K','351','Airbus A350-1000',2500,280,158000,600,40000,154000,319000],
+ ['B787','B787-9ER','B789','789','Boeing 787-9 ER',2100,230,126920,450,21000,129000,254000]
+];
+const CATS=[['C1-A','C1-B','C1-C'],['C2-A','C2-B','C2-C'],['C3-A','C3-B','C3-C'],['C4-A','C4-B','C4-C'],['C5-A','C5-B','C5-C']];
+const DATA=[];
+for(let i=0;i<153;i++){
+  const b=BASE[i%BASE.length];
+  DATA.push({type:b[0],reg:'VN-A'+(601+i),sub:b[1],icao:b[2],iata:b[3],name:b[4],taxi:b[5],apu:b[6],fuel:b[7],water:b[8],
+    cargo:b[9],bow:b[10],mrw:b[11],status:(i%9===8)?'Inactive':'Active',
+    cat:[CATS[0][i%3],CATS[1][(i+1)%3],CATS[2][(i+2)%3],CATS[3][(i*2)%3],CATS[4][(i*3+1)%3]]});
+}
+const COLS=[
+ {k:'no',l:'No.',fixed:1,cls:'fx fx1 num'},
+ {k:'reg',l:'AC Registration',fixed:1,cls:'fx fx2'},
+ {k:'sub',l:'AC Subtype'},{k:'icao',l:'ICAO Designator'},{k:'iata',l:'IATA Designator'},
+ {k:'name',l:'Aircraft Type Name'},
+ {k:'taxi',l:'Taxi FF (kg/h)',num:1},{k:'apu',l:'APU FF (kg/h)',num:1},{k:'fuel',l:'Fuel Cap (kg)',num:1},
+ {k:'water',l:'Water Cap (L)',num:1},{k:'cargo',l:'Cargo (kg)',num:1},{k:'bow',l:'BOW (kg)',num:1},{k:'mrw',l:'MRW',num:1},
+ {k:'status',l:'Status'}
+];
+const MENU=[
+ ['badge','Pilot Category'],['airline_seat_recline_normal','Cabin Crew Category'],['business_center','Carrier'],
+ ['public','Country Category'],['grid_4x4','FIR Category'],['mail','Email List'],['inventory_2','ULD Category'],
+ ['deployed_code','ULD'],['route','Flight Routes'],['flight','Flight Fleet'],['category','AC Subtype'],
+ ['flight_takeoff','Aircraft',1],['location_city','Airport'],['description','OTP-OSP'],['call_split','Leg Type'],
+ ['notifications','Notification','sep'],['settings','Setting']
+];
+
+/* ===================== TRẠNG THÁI ===================== */
+const S={page:1,size:25,dens:'compact',hidden:new Set(),
+  f:{reg:'',type:'',sub:'',status:'',cat:['','','','','']}};
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n).toLocaleString('en-US');
+
+/* ===================== DỰNG UI TĨNH ===================== */
+$('menu').innerHTML=MENU.map(m=>`<div class="mi${m[2]===1?' active':''}${m[2]==='sep'?' sep':''}" data-tip="${m[1]}" onclick="toast('Ngoài phạm vi mockup')"><span class="material-symbols-outlined">${m[0]}</span><span class="mi-l">${m[1]}</span></div>`).join('');
+$('menu').querySelector('.active').removeAttribute('onclick');
+function opts(sel,label,vals){sel.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');}
+opts($('fType'),'AC Type',[...new Set(DATA.map(d=>d.type))]);
+opts($('fSub'),'Search by AC Subtype',[...new Set(DATA.map(d=>d.sub))]);
+opts($('fStatus'),'Status',['Active','Inactive']);
+$('catGrid').innerHTML=CATS.map((c,i)=>`<div class="fld sel"><select id="fCat${i}" class="empty"><option value="">Category ${i+1}</option>${c.map(v=>`<option>${v}</option>`).join('')}</select></div>`).join('');
+$('colList').innerHTML=COLS.map(c=>`<label class="ck${c.fixed?' dis':''}"><input type="checkbox" data-k="${c.k}" checked ${c.fixed?'disabled':''}>${c.l}${c.fixed?' <span style="color:var(--muted);font-size:11px">(frozen)</span>':''}</label>`).join('');
+
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),1600);}
+
+/* ===================== LỌC ===================== */
+function filtered(){
+  const f=S.f;
+  return DATA.filter(d=>(!f.reg||d.reg.toLowerCase().includes(f.reg.toLowerCase()))&&(!f.type||d.type===f.type)&&
+    (!f.sub||d.sub===f.sub)&&(!f.status||d.status===f.status)&&f.cat.every((c,i)=>!c||d.cat[i]===c));
+}
+function readFilters(){
+  S.f.reg=$('fReg').value.trim();S.f.type=$('fType').value;S.f.sub=$('fSub').value;S.f.status=$('fStatus').value;
+  S.f.cat=[0,1,2,3,4].map(i=>$('fCat'+i).value);
+}
+function writeFilters(){
+  $('fReg').value=S.f.reg;$('fType').value=S.f.type;$('fSub').value=S.f.sub;$('fStatus').value=S.f.status;
+  S.f.cat.forEach((c,i)=>$('fCat'+i).value=c);
+  document.querySelectorAll('.fld select').forEach(s=>s.classList.toggle('empty',!s.value));
+}
+function renderChips(){
+  const f=S.f,items=[];
+  if(f.reg)items.push(['reg','AC Registration',f.reg]);
+  if(f.type)items.push(['type','AC Type',f.type]);
+  if(f.sub)items.push(['sub','AC Subtype',f.sub]);
+  if(f.status)items.push(['status','Status',f.status]);
+  f.cat.forEach((c,i)=>{if(c)items.push(['cat'+i,'Category '+(i+1),c]);});
+  $('chips').hidden=!items.length;
+  $('chips').innerHTML=items.map(it=>`<span class="chip">${it[1]}: <b>${it[2]}</b><button data-k="${it[0]}" title="Remove"><span class="material-symbols-outlined">close</span></button></span>`).join('');
+  $('fBadge').textContent=items.length;$('fBadge').classList.toggle('on',items.length>0);
+  const m=f.cat.filter(Boolean).length;$('mBadge').textContent=m;$('mBadge').classList.toggle('on',m>0);
+}
+function apply(){readFilters();S.page=1;render();}
+
+/* ===================== BẢNG ===================== */
+function render(){
+  const rows=filtered(),total=rows.length,pages=Math.max(1,Math.ceil(total/S.size));
+  S.page=Math.min(S.page,pages);
+  const start=(S.page-1)*S.size,slice=rows.slice(start,start+S.size);
+  const cols=COLS.filter(c=>!S.hidden.has(c.k));
+  $('thead').innerHTML='<tr>'+cols.map(c=>`<th class="${(c.cls||'')+(c.num?' num':'')}">${c.l}</th>`).join('')+'</tr>';
+  $('tbody').innerHTML=slice.length?slice.map((d,i)=>'<tr>'+cols.map(c=>{
+    let v=c.k==='no'?start+i+1:d[c.k];
+    if(c.num&&c.k!=='no')v=fmt(v);
+    if(c.k==='status')v=`<span class="pill ${d.status==='Active'?'a':'i'}">${d.status}</span>`;
+    return `<td class="${(c.cls||'')+(c.num?' num':'')}">${v}</td>`;}).join('')+'</tr>').join('')
+    :`<tr class="empty-row"><td colspan="${cols.length}">No data</td></tr>`;
+  renderPager(total,pages);renderChips();measure();
+}
+function renderPager(total,pages){
+  const p=S.page;let nums=[];
+  const lo=Math.max(1,Math.min(p-2,pages-4)),hi=Math.min(pages,lo+4);
+  for(let i=lo;i<=hi;i++)nums.push(i);
+  $('pager').innerHTML=`<span>Total: <b>${total}</b></span>
+   <div class="pg-r"><span>Show</span>
+    <select class="pg-size" id="pgSize">${[25,50,100].map(n=>`<option value="${n}"${n===S.size?' selected':''}>${n} Records</option>`).join('')}</select>
+    <button class="pgb" data-p="1" ${p===1?'disabled':''}><span class="material-symbols-outlined">keyboard_double_arrow_left</span></button>
+    <button class="pgb" data-p="${p-1}" ${p===1?'disabled':''}><span class="material-symbols-outlined">chevron_left</span></button>
+    ${nums.map(n=>`<button class="pgb${n===p?' on':''}" data-p="${n}">${n}</button>`).join('')}
+    <button class="pgb" data-p="${p+1}" ${p===pages?'disabled':''}><span class="material-symbols-outlined">chevron_right</span></button>
+    <button class="pgb" data-p="${pages}" ${p===pages?'disabled':''}><span class="material-symbols-outlined">keyboard_double_arrow_right</span></button></div>`;
+}
+
+/* ===================== SỰ KIỆN ===================== */
+$('pager').addEventListener('click',e=>{const b=e.target.closest('.pgb');if(b&&!b.disabled){S.page=+b.dataset.p;render();}});
+$('pager').addEventListener('change',e=>{if(e.target.id==='pgSize'){S.size=+e.target.value;S.page=1;render();}});
+$('btnSearch').onclick=apply;
+$('fReg').addEventListener('keydown',e=>{if(e.key==='Enter')apply();});
+['fType','fSub','fStatus'].forEach(id=>$(id).addEventListener('change',()=>{$(id).classList.toggle('empty',!$(id).value);apply();}));
+document.querySelectorAll('#catGrid select').forEach(s=>s.addEventListener('change',()=>s.classList.toggle('empty',!s.value)));
+$('btnClear').onclick=()=>{S.f={reg:'',type:'',sub:'',status:'',cat:['','','','','']};writeFilters();S.page=1;render();};
+$('moreApply').onclick=()=>{apply();$('popMore').classList.remove('show');};
+$('moreClear').onclick=()=>{[0,1,2,3,4].forEach(i=>{$('fCat'+i).value='';$('fCat'+i).classList.add('empty');});};
+$('chips').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;
+  if(k.startsWith('cat'))S.f.cat[+k.slice(3)]='';else S.f[k]='';writeFilters();S.page=1;render();});
+$('btnFilter').onclick=()=>{const h=$('filters').classList.toggle('hidden');$('btnFilter').setAttribute('aria-expanded',String(!h));measure();};
+$('btnRefresh').onclick=()=>{toast('Đã làm mới dữ liệu (mẫu)');render();};
+$('btnExport').onclick=()=>toast('Export Excel: ngoài phạm vi mockup');
+$('dtabs').addEventListener('click',e=>{const t=e.target.closest('.dtab');if(t&&!t.classList.contains('active'))toast('Ngoài phạm vi mockup');});
+function closePops(except){['popMore','popTS'].forEach(id=>{if(id!==except)$(id).classList.remove('show');});}
+$('btnMore').onclick=e=>{e.stopPropagation();closePops('popMore');$('popMore').classList.toggle('show');};
+$('btnTS').onclick=e=>{e.stopPropagation();closePops('popTS');$('popTS').classList.toggle('show');};
+document.addEventListener('click',e=>{if(!e.target.closest('.pop'))closePops();});
+$('popMore').addEventListener('click',e=>e.stopPropagation());
+$('popTS').addEventListener('click',e=>e.stopPropagation());
+$('colList').addEventListener('change',e=>{const k=e.target.dataset.k;if(!k)return;
+  e.target.checked?S.hidden.delete(k):S.hidden.add(k);render();});
+function setDens(d){S.dens=d;$('app').classList.toggle('std',d==='std');
+  document.querySelectorAll('#densSeg button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));measure();}
+$('densSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setDens(b.dataset.d);});
+$('tsReset').onclick=()=>{S.hidden.clear();document.querySelectorAll('#colList input').forEach(i=>i.checked=true);setDens('compact');render();};
+$('sc').addEventListener('scroll',()=>$('app').classList.toggle('scrolled-x',$('sc').scrollLeft>2));
+$('sbToggle').onclick=()=>{const o=$('sidebar').classList.toggle('open');$('sbIcon').textContent=o?'chevron_left':'chevron_right';
+  $('sbToggle').dataset.tip=o?'Thu gọn menu':'Mở rộng menu';setTimeout(measure,230);};
+$('themeBtn').onclick=()=>{const a=$('app'),d=a.dataset.theme==='light';a.dataset.theme=d?'dark':'light';
+  $('themeIcon').textContent=d?'light_mode':'dark_mode';$('themeBtn').querySelector('.mi-l').textContent=d?'Light mode':'Dark mode';};
+$('btnNotes').onclick=()=>$('drawer').classList.toggle('show');
+$('btnNotesX').onclick=()=>$('drawer').classList.remove('show');
+
+/* ===================== GIẢ LẬP MÀN HÌNH ===================== */
+let SIZE='1920x1080';
+function layout(){
+  const stage=$('stage'),sw=stage.clientWidth,sh=stage.clientHeight;
+  let W,H;
+  if(SIZE==='fit'){W=sw;H=sh;}else{[W,H]=SIZE.split('x').map(Number);}
+  const k=Math.min(sw/W,sh/H,1);
+  const sel=$('scaleSel').value;
+  const ui=sel==='auto'?(W>=3200?2:W>=2400?1.5:1):+sel;
+  const vp=$('vp'),box=$('vpbox'),app=$('app');
+  vp.style.width=W+'px';vp.style.height=H+'px';vp.style.transform=`scale(${k})`;
+  box.style.width=W*k+'px';box.style.height=H*k+'px';
+  app.style.zoom=ui;app.style.width=(W/ui)+'px';app.style.height=(H/ui)+'px';
+  layout.W=W;layout.H=H;layout.ui=ui;layout.k=k;
+  measure();
+}
+function measure(){
+  requestAnimationFrame(()=>{
+    const sc=$('sc'),th=$('thead').offsetHeight,rh=$('tbody').querySelector('tr')?.offsetHeight||28;
+    const n=$('tbody').querySelectorAll('tr:not(.empty-row)').length;
+    const fit=sc.scrollHeight>sc.clientHeight+1?Math.floor((sc.clientHeight-th)/rh):n;
+    const effH=(layout.H||1080)/(layout.ui||1);
+    const legacy=Math.max(0,Math.floor((effH-418)/48));
+    $('meter').innerHTML=`Cửa sổ giả lập ${layout.W}×${layout.H} · cỡ giao diện ${Math.round((layout.ui||1)*100)}% · `+
+      `dòng thấy được: <b>${fit}</b> <s>(bản dev cũ ước tính ≈ ${legacy})</s>`;
+  });
+}
+$('sizeGrp').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#sizeGrp button').forEach(x=>x.classList.toggle('on',x===b));SIZE=b.dataset.s;layout();});
+$('scaleSel').onchange=layout;
+window.addEventListener('resize',layout);
+
+/* Mở nhanh bằng đường dẫn: #1366x768 · #3840x2160 · #1920x1080,dark · #fit,std */
+(function(){const h=location.hash.slice(1).split(',');
+  const sz=h.find(x=>/^\d+x\d+$/.test(x)||x==='fit');
+  if(sz){SIZE=sz;document.querySelectorAll('#sizeGrp button').forEach(x=>x.classList.toggle('on',x.dataset.s===sz));}
+  if(h.includes('dark'))$('themeBtn').click();
+  if(h.includes('std'))setDens('std');
+  if(h.includes('open'))$('sbToggle').click();})();
+render();layout();
+</script>
+</body>
+</html>
