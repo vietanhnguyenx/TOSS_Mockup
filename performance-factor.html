@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  MOCKUP v0.23 — TOSS / OPERATIONS ANALYSIS › PERFORMANCE FACTOR
+  MOCKUP v0.24 — TOSS / OPERATIONS ANALYSIS › PERFORMANCE FACTOR
   BA PIC: Nguyễn Lê Việt Anh · v0.1 (13/08/2026) dựng 3 màn trên khung riêng
                               · v0.2 (13/08/2026) dựng lại theo hệ thiết kế chuẩn của
                                 mockup "Airport Ops - Airport Operations-v0.1.html"
@@ -235,6 +235,14 @@
                                 (3) Popup xác nhận thêm ô "duplicate" và KHỐI CẢNH BÁO GHI ĐÈ, liệt kê
                                     các tàu bay đã có hệ số ở kỳ sắp ghi (BR-PF-23, BR-PF-25).
 
+                              · v0.24 (14/10/2026) ĐỔI NHÁNH SAU KHI ĐÃ CHỌN TỆP:
+                                (1) Bấm thẻ nhánh KHÁC khi đã có tệp ⇒ popup xác nhận "Switch branch";
+                                    xác nhận thì bỏ tệp + phạm vi ghi rồi mở popup chọn tệp của nhánh mới,
+                                    huỷ thì giữ nguyên nhánh và tệp. Chưa chọn tệp ⇒ đổi ngay, không hỏi.
+                                (2) Bấm lại chính thẻ đang chọn ⇒ chỉ mở popup chọn tệp, KHÔNG xoá gì
+                                    (trước đây setBranch xoá sạch kể cả khi bấm lại cùng thẻ).
+                                (3) Sau khi Import xong (bảng kiểm tra đã ẩn) thì đổi nhánh tự do.
+
   Phạm vi: Function list v1.0 dòng 108–114 · YCKT V3 dòng 180–192 (TOSS-136 → TOSS-141)
 
   ===========================================================================
@@ -467,7 +475,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TOSS — Operations Analysis › Performance Factor (Mockup v0.23)</title>
+<title>TOSS — Operations Analysis › Performance Factor (Mockup v0.24)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
@@ -957,7 +965,7 @@
 
 <div class="devbar">
   <span class="material-symbols-outlined" style="font-size:16px;">draft</span>
-  <span><b>MOCKUP v0.23</b> — Operations Analysis › Performance Factor · Function list d.108–114 · YCKT V3 d.180–192 (TOSS-136→141)</span>
+  <span><b>MOCKUP v0.24</b> — Operations Analysis › Performance Factor · Function list d.108–114 · YCKT V3 d.180–192 (TOSS-136→141)</span>
   <span class="tag">DEMO DATA — dữ liệu mẫu, không phải số liệu khai thác thật</span>
 </div>
 
@@ -1149,19 +1157,19 @@
           <span class="hint">Each branch has a different field set and needs its own parser</span></div>
         <div class="card-body">
           <div class="branch-row" id="branchRow">
-            <div class="branch on" id="brPEP" onclick="setBranch('PEP',true)"
+            <div class="branch on" id="brPEP" onclick="onBranchClick('PEP')"
                  data-src="[Chốt 14/08 · P-6] PEP = Airbus (NAVBLUE SAS)">
               <span class="material-symbols-outlined">flight</span>
               <span><span class="bt">Airbus — PEP</span>
                 <span class="bs">Flat CSV, 60–61 columns. Carries UTC time and departure/arrival airports.</span></span>
             </div>
-            <div class="branch" id="brPET" onclick="setBranch('PET',true)"
+            <div class="branch" id="brPET" onclick="onBranchClick('PET')"
                  data-src="[Chốt 14/08 · P-6] PET = Boeing">
               <span class="material-symbols-outlined">flight</span>
               <span><span class="bt">Boeing — PET</span>
                 <span class="bs">Text file, 2 blocks. No time and no airports — matching relies on the flight number.</span></span>
             </div>
-            <div class="branch" id="brATR" onclick="setBranch('ATR',true)"
+            <div class="branch" id="brATR" onclick="onBranchClick('ATR')"
                  data-src="[Chốt 10/09] mở nhánh ATR theo BR-PF-29 — tra ngược số hiệu tàu bay từ bảng chuyến bay">
               <span class="material-symbols-outlined">flight</span>
               <span><span class="bt">ATR</span>
@@ -2173,6 +2181,24 @@ function setBranch(br, openPicker){
   if(openPicker) openFilePicker();
 }
 function branchFiles(){ return FILES.filter(f=>f[4]===BRANCH); }
+/* v0.24 — đổi nhánh sau khi đã chọn tệp. Bộ đọc của ba nhánh khác nhau nên tệp không mang sang được;
+   ghi vào hệ thống lại không hoàn tác được, nên KHÔNG xoá âm thầm mà hỏi trước. */
+const BRANCH_LABEL = {PEP:'Airbus — PEP', PET:'Boeing — PET', ATR:'ATR'};
+function hasStagedFiles(){ return filesLoaded && $('previewCard').style.display !== 'none'; }
+function onBranchClick(br){
+  if(br === BRANCH){ openFilePicker(); return; }          /* bấm lại thẻ đang chọn: chỉ mở chọn tệp, không xoá gì */
+  if(!hasStagedFiles()){ setBranch(br, true); return; }  /* chưa có tệp: đổi ngay */
+  askSwitchBranch(br);
+}
+function askSwitchBranch(br){
+  const n = branchFiles().filter(f=>!f[6]).length;
+  askConfirm('Switch to ' + BRANCH_LABEL[br] + '?',
+    `<p style="margin:0 0 9px">Switching to <b>${BRANCH_LABEL[br]}</b> will drop the ${n} parsed file(s) of
+       <b>${BRANCH_LABEL[BRANCH]}</b> and clear the import scope. Nothing has been written yet.</p>
+     <p class="note" style="margin:0">The two branches read different file formats, so the files cannot be carried over.
+       You will need to select them again if you come back to ${BRANCH_LABEL[BRANCH]}.</p>`,
+    'Switch branch', true, ()=>setBranch(br, true));
+}
 function openFilePicker(){
   $('fpOverlay').classList.add('show');
 }
